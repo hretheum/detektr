@@ -1,0 +1,97 @@
+@startuml Use Cases - System Detektor
+!define RECTANGLE
+
+' Aktorzy
+actor "User" as U
+actor "Home Assistant" as HA
+actor "Camera" as C
+actor "AI Models" as AI
+actor "System" as S
+
+' Use Cases dla User
+rectangle "Zarządzanie Konfiguracją" {
+  usecase "UC01: Konfiguracja kamer" as UC01
+  usecase "UC02: Definiowanie stref detekcji" as UC02
+  usecase "UC03: Ustawianie reguł automatyzacji" as UC03
+  usecase "UC04: Zarządzanie użytkownikami" as UC04
+}
+
+rectangle "Interakcja z Systemem" {
+  usecase "UC05: Wydawanie komend głosowych" as UC05
+  usecase "UC06: Wykonywanie gestów kontrolnych" as UC06
+  usecase "UC07: Przeglądanie historii zdarzeń" as UC07
+  usecase "UC08: Otrzymywanie powiadomień" as UC08
+}
+
+' Use Cases dla System
+rectangle "Przetwarzanie Wizyjne" {
+  usecase "UC09: Przechwytywanie strumienia wideo" as UC09
+  usecase "UC10: Wykrywanie obiektów" as UC10
+  usecase "UC11: Rozpoznawanie twarzy" as UC11
+  usecase "UC12: Detekcja gestów" as UC12
+  usecase "UC13: Detekcja zwierząt" as UC13
+}
+
+rectangle "Przetwarzanie Audio" {
+  usecase "UC14: Rozpoznawanie mowy (STT)" as UC14
+  usecase "UC15: Synteza mowy (TTS)" as UC15
+}
+
+rectangle "Integracje" {
+  usecase "UC16: Wysyłanie zdarzeń do HA" as UC16
+  usecase "UC17: Przetwarzanie intencji (LLM)" as UC17
+  usecase "UC18: Monitorowanie wydajności" as UC18
+}
+
+' Use Cases dla Home Assistant
+rectangle "Automatyzacje" {
+  usecase "UC19: Sterowanie oświetleniem" as UC19
+  usecase "UC20: Zarządzanie alarmami" as UC20
+  usecase "UC21: Kontrola multimediów" as UC21
+}
+
+' Relacje User
+U --> UC01
+U --> UC02
+U --> UC03
+U --> UC04
+U --> UC05
+U --> UC06
+U --> UC07
+U <-- UC08
+
+' Relacje System
+S --> UC09
+S --> UC10
+S --> UC11
+S --> UC12
+S --> UC13
+S --> UC14
+S --> UC15
+S --> UC16
+S --> UC17
+S --> UC18
+
+' Relacje Camera
+C --> UC09
+
+' Relacje AI Models
+AI <-- UC11
+AI <-- UC12
+AI <-- UC14
+AI <-- UC17
+
+' Relacje Home Assistant
+HA <-- UC16
+HA --> UC19
+HA --> UC20
+HA --> UC21
+
+' Include/Extend
+UC10 ..> UC11 : <<include>>
+UC10 ..> UC12 : <<include>>
+UC10 ..> UC13 : <<include>>
+UC05 ..> UC14 : <<include>>
+UC16 ..> UC17 : <<extend>>
+
+@enduml

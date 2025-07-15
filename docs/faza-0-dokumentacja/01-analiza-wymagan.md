@@ -8,17 +8,17 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
 ### Blok 1: Analiza wymagań funkcjonalnych (RF)
 
 #### Zadania atomowe:
-1. **[ ] Identyfikacja głównych aktorów systemu**
+1. **[x] Identyfikacja głównych aktorów systemu**
    - **Metryka**: Min. 3 aktorów (User, System, Home Assistant)
    - **Walidacja**: `cat docs/requirements/actors.md | grep "^##" | wc -l`
    - **Czas**: 2h
 
-2. **[ ] Mapowanie use cases dla każdego aktora**
+2. **[x] Mapowanie use cases dla każdego aktora**
    - **Metryka**: Min. 15 use cases
    - **Walidacja**: Diagram UML z use cases w PlantUML
    - **Czas**: 4h
 
-3. **[ ] Utworzenie wymagań funkcjonalnych z priorytetami**
+3. **[x] Utworzenie wymagań funkcjonalnych z priorytetami**
    - **Metryka**: 20+ wymagań w formacie RF001-RF020+
    - **Walidacja**: 
      ```bash
@@ -27,7 +27,7 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
      ```
    - **Czas**: 6h
 
-4. **[ ] Kategoryzacja wymagań (MoSCoW)**
+4. **[x] Kategoryzacja wymagań (MoSCoW)**
    - **Metryka**: 100% wymagań z przypisanym priorytetem
    - **Walidacja**: Każde RF ma tag: [MUST]/[SHOULD]/[COULD]/[WONT]
    - **Czas**: 2h
@@ -40,22 +40,22 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
 ### Blok 2: Analiza wymagań niefunkcjonalnych (RNF)
 
 #### Zadania atomowe:
-1. **[ ] Wymagania wydajnościowe (Performance)**
+1. **[x] Wymagania wydajnościowe (Performance)**
    - **Metryka**: Min. 5 mierzalnych KPI
    - **Walidacja**: Każde ma target value (np. latency <2s)
    - **Czas**: 3h
 
-2. **[ ] Wymagania bezpieczeństwa (Security)**
+2. **[x] Wymagania bezpieczeństwa (Security)**
    - **Metryka**: Pokrycie OWASP Top 10 dla IoT
    - **Walidacja**: Security checklist 100% wypełniona
    - **Czas**: 3h
 
-3. **[ ] Wymagania niezawodnościowe (Reliability)**
+3. **[x] Wymagania niezawodnościowe (Reliability)**
    - **Metryka**: SLA zdefiniowane (uptime, MTBF, MTTR)
    - **Walidacja**: `grep -E "(99\.[0-9]%|MTBF|MTTR)" non-functional-requirements.md`
    - **Czas**: 2h
 
-4. **[ ] Wymagania skalowalności i utrzymania**
+4. **[x] Wymagania skalowalności i utrzymania**
    - **Metryka**: Zdefiniowane limity (cameras, FPS, storage)
    - **Walidacja**: Capacity planning sheet wypełniony
    - **Czas**: 2h
@@ -68,12 +68,12 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
 ### Blok 3: Utworzenie macierzy śledzenia wymagań
 
 #### Zadania atomowe:
-1. **[ ] Przygotowanie szablonu macierzy**
+1. **[x] Przygotowanie szablonu macierzy**
    - **Metryka**: Kolumny: ID, Nazwa, Komponent, Test, Status
    - **Walidacja**: CSV/Excel z nagłówkami
    - **Czas**: 1h
 
-2. **[ ] Mapowanie wymagań do komponentów**
+2. **[x] Mapowanie wymagań do komponentów**
    - **Metryka**: 100% RF/RNF zmapowanych
    - **Walidacja**: 
      ```python
@@ -83,7 +83,7 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
      ```
    - **Czas**: 3h
 
-3. **[ ] Linking wymagań do test cases (placeholder)**
+3. **[x] Linking wymagań do test cases (placeholder)**
    - **Metryka**: Każde wymaganie ma test ID
    - **Walidacja**: Kolumna 'Test_ID' wypełniona
    - **Czas**: 2h
@@ -96,17 +96,17 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
 ### Blok 4: Walidacja i akceptacja wymagań
 
 #### Zadania atomowe:
-1. **[ ] Internal review dokumentacji**
+1. **[x] Internal review dokumentacji**
    - **Metryka**: 0 krytycznych uwag
    - **Walidacja**: Review checklist completed
    - **Czas**: 2h
 
-2. **[ ] Sesja z "stakeholders" (sam ze sobą jako hobbysta)**
+2. **[x] Sesja z "stakeholders" (sam ze sobą jako hobbysta)**
    - **Metryka**: Wszystkie niejasności wyjaśnione
    - **Walidacja**: Meeting notes z decyzjami
    - **Czas**: 1h
 
-3. **[ ] Finalizacja i wersjonowanie**
+3. **[x] Finalizacja i wersjonowanie**
    - **Metryka**: v1.0 tagged w git
    - **Walidacja**: `git tag | grep "requirements-v1.0"`
    - **Czas**: 1h

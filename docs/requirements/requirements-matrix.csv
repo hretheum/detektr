@@ -1,0 +1,46 @@
+ID,Name,Type,Priority,Component,Test_ID,Status,Notes
+RF001,RTSP Stream Capture,Functional,MUST,rtsp-capture,TC001,Pending,Core functionality
+RF002,Multi-camera Support,Functional,MUST,rtsp-capture,TC002,Pending,4 cameras @ 10 FPS
+RF003,Frame Buffering,Functional,MUST,frame-buffer,TC003,Pending,Redis/RabbitMQ
+RF004,Frame Tracking ID,Functional,MUST,frame-processor,TC004,Pending,Unique ID format
+RF005,Metadata Storage,Functional,SHOULD,postgres,TC005,Pending,TimescaleDB
+RF006,Person Detection,Functional,MUST,object-detection,TC006,Pending,>90% accuracy
+RF007,Face Recognition,Functional,MUST,face-recognition,TC007,Pending,Known users only
+RF008,Animal Detection,Functional,SHOULD,object-detection,TC008,Pending,Dogs and cats
+RF009,Gesture Detection,Functional,SHOULD,gesture-detection,TC009,Pending,5 gestures min
+RF010,Real-time Processing,Functional,MUST,all-services,TC010,Pending,<2s latency
+RF011,Voice Commands PL,Functional,SHOULD,voice-processing,TC011,Pending,Polish language
+RF012,Voice Response TTS,Functional,COULD,voice-processing,TC012,Pending,Text to speech
+RF013,Wake Word Detection,Functional,COULD,voice-processing,TC013,Pending,Detektor
+RF014,Voice Differentiation,Functional,WONT,voice-processing,TC014,Pending,Multi-user voice
+RF015,MQTT Events to HA,Functional,MUST,ha-bridge,TC015,Pending,Home Assistant
+RF016,Automation Scenarios,Functional,MUST,automation-engine,TC016,Pending,Predefined rules
+RF017,LLM Integration,Functional,SHOULD,llm-service,TC017,Pending,Intent analysis
+RF018,Event Logging,Functional,MUST,logging-service,TC018,Pending,With filtering
+RF019,Detection Zones,Functional,MUST,zone-manager,TC019,Pending,Per camera zones
+RF020,If-Then Rules,Functional,SHOULD,rule-engine,TC020,Pending,Automation rules
+RF021,Face Database Mgmt,Functional,MUST,face-management,TC021,Pending,User faces CRUD
+RF022,Export History,Functional,COULD,export-service,TC022,Pending,CSV/JSON export
+RF023,Performance Metrics,Functional,MUST,monitoring,TC023,Pending,CPU/GPU/RAM/latency
+RF024,Performance Alerts,Functional,SHOULD,alerting,TC024,Pending,Threshold alerts
+RF025,Distributed Tracing,Functional,MUST,jaeger,TC025,Pending,All operations
+RNF001,4 Cameras @ 10FPS,Performance,MUST,all-services,TC026,Pending,40 FPS total
+RNF002,E2E Latency <2s,Performance,MUST,all-services,TC027,Pending,P95 < 2000ms
+RNF003,Face Accuracy >90%,Performance,MUST,face-recognition,TC028,Pending,Good lighting
+RNF004,100 Events/sec,Performance,SHOULD,message-queue,TC029,Pending,Burst handling
+RNF005,RAM Usage <16GB,Performance,SHOULD,all-services,TC030,Pending,Standard load
+RNF006,Encrypted Secrets,Security,MUST,all-services,TC031,Pending,SOPS + age
+RNF007,TLS Connections,Security,MUST,network,TC032,Pending,TLS 1.2+
+RNF008,API Authorization,Security,MUST,api-gateway,TC033,Pending,JWT/OAuth2
+RNF009,Container Isolation,Security,SHOULD,docker,TC034,Pending,Non-root users
+RNF010,Audit Logging,Security,SHOULD,audit-service,TC035,Pending,Admin operations
+RNF011,99% Availability,Reliability,MUST,all-services,TC036,Pending,8.76h/year down
+RNF012,MTBF >720h,Reliability,MUST,all-services,TC037,Pending,30 days
+RNF013,MTTR <30min,Reliability,SHOULD,all-services,TC038,Pending,Recovery time
+RNF014,Auto-restart,Reliability,SHOULD,docker,TC039,Pending,Failed containers
+RNF015,Daily Backups,Reliability,COULD,backup-service,TC040,Pending,Config + faces
+RNF016,Scale 1-8 Cameras,Scalability,MUST,all-services,TC041,Pending,Linear scaling
+RNF017,7 Days Storage,Scalability,MUST,storage,TC042,Pending,<100GB/7days
+RNF018,Rolling Updates,Scalability,SHOULD,deployment,TC043,Pending,Zero downtime
+RNF019,Horizontal Scale,Scalability,SHOULD,ai-services,TC044,Pending,Add replicas
+RNF020,Multi-node Ready,Scalability,COULD,deployment,TC045,Pending,Swarm/K8s
