@@ -1,7 +1,20 @@
 # Faza 2 / Zadanie 1: Serwis RTSP Stream Capture
 
+<!-- 
+LLM CONTEXT PROMPT:
+RTSP capture service bazuje na eofek/detektor stream-forwarder patterns (docs/analysis/eofek-detektor-analysis.md):
+- Docker organization pattern z metrics export
+- GPU detection logic dla optimization
+- Health checks z comprehensive monitoring
+- Redis integration dla frame buffering
+- ADOPTUJEMY: ich Docker patterns, metrics abstraction
+- UNIKAMY: microservices complexity, external dependencies lock-in
+-->
+
 ## Cel zadania
 Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z automatycznym reconnect, frame buffering i metrykami wydajności od początku.
+
+**Pattern Source**: Adoptuje eofek/detektor stream-forwarder architecture z uproszczeniami.
 
 ## Dekompozycja na bloki zadań
 

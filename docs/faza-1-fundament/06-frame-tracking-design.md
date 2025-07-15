@@ -1,7 +1,18 @@
 # Faza 1 / Zadanie 6: Frame tracking design i implementacja
 
+<!-- 
+LLM CONTEXT PROMPT:
+Frame tracking system bazuje na patterns z eofek/detektor analysis (docs/analysis/eofek-detektor-analysis.md):
+- Metrics abstraction layer pattern
+- Event-driven architecture z Redis Streams
+- GPU monitoring patterns z comprehensive checks
+- Ale UNIKAMY: over-engineering, zbyt complex event flows
+-->
+
 ## Cel zadania
 Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline przetwarzania, wykorzystując distributed tracing i event sourcing dla pełnej widoczności każdej klatki.
+
+**Pattern Source**: Inspirowane eofek/detektor metrics architecture z simplifikacjami.
 
 ## Blok 0: Prerequisites check
 

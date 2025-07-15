@@ -7,11 +7,19 @@ Projekt: Hobbystyczny system rozpoznawania obrazu z kamery IP + automatyzacja Ho
 Stack: Docker, Python, GPU (GTX 4070 Super), observability-first approach
 Fazy: 0-6, każda z zadaniami zdekomponowanymi na bloki i zadania atomowe
 
+INSPIRACJE: Bazujemy na proven patterns z eofek/detektor (docs/analysis/eofek-detektor-analysis.md):
+- Metrics architecture pattern z abstraction layer
+- Event-driven communication przez Redis Streams  
+- GPU monitoring patterns
+- Error handling (Circuit Breaker, Adaptive Backoff)
+- Ale UNIKAMY: over-engineering, microservices complexity, external lock-in
+
 Gdy rozpoczynasz pracę w dowolnym punkcie projektu:
 1. Sprawdź w której fazie jesteśmy (zobacz sekcję 2)
 2. Każde zadanie ma link do szczegółowej dekompozycji
 3. Stosuj TDD, Clean Architecture, observability od początku
 4. Używaj CLAUDE.md dla zasad projektu
+5. Implementuj patterns z eofek/detektor analysis gdzie wskazane
 -->
 
 ## 1. Architektura Rozwiązania
@@ -42,15 +50,16 @@ System składa się z następujących głównych komponentów:
 - **Metadata Store**: PostgreSQL/TimescaleDB do przechowywania metadanych klatek
 
 #### 1.2.2 Warstwa Przetwarzania AI
-- **Face Recognition Service**: YOLO/FaceNet na GPU
-- **Gesture Detection Service**: MediaPipe/OpenPose  
-- **Object Detection Service**: YOLO/Detectron2 (zwierzęta, obiekty)
+- **Face Recognition Service**: MediaPipe Face Detection + InsightFace embeddings (proven pattern z eofek/detektor)
+- **Object Detection Service**: YOLO v8 (rozszerzenie względem eofek/detektor)
+- **Gesture Detection Service**: MediaPipe Hands + custom gesture recognition
 - **Voice Processing Service**: Whisper (STT) + TTS
 
 #### 1.2.3 Warstwa Integracji
+- **Event Bus**: Redis Streams z event acknowledgement (pattern z eofek/detektor)
 - **Intent Recognition Service**: Połączenie z LLM (OpenAI/Anthropic)
-- **Home Assistant Bridge**: MQTT/REST API do komunikacji z HA
-- **Event Bus**: Apache Kafka/NATS do komunikacji między serwisami
+- **Home Assistant Bridge**: MQTT/REST API (rozszerzenie - czego brakuje w eofek/detektor)
+- **Metrics Adapter**: Abstraction layer dla Prometheus (adoptowane z eofek/detektor)
 
 #### 1.2.4 Warstwa Observability
 - **Distributed Tracing**: Jaeger

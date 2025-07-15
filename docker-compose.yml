@@ -1,5 +1,8 @@
 version: '3.8'
 
+# Based on eofek/detektor patterns with simplifications
+# Reference: docs/analysis/eofek-detektor-analysis.md
+
 services:
   # Database
   postgres:

@@ -1,7 +1,20 @@
 # Faza 3 / Zadanie 2: Face Recognition z FaceNet/InsightFace
 
+<!-- 
+LLM CONTEXT PROMPT:
+Face recognition service bazuje na proven patterns z eofek/detektor (docs/analysis/eofek-detektor-analysis.md):
+- MediaPipe Face Detection jako foundation (już przetestowane)
+- InsightFace embeddings (rozszerzenie ich systemu)
+- GPU monitoring patterns dla AI models
+- Metrics abstraction layer dla performance tracking
+- ADOPTUJEMY: ich MediaPipe approach, GPU patterns
+- ROZSZERZAMY: o InsightFace embeddings, FAISS similarity search
+-->
+
 ## Cel zadania
 Zaimplementować system rozpoznawania twarzy dla zarejestrowanych użytkowników, z wysoką dokładnością i odpornością na różne warunki oświetleniowe.
+
+**Pattern Source**: Rozszerza eofek/detektor MediaPipe face detection o embeddings i similarity search.
 
 ## Dekompozycja na bloki zadań
 

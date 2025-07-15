@@ -128,8 +128,45 @@ docker exec -it service-name nvidia-smi
 - GPU tylko dla AI services
 - LLM w chmurze (OpenAI/Anthropic)
 - Lokalne modele: YOLO, MediaPipe, Whisper
-- Message bus: Kafka/NATS
+- Message bus: Redis Streams (pattern z eofek/detektor)
 - Observability: Jaeger + Prometheus + Grafana
+
+## Patterns z eofek/detektor do Adoptowania
+
+**Reference**: `docs/analysis/eofek-detektor-analysis.md`
+
+### ✅ CO ADOPTUJEMY:
+- **Metrics abstraction layer** - ich pattern dla Prometheus
+- **Redis Streams** zamiast Kafka - prostsze, proven solution
+- **GPU monitoring patterns** - comprehensive GPU checks
+- **Docker organization** - env-specific configs
+- **Event acknowledgement** - dla reliability
+
+### 🚫 CZEGO UNIKAMY:
+- **Over-engineering** - za dużo mikroservisów
+- **External dependencies lock-in** - tight coupling z Telegram/Cloudflare
+- **Complex event flows** - trudne do debug
+
+### 🔧 KONKRETNE IMPLEMENTACJE:
+```python
+# Metrics adapter pattern (z eofek/detektor)
+class DetectionMetrics:
+    def increment_detections(self):
+        detection_metrics.increment_detections()
+    
+    def observe_detection_time(self, time):
+        detection_metrics.observe_detection_time(time)
+
+# Event publishing (Redis Streams)
+async def publish_event(self, event_type, data):
+    event = {
+        'timestamp': datetime.now().isoformat(),
+        'type': event_type,
+        'service': self.service_name,
+        'data': data
+    }
+    await self.redis.xadd(stream_name, event)
+```
 
 ## Zarządzanie Sekretami - PRZYKŁADY
 

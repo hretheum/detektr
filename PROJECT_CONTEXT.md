@@ -18,6 +18,21 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 - **AI/ML**: YOLO, MediaPipe, Whisper, OpenAI/Anthropic API
 - **Observability**: Jaeger, Prometheus, Grafana (od początku!)
 - **Architektura**: Clean Architecture, DDD, Event Sourcing, TDD
+- **Message Bus**: Redis Streams (adoptowane z eofek/detektor)
+
+## Influences - eofek/detektor Analysis
+**Reference**: `docs/analysis/eofek-detektor-analysis.md`
+
+**ADOPTUJEMY**:
+- Metrics abstraction layer pattern
+- Redis Streams event-driven architecture
+- GPU monitoring patterns
+- Docker organization (dev/prod configs)
+
+**UNIKAMY**:
+- Over-engineering (za dużo mikroservisów)
+- Complex event flows
+- External dependencies lock-in
 
 ## Struktura dokumentacji
 ```

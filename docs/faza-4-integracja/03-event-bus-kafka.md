@@ -1,7 +1,19 @@
-# Faza 4 / Zadanie 3: Apache Kafka/NATS event bus
+# Faza 4 / Zadanie 3: Redis Streams Event Bus (eofek/detektor pattern)
+
+<!-- 
+LLM CONTEXT PROMPT:
+Event bus design bazuje na proven patterns z eofek/detektor (docs/analysis/eofek-detektor-analysis.md):
+- Redis Streams zamiast Kafka (prostsze, proven solution)
+- Event acknowledgement dla reliability
+- Structured event format z unique IDs
+- ADOPTUJEMY: Redis Streams architecture z eofek/detektor
+- UNIKAMY: Kafka complexity dla naszego use case
+-->
 
 ## Cel zadania
-Wdrożyć skalowalny event bus oparty na Apache Kafka lub NATS dla niezawodnej komunikacji między mikroserwisami z gwarancją dostarczenia i uporządkowania.
+Wdrożyć skalowalny event bus oparty na Redis Streams dla niezawodnej komunikacji między serwisami z gwarancją dostarczenia i uporządkowania.
+
+**Pattern Source**: Adoptuje eofek/detektor Redis Streams event-driven architecture.
 
 ## Blok 0: Prerequisites check
 
