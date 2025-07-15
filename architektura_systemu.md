@@ -8,6 +8,7 @@ Stack: Docker, Python, GPU (GTX 4070 Super), observability-first approach
 Fazy: 0-6, każda z zadaniami zdekomponowanymi na bloki i zadania atomowe
 
 INSPIRACJE: Bazujemy na proven patterns z eofek/detektor (docs/analysis/eofek-detektor-analysis.md):
+- Source: https://github.com/eofek/detektor (repozytorium autorskie - kod dostępny)
 - Metrics architecture pattern z abstraction layer
 - Event-driven communication przez Redis Streams  
 - GPU monitoring patterns

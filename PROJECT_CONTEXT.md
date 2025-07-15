@@ -21,7 +21,8 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 - **Message Bus**: Redis Streams (adoptowane z eofek/detektor)
 
 ## Influences - eofek/detektor Analysis
-**Reference**: `docs/analysis/eofek-detektor-analysis.md`
+**Reference**: `docs/analysis/eofek-detektor-analysis.md`  
+**Source Repository**: https://github.com/eofek/detektor (własność autora - kod dostępny do wykorzystania)
 
 **ADOPTUJEMY**:
 - Metrics abstraction layer pattern

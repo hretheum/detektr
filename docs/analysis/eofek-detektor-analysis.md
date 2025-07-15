@@ -2,7 +2,9 @@
 
 ## Podsumowanie Analizy
 
-Przeprowadziłem dogłębną analizę repozytorium https://github.com/eofek/detektor, które zawiera system monitoringu wideo i detekcji obiektów. Projekt prezentuje dojrzałe podejście do architektury mikroservisów z naciskiem na observability.
+Przeprowadziłem dogłębną analizę repozytorium **https://github.com/eofek/detektor** (własność autora tego projektu), które zawiera system monitoringu wideo i detekcji obiektów. Projekt prezentuje dojrzałe podejście do architektury mikroservisów z naciskiem na observability.
+
+**📝 Nota prawna**: Repozytorium eofek/detektor jest własnością autora projektu Detektor, co umożliwia swobodne wykorzystanie kodów i patternów.
 
 ## Kluczowe Spostrzeżenia
 

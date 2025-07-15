@@ -4,7 +4,8 @@ Metrics architecture adopted from eofek/detektor with abstraction layer pattern.
 
 ## Pattern Overview
 
-Based on proven approach from [eofek/detektor analysis](../../../docs/analysis/eofek-detektor-analysis.md):
+Based on proven approach from [eofek/detektor analysis](../../../docs/analysis/eofek-detektor-analysis.md):  
+**Source**: https://github.com/eofek/detektor (repozytorium autorskie)
 
 ```python
 # Metrics adapter pattern (from eofek/detektor)

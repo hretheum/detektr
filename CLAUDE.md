@@ -133,7 +133,8 @@ docker exec -it service-name nvidia-smi
 
 ## Patterns z eofek/detektor do Adoptowania
 
-**Reference**: `docs/analysis/eofek-detektor-analysis.md`
+**Reference**: `docs/analysis/eofek-detektor-analysis.md`  
+**Source Repository**: https://github.com/eofek/detektor (autorskie - kod dostępny do wykorzystania)
 
 ### ✅ CO ADOPTUJEMY:
 - **Metrics abstraction layer** - ich pattern dla Prometheus
