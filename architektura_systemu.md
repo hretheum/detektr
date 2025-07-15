@@ -180,7 +180,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 
 #### Zadania i Metryki
 
-1. **Analiza i dokumentacja wymagań**
+1. **[x] Analiza i dokumentacja wymagań**
    - **Metryki**:
      - 100% wymagań funkcjonalnych z ID i priorytetem
      - 100% wymagań niefunkcjonalnych zmapowanych
@@ -194,7 +194,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Wszystkie stakeholders zaakceptowali wymagania
    - **[Szczegóły →](docs/faza-0-dokumentacja/01-analiza-wymagan.md)**
 
-2. **Utworzenie struktury projektu i repozytorium**
+2. **[x] Utworzenie struktury projektu i repozytorium**
    - **Metryki**:
      - Struktura katalogów zgodna z Clean Architecture
      - CI/CD pipeline skonfigurowany
@@ -207,7 +207,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Pierwszy commit przechodzi przez CI
    - **[Szczegóły →](docs/faza-0-dokumentacja/02-struktura-projektu.md)**
 
-3. **Dekompozycja wszystkich zadań projektowych**
+3. **[x] Dekompozycja wszystkich zadań projektowych**
    - **Metryki**:
      - 100% zadań z faz 1-6 zdekomponowanych
      - Każde zadanie ma 3-7 zadań atomowych
@@ -220,7 +220,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Każde zadanie ma dokument z dekompozycją
    - **[Szczegóły →](docs/faza-0-dokumentacja/03-dekompozycja-zadan.md)**
 
-4. **Przygotowanie środowiska developerskiego**
+4. **[ ] Przygotowanie środowiska developerskiego**
    - **Metryki**:
      - Dev containers działają na Mac OS
      - Remote development przez SSH działa
@@ -233,7 +233,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Można developować z Mac'a na Ubuntu
    - **[Szczegóły →](docs/faza-0-dokumentacja/04-srodowisko-dev.md)**
 
-5. **Szablon dokumentacji technicznej**
+5. **[x] Szablon dokumentacji technicznej**
    - **Metryki**:
      - Templates dla: API, Architecture, Runbook
      - Style guide utworzony

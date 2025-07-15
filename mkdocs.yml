@@ -1,0 +1,177 @@
+site_name: Detektor - Visual Detection & Automation System
+site_description: Documentation for the Detektor visual detection and home automation system
+site_author: Detektor Development Team
+site_url: https://hretheum.github.io/detektr
+
+repo_name: hretheum/detektr
+repo_url: https://github.com/hretheum/detektr
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.highlight
+    - search.share
+    - search.suggest
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: hretheum
+      repo: detektr
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+plugins:
+  - search:
+      lang: en
+  - minify:
+      minify_html: true
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - git-committers:
+      repository: hretheum/detektr
+      branch: main
+
+nav:
+  - Home:
+    - Overview: index.md
+    - Quick Start: quickstart.md
+    - Architecture: architecture.md
+  - Requirements:
+    - Overview: requirements/index.md
+    - Functional: requirements/functional-requirements.md
+    - Non-Functional: requirements/non-functional-requirements.md
+    - Use Cases: requirements/use-cases.md
+    - Actors: requirements/actors.md
+  - Development:
+    - Getting Started: development/getting-started.md
+    - Environment Setup: development/environment.md
+    - Contributing: CONTRIBUTING.md
+    - Style Guide: style-guide.md
+  - Architecture:
+    - System Overview: architecture/overview.md
+    - Component Design: architecture/components.md
+    - Data Flow: architecture/data-flow.md
+    - Deployment: architecture/deployment.md
+  - API Reference:
+    - Overview: api/overview.md
+    - Authentication: api/authentication.md
+    - Detection Services: api/detection.md
+    - Automation: api/automation.md
+  - Operations:
+    - Installation: operations/installation.md
+    - Configuration: operations/configuration.md
+    - Monitoring: operations/monitoring.md
+    - Troubleshooting: operations/troubleshooting.md
+  - Phase Documentation:
+    - Phase 0 - Documentation: faza-0-dokumentacja/
+    - Phase 1 - Foundation: faza-1-fundament/
+    - Phase 2 - Acquisition: faza-2-akwizycja/
+    - Phase 3 - Detection: faza-3-detekcja/
+    - Phase 4 - Integration: faza-4-integracja/
+    - Phase 5 - LLM: faza-5-llm/
+    - Phase 6 - Optimization: faza-6-optymalizacja/
+
+extra:
+  version:
+    provider: mike
+    default: latest
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/hretheum/detektr
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/r/detektor/
+  analytics:
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >-
+            Thanks for your feedback! Help us improve this page by
+            <a href="https://github.com/hretheum/detektr/issues/new/?title=[Feedback]+{title}+-+{url}" target="_blank" rel="noopener">telling us what you found lacking</a>.
+
+copyright: |
+  &copy; 2025 Detektor Project
