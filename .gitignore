@@ -51,16 +51,27 @@ logs/
 !docs/**/*.jpg
 
 # Secrets
-.env
-.env.*
+.env.decrypted
+.env.local
+.env.*.decrypted
 !.env.example
-**/.env
-**/.env.*
+!.env.encrypted
+**/.env.decrypted
+**/.env.local
+**/.env.*.decrypted
 !**/.env.example
 *.key
 *.pem
 secrets/
 **/secrets/
+!secrets/**/*.encrypted
+
+# SOPS
+# Private age keys - NEVER commit these!
+**/keys.txt
+**/*.age
+# But allow encrypted files
+!*.encrypted
 
 # Docker
 *.pid

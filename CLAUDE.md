@@ -22,9 +22,16 @@ WORKFLOW STARTOWY:
 **NO HARDCODED SECRETS - ABSOLUTNY ZAKAZ**
 - NIGDY nie hardkoduj kluczy API, haseł, tokenów, connection strings
 - NIGDY nie używaj sekretów jako fallback/default values
-- WSZYSTKIE sekrety TYLKO w plikach .env lub Docker secrets
+- WSZYSTKIE sekrety TYLKO w plikach .env (zaszyfrowanych przez SOPS)
 - Przykład DOBRY: `api_key = os.getenv('OPENAI_API_KEY')`
 - Przykład ZŁY: `api_key = os.getenv('OPENAI_API_KEY', 'sk-12345...')` ❌
+
+**🔐 UŻYWAMY SOPS - Workflow dla nowych sekretów:**
+1. **Edytuj zaszyfrowany .env**: `make secrets-edit` lub `sops .env`
+2. **Dodaj nowy sekret** w edytorze
+3. **Zapisz i zamknij** - SOPS automatycznie zaszyfruje
+4. **Commituj zaszyfrowany .env** - to jest bezpieczne!
+5. **Używaj w kodzie**: `os.getenv('NOWY_SEKRET')`
 
 ### Pozostałe zasady (w kolejności ważności):
 1. **Test-Driven Development (TDD)** - ZAWSZE pisz test przed implementacją
@@ -162,5 +169,35 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
     env_file:
-      - .env  # Tylko w development!
+      - .env.decrypted  # Makefile automatycznie odszyfruje
 ```
+
+### 🔐 SOPS - Szybkie komendy:
+
+```bash
+# Pierwsza konfiguracja (tylko raz)
+make secrets-init
+
+# Edycja sekretów (otwiera edytor)
+make secrets-edit
+# lub
+sops .env
+
+# Uruchomienie z automatycznym odszyfrowaniem
+make up  # Odszyfruje .env → uruchomi docker-compose → usunie .env.decrypted
+
+# Ręczne odszyfrowanie (do debugowania)
+make secrets-decrypt  # Tworzy .env.decrypted
+# PAMIĘTAJ USUNĄĆ: rm .env.decrypted
+
+# Dodanie nowego członka zespołu
+# 1. Poproś o klucz publiczny (age1...)
+# 2. Dodaj do .sops.yaml
+# 3. sops updatekeys .env
+```
+
+### ⚠️ WAŻNE przy SOPS:
+- ✅ Commituj zaszyfrowany `.env` (wygląda jak JSON z encrypted values)
+- ❌ NIGDY nie commituj `.env.decrypted` ani `keys.txt`
+- ✅ Każdy developer ma własny klucz age
+- ✅ Dokumentacja: `/docs/SECRETS_MANAGEMENT.md`
