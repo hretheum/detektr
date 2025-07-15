@@ -52,10 +52,15 @@ logs/
 
 # Secrets
 .env
-.env.local
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 *.key
 *.pem
 secrets/
+**/secrets/
 
 # Docker
 *.pid
