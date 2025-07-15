@@ -1,7 +1,7 @@
 # Makefile for Detektor project
 # Simplifies common operations, especially with SOPS encryption
 
-.PHONY: help up down logs test clean secrets-edit secrets-decrypt
+.PHONY: help up down logs test clean secrets-edit secrets-decrypt lint format pre-commit
 
 # Default target
 help:
@@ -10,6 +10,9 @@ help:
 	@echo "  make down            - Stop all services"
 	@echo "  make logs [service=] - Show logs (service optional)"
 	@echo "  make test            - Run all tests"
+	@echo "  make lint            - Run linters"
+	@echo "  make format          - Format code"
+	@echo "  make pre-commit      - Run pre-commit hooks"
 	@echo "  make clean           - Clean up temporary files"
 	@echo "  make secrets-edit    - Edit encrypted .env file"
 	@echo "  make secrets-decrypt - Decrypt .env to .env.decrypted (temporary)"
@@ -62,6 +65,31 @@ secrets-decrypt:
 	@SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops -d .env > .env.decrypted || (echo "❌ Failed to decrypt .env" && exit 1)
 	@echo "⚠️  Remember to delete .env.decrypted when done!"
 	@echo "✅ Decrypted to .env.decrypted"
+
+# Development tools
+lint:
+	@echo "🔍 Running linters..."
+	@ruff check src/ tests/ || true
+	@black --check src/ tests/ || true
+	@echo "✅ Linting completed"
+
+format:
+	@echo "🎨 Formatting code..."
+	@isort src/ tests/ || true
+	@black src/ tests/ || true
+	@ruff check --fix src/ tests/ || true
+	@echo "✅ Formatting completed"
+
+pre-commit:
+	@echo "🤖 Running pre-commit hooks..."
+	@pre-commit run --all-files
+	@echo "✅ Pre-commit completed"
+
+install-hooks:
+	@echo "🔧 Installing git hooks..."
+	@pre-commit install
+	@pre-commit install --hook-type commit-msg
+	@echo "✅ Hooks installed"
 
 # Initialize SOPS for new developer
 secrets-init:
