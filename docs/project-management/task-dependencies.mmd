@@ -1,0 +1,119 @@
+graph LR
+    subgraph "Faza 0: Dokumentacja"
+        F0_1[Analiza wymagań]
+        F0_2[Struktura projektu]
+        F0_3[Dekompozycja zadań]
+        F0_4[Środowisko dev]
+        F0_5[Szablon dokumentacji]
+        
+        F0_1 --> F0_2
+        F0_2 --> F0_3
+        F0_2 --> F0_4
+        F0_3 --> F0_5
+    end
+    
+    subgraph "Faza 1: Fundament"
+        F1_1[Docker setup]
+        F1_2[NVIDIA toolkit]
+        F1_3[Git repository]
+        F1_4[Observability stack]
+        F1_5[OpenTelemetry]
+        F1_6[Frame tracking]
+        F1_7[TDD setup]
+        F1_8[Dashboards]
+        
+        F1_1 --> F1_2
+        F1_1 --> F1_3
+        F1_1 --> F1_4
+        F1_4 --> F1_5
+        F1_5 --> F1_6
+        F1_3 --> F1_7
+        F1_4 --> F1_8
+    end
+    
+    subgraph "Faza 2: Akwizycja"
+        F2_1[RTSP capture]
+        F2_2[Frame buffer]
+        F2_3[Metadata store]
+        F2_4[Base processor]
+        F2_5[Health checks]
+        
+        F2_1 --> F2_2
+        F2_2 --> F2_3
+        F2_3 --> F2_4
+        F2_4 --> F2_5
+    end
+    
+    subgraph "Faza 3: Detekcja"
+        F3_1[YOLO detection]
+        F3_2[Face recognition]
+        F3_3[Gesture detection]
+        F3_4[Event aggregation]
+        F3_5[GPU optimization]
+        F3_6[Detection zones]
+        
+        F3_1 --> F3_4
+        F3_2 --> F3_4
+        F3_3 --> F3_4
+        F3_1 & F3_2 & F3_3 --> F3_5
+        F3_4 --> F3_6
+    end
+    
+    subgraph "Faza 4: Integracja"
+        F4_1[MQTT HA bridge]
+        F4_2[Automation engine]
+        F4_3[Event bus]
+        F4_4[API gateway]
+        F4_5[E2E tests]
+        
+        F4_3 --> F4_1
+        F4_3 --> F4_2
+        F4_1 & F4_2 --> F4_4
+        F4_4 --> F4_5
+    end
+    
+    subgraph "Faza 5: LLM"
+        F5_1[LLM integration]
+        F5_2[Intent recognition]
+        F5_3[Voice processing]
+        F5_4[Conversation memory]
+        
+        F5_1 --> F5_2
+        F5_3 --> F5_2
+        F5_2 --> F5_4
+    end
+    
+    subgraph "Faza 6: Optymalizacja"
+        F6_1[Performance profiling]
+        F6_2[Bottleneck analysis]
+        F6_3[Caching strategy]
+        F6_4[Horizontal scaling]
+        F6_5[Production hardening]
+        
+        F6_1 --> F6_2
+        F6_2 --> F6_3
+        F6_3 --> F6_4
+        F6_4 --> F6_5
+    end
+    
+    %% Cross-phase dependencies
+    F0_5 -.-> F1_1
+    F1_8 -.-> F2_1
+    F2_5 -.-> F3_1
+    F3_6 -.-> F4_1
+    F4_5 -.-> F5_1
+    F5_4 -.-> F6_1
+    
+    %% Critical path highlighting
+    F0_1 -.-> F1_1
+    F1_6 -.-> F2_4
+    F2_4 -.-> F3_1
+    F3_4 -.-> F4_2
+    F4_2 -.-> F5_2
+    
+    style F0_1 fill:#ff5252,stroke:#c62828,stroke-width:2px
+    style F1_1 fill:#ff5252,stroke:#c62828,stroke-width:2px
+    style F1_6 fill:#ff5252,stroke:#c62828,stroke-width:2px
+    style F2_4 fill:#ff5252,stroke:#c62828,stroke-width:2px
+    style F3_4 fill:#ff5252,stroke:#c62828,stroke-width:2px
+    style F4_2 fill:#ff5252,stroke:#c62828,stroke-width:2px

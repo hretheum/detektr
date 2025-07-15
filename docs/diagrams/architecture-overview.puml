@@ -1,0 +1,89 @@
+@startuml Detektor System Architecture
+
+!define RECTANGLE_COLOR #E1F5FE
+!define COMPONENT_COLOR #81C784
+!define SERVICE_COLOR #FFB74D
+!define STORAGE_COLOR #9575CD
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontName Arial
+
+package "Input Layer" <<Rectangle>> {
+  [IP Cameras] as CAM <<Component>>
+  [Microphone Array] as MIC <<Component>>
+}
+
+package "Acquisition Layer" <<Rectangle>> {
+  [RTSP Capture Service] as RTSP <<Service>>
+  [Voice Processing Service] as VOICE <<Service>>
+  [Frame Buffer (Redis)] as BUFFER <<Storage>>
+}
+
+package "AI Detection Layer" <<Rectangle>> {
+  [YOLO Object Detection] as YOLO <<Service>>
+  [Face Recognition] as FACE <<Service>>
+  [Gesture Detection] as GESTURE <<Service>>
+  [Event Aggregator] as AGGREGATOR <<Service>>
+}
+
+package "Integration Layer" <<Rectangle>> {
+  [Automation Engine] as ENGINE <<Service>>
+  [LLM Intent Service] as LLM <<Service>>
+  [MQTT Bridge] as MQTT <<Service>>
+  [API Gateway] as API <<Service>>
+}
+
+package "Storage Layer" <<Rectangle>> {
+  database "TimescaleDB\n(Metadata)" as TSDB <<Storage>>
+  database "PostgreSQL\n(Config/Users)" as PG <<Storage>>
+  database "Redis\n(Cache/Queue)" as REDIS <<Storage>>
+}
+
+package "External Systems" <<Rectangle>> {
+  [Home Assistant] as HA <<Component>>
+  [OpenAI/Anthropic] as LLMAPI <<Component>>
+}
+
+package "Observability" <<Rectangle>> {
+  [Jaeger Tracing] as JAEGER
+  [Prometheus Metrics] as PROM
+  [Grafana Dashboards] as GRAF
+  [Loki Logs] as LOKI
+}
+
+' Connections
+CAM --> RTSP : RTSP stream
+MIC --> VOICE : Audio stream
+RTSP --> BUFFER : Frames
+BUFFER --> YOLO : Process
+BUFFER --> FACE : Process
+BUFFER --> GESTURE : Process
+VOICE --> LLM : Commands
+
+YOLO --> AGGREGATOR : Detections
+FACE --> AGGREGATOR : Identities
+GESTURE --> AGGREGATOR : Gestures
+
+AGGREGATOR --> ENGINE : Events
+ENGINE --> MQTT : Actions
+LLM --> ENGINE : Intents
+
+MQTT <--> HA : MQTT protocol
+LLM <--> LLMAPI : API calls
+
+' Storage connections
+RTSP --> TSDB : Metadata
+AGGREGATOR --> TSDB : Events
+ENGINE --> PG : Config
+FACE --> PG : User data
+all --> REDIS : Cache
+
+' Observability connections
+all ..> JAEGER : Traces
+all ..> PROM : Metrics
+all ..> LOKI : Logs
+PROM --> GRAF : Visualize
+LOKI --> GRAF : Visualize
+
+@enduml

@@ -1,0 +1,62 @@
+graph TD
+    subgraph "Camera Layer"
+        C1[Camera 1]
+        C2[Camera 2]
+        C3[Camera 3]
+    end
+    
+    subgraph "Acquisition"
+        RTSP[RTSP Capture Service]
+        FB[Frame Buffer]
+    end
+    
+    subgraph "Frame Tracking"
+        FID[Frame ID Generator<br/>{timestamp}_{camera}_{seq}]
+        META[Metadata Store]
+    end
+    
+    subgraph "Detection Services"
+        YOLO[YOLO Detection]
+        FACE[Face Recognition]
+        GEST[Gesture Detection]
+    end
+    
+    subgraph "Tracing"
+        SPAN1[Span: Capture]
+        SPAN2[Span: Process]
+        SPAN3[Span: Detect]
+        SPAN4[Span: Action]
+    end
+    
+    subgraph "Event Processing"
+        AGG[Event Aggregator]
+        ENG[Automation Engine]
+    end
+    
+    subgraph "Output"
+        HA[Home Assistant]
+        API[API Gateway]
+    end
+    
+    C1 & C2 & C3 -->|RTSP Stream| RTSP
+    RTSP -->|Extract Frame| FB
+    RTSP -->|Generate ID| FID
+    FID -->|Store| META
+    
+    FB -->|Frame + ID| YOLO & FACE & GEST
+    
+    RTSP -.->|Start Trace| SPAN1
+    FB -.->|Continue| SPAN2
+    YOLO & FACE & GEST -.->|Continue| SPAN3
+    
+    YOLO & FACE & GEST -->|Detection + ID| AGG
+    AGG -->|Aggregated Event| ENG
+    ENG -->|Action + ID| HA & API
+    ENG -.->|End Trace| SPAN4
+    
+    style FID fill:#ff9800,stroke:#e65100,stroke-width:2px
+    style META fill:#9c27b0,stroke:#4a148c,stroke-width:2px
+    style SPAN1 fill:#e3f2fd,stroke:#1976d2,stroke-width:1px,stroke-dasharray: 5 5
+    style SPAN2 fill:#e3f2fd,stroke:#1976d2,stroke-width:1px,stroke-dasharray: 5 5
+    style SPAN3 fill:#e3f2fd,stroke:#1976d2,stroke-width:1px,stroke-dasharray: 5 5
+    style SPAN4 fill:#e3f2fd,stroke:#1976d2,stroke-width:1px,stroke-dasharray: 5 5
