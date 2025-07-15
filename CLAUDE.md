@@ -18,6 +18,15 @@ WORKFLOW STARTOWY:
 
 ## Główne Zasady Projektu
 
+### 🚨 ZASADA ZERO - NAJWYŻSZY PRIORYTET 🚨
+**NO HARDCODED SECRETS - ABSOLUTNY ZAKAZ**
+- NIGDY nie hardkoduj kluczy API, haseł, tokenów, connection strings
+- NIGDY nie używaj sekretów jako fallback/default values
+- WSZYSTKIE sekrety TYLKO w plikach .env lub Docker secrets
+- Przykład DOBRY: `api_key = os.getenv('OPENAI_API_KEY')`
+- Przykład ZŁY: `api_key = os.getenv('OPENAI_API_KEY', 'sk-12345...')` ❌
+
+### Pozostałe zasady (w kolejności ważności):
 1. **Test-Driven Development (TDD)** - ZAWSZE pisz test przed implementacją
 2. **Observability First** - Każdy serwis ma wbudowany tracing i metryki od początku
 3. **Clean Architecture** - Separacja warstw: domain, infrastructure, application
@@ -114,3 +123,44 @@ docker exec -it service-name nvidia-smi
 - Lokalne modele: YOLO, MediaPipe, Whisper
 - Message bus: Kafka/NATS
 - Observability: Jaeger + Prometheus + Grafana
+
+## Zarządzanie Sekretami - PRZYKŁADY
+
+### ✅ DOBRZE - Używanie zmiennych środowiskowych:
+```python
+import os
+from pathlib import Path
+
+# Ładowanie z .env w development
+if Path('.env').exists():
+    from dotenv import load_dotenv
+    load_dotenv()
+
+# Pobieranie sekretów
+api_key = os.getenv('OPENAI_API_KEY')
+if not api_key:
+    raise ValueError("OPENAI_API_KEY not set in environment")
+
+db_url = os.getenv('DATABASE_URL')
+if not db_url:
+    raise ValueError("DATABASE_URL not set in environment")
+```
+
+### ❌ ŹLE - Hardkodowane wartości:
+```python
+# NIGDY TAK NIE RÓB!
+api_key = "sk-1234567890abcdef"  # ❌
+api_key = os.getenv('OPENAI_API_KEY', 'sk-default')  # ❌
+db_url = "postgresql://user:pass@localhost/db"  # ❌
+```
+
+### Docker Compose z sekretami:
+```yaml
+services:
+  app:
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+    env_file:
+      - .env  # Tylko w development!
+```
