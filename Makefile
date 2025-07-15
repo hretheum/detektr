@@ -17,7 +17,7 @@ help:
 # Start services with decrypted secrets
 up:
 	@echo "🔓 Decrypting secrets..."
-	@sops -d .env > .env.decrypted 2>/dev/null || (echo "❌ Failed to decrypt .env. Do you have SOPS configured?" && exit 1)
+	@SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops -d .env > .env.decrypted 2>/dev/null || (echo "❌ Failed to decrypt .env. Do you have SOPS configured?" && exit 1)
 	@echo "🚀 Starting services..."
 	@docker-compose --env-file .env.decrypted up -d
 	@rm -f .env.decrypted
@@ -54,12 +54,12 @@ clean:
 # Edit encrypted secrets
 secrets-edit:
 	@echo "🔐 Opening encrypted .env for editing..."
-	@sops .env || (echo "❌ Failed to edit .env. Do you have SOPS configured?" && exit 1)
+	@SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops .env || (echo "❌ Failed to edit .env. Do you have SOPS configured?" && exit 1)
 
 # Decrypt secrets (for debugging)
 secrets-decrypt:
 	@echo "🔓 Decrypting .env to .env.decrypted..."
-	@sops -d .env > .env.decrypted || (echo "❌ Failed to decrypt .env" && exit 1)
+	@SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops -d .env > .env.decrypted || (echo "❌ Failed to decrypt .env" && exit 1)
 	@echo "⚠️  Remember to delete .env.decrypted when done!"
 	@echo "✅ Decrypted to .env.decrypted"
 

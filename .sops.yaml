@@ -7,18 +7,17 @@ creation_rules:
   - path_regex: \.env$
     # Add your age public key here (get it from: age-keygen -y key.txt)
     # Example: age: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
-    age: >-
-      AGE-PUBLIC-KEY-HERE
+    age: age1pk3a3zwh3wjsdkfgqhz04l6vh7dm9ru2v909q4wlugrg5u33x5pqlhllhn
     
   # Encrypt any file ending with .secret
   - path_regex: \.secret$
     age: >-
-      AGE-PUBLIC-KEY-HERE
+      age1pk3a3zwh3wjsdkfgqhz04l6vh7dm9ru2v909q4wlugrg5u33x5pqlhllhn
       
   # Encrypt secrets in specific directories
   - path_regex: secrets/.*\.yaml$
     age: >-
-      AGE-PUBLIC-KEY-HERE
+      age1pk3a3zwh3wjsdkfgqhz04l6vh7dm9ru2v909q4wlugrg5u33x5pqlhllhn
 
 # Optional: Configure how values are encrypted
 # stores:
