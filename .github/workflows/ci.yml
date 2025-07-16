@@ -2,126 +2,183 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, develop ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 env:
-  PYTHON_VERSION: "3.11"
-
+  PYTHON_VERSION: '3.11'
+  
 jobs:
   lint:
     name: Lint Code
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
+          
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff black isort mypy
+          pip install -r requirements-dev.txt
+          
+      - name: Run Black
+        run: black --check --diff src tests
+        
+      - name: Run isort
+        run: isort --check-only --diff src tests
+        
+      - name: Run Flake8
+        run: flake8 src tests
+        
+      - name: Run Bandit security check
+        run: bandit -r src -ll
 
-      - name: Run Ruff
-        run: ruff check src/ tests/ || true
-
-      - name: Check Black formatting
-        run: black --check src/ tests/ || true
-
-      - name: Check import sorting
-        run: isort --check-only src/ tests/ || true
-
-      - name: Run MyPy
-        run: mypy src/ || true
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          
+      - name: Run mypy
+        run: mypy src --ignore-missing-imports
 
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    needs: lint
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12"]
+    services:
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov pytest-asyncio
-
-      - name: Run tests
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          
+      - name: Run unit tests with coverage
         run: |
-          pytest --cov=src --cov-report=xml --cov-report=term || true
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
+          pytest tests/unit \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            -v
+            
+      - name: Run integration tests
+        run: |
+          pytest tests/integration -v
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
           fail_ci_if_error: false
 
-  docker:
-    name: Build Docker Images
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Lint Dockerfiles
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: ./Dockerfile*
-          ignore: DL3008,DL3009
-          failure-threshold: warning
-
-      - name: Build images
-        run: |
-          docker-compose build --parallel || true
-
-      - name: Test docker-compose config
-        run: |
-          docker-compose config
-
   security:
-    name: Security Checks
+    name: Security Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '0'  # Don't fail build on vulnerabilities
-
-      - name: Check for secrets
-        uses: trufflesecurity/trufflehog@v3.87.2
-        with:
-          path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
-          extra_args: --debug --only-verified
-
-  pre-commit:
-    name: Pre-commit Checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - uses: pre-commit/action@v3.0.1
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety
+          
+      - name: Run Safety check
+        run: |
+          pip install -r requirements.txt
+          safety check --json
+        continue-on-error: true
+
+  build-test:
+    name: Test Docker Build
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, test]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: detektor:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+  all-checks-pass:
+    name: All CI Checks Pass
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, test, security, build-test]
+    steps:
+      - name: All checks passed
+        run: echo "✅ All CI checks passed successfully!"

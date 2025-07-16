@@ -64,8 +64,41 @@ find src -type d -not -path '*/\.*' -exec test -f {}/__init__.py \; -print | wc 
 3. **Głęboka struktura katalogów** - przygotowana na rozbudowę
 4. **ASCII w docstringach** - uniknięcie problemów z kodowaniem
 
+## Blok 2: Konfiguracja CI/CD z GitHub Actions - COMPLETED ✅
+
+### Utworzone pliki
+1. **`.github/workflows/ci.yml`** - Główny workflow CI
+   - Jobs: lint, type-check, test, security, build-test
+   - Integracja z codecov
+   - Cache dla pip packages
+   - Redis service dla testów integracyjnych
+
+2. **`.github/workflows/pr-checks.yml`** - Dodatkowe sprawdzenia PR
+   - Walidacja tytułu PR (semantic)
+   - Automatyczne labele rozmiaru
+   - Dependency review
+
+3. **Konfiguracja narzędzi**:
+   - `pyproject.toml` - black, isort, mypy, pytest, coverage
+   - `.flake8` - linter configuration
+   - `codecov.yml` - coverage requirements (80% target)
+
+4. **Docker setup**:
+   - `Dockerfile` - multi-stage build, non-root user
+   - `.dockerignore` - optymalizacja build context
+   - `docker-compose.yml` - development setup z Redis
+
+5. **Podstawowe testy**:
+   - `tests/unit/test_imports.py` - weryfikacja struktury
+   - `tests/integration/test_redis_connection.py` - test połączenia
+
+### Metryki
+- **5 jobs w CI** (lint, type-check, test, security, build)
+- **80% coverage** wymagane (fail_under w pyproject.toml)
+- **Codecov integration** skonfigurowana
+- **Docker build** w CI pipeline
+
 ## Następne kroki
 
-- Blok 2: Konfiguracja CI/CD z GitHub Actions
 - Blok 3: Pre-commit hooks i code quality
 - Blok 4: Dokumentacja i tooling setup

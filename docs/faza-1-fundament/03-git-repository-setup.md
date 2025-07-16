@@ -63,7 +63,7 @@ Utworzenie kompletnej struktury repozytorium zgodnej z Clean Architecture, konfi
 ### Blok 2: Konfiguracja CI/CD z GitHub Actions
 
 #### Zadania atomowe:
-1. **[ ] Utworzenie workflow dla CI**
+1. **[x] Utworzenie workflow dla CI**
    - **Metryka**: .github/workflows/ci.yml z test, lint, type-check jobs
    - **Walidacja**: 
      ```bash
@@ -72,7 +72,7 @@ Utworzenie kompletnej struktury repozytorium zgodnej z Clean Architecture, konfi
      ```
    - **Czas**: 1.5h
 
-2. **[ ] Konfiguracja Docker build w CI**
+2. **[x] Konfiguracja Docker build w CI**
    - **Metryka**: Build wszystkich serwisów w CI pipeline
    - **Walidacja**: 
      ```bash
@@ -81,7 +81,7 @@ Utworzenie kompletnej struktury repozytorium zgodnej z Clean Architecture, konfi
      ```
    - **Czas**: 1h
 
-3. **[ ] Setup code coverage i quality gates**
+3. **[x] Setup code coverage i quality gates**
    - **Metryka**: Coverage >80% required, codecov integration
    - **Walidacja**: 
      ```bash

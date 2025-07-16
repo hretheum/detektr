@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+*.cover
+.hypothesis/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Development
+requirements-dev.txt
+Makefile
+pyproject.toml
+.flake8
+.pre-commit-config.yaml
+
+# Secrets
+.env*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# Logs and data
+logs/
+data/
+*.log
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
