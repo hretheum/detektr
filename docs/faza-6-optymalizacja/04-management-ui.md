@@ -1,14 +1,17 @@
 # Faza 6 / Zadanie 4: UI/Dashboard do zarządzania systemem
 
 ## Cel zadania
+
 Stworzyć intuicyjny interfejs webowy do zarządzania systemem detekcji z podglądem na żywo, edytorem reguł i pełną kontrolą.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Frontend framework decision**
    - **Metryka**: Framework chosen and justified
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Test framework setup
      npx create-react-app test-ui --template typescript
@@ -16,27 +19,32 @@ Stworzyć intuicyjny interfejs webowy do zarządzania systemem detekcji z podgl�
      npm create vue@latest test-ui -- --typescript
      # Verify builds successfully
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] API endpoints available**
    - **Metryka**: Management API ready
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl http://localhost:8000/api/v1/health
      curl http://localhost:8000/api/v1/cameras
      curl http://localhost:8000/api/v1/automations
      # All return 200 OK
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Core UI components
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Live camera view z bounding boxes**
    - **Metryka**: Real-time video with overlays
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```typescript
      // Component renders video stream
      const stream = useCameraStream('front-door');
@@ -45,41 +53,49 @@ Stworzyć intuicyjny interfejs webowy do zarządzania systemem detekcji z podgl�
      assert(detections.length >= 0);
      // Bounding boxes rendered correctly
      ```
+
    - **Czas**: 3h
 
 2. **[ ] System health dashboard**
    - **Metryka**: All services status visible
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```typescript
      const health = useSystemHealth();
      assert(health.services.length > 5);
      assert(health.overall_status in ['healthy', 'degraded', 'error']);
      // Each service shows: status, uptime, metrics
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Detection history timeline**
    - **Metryka**: Scrollable event history
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```typescript
      const events = useDetectionHistory({ hours: 24 });
      assert(events.length > 0);
      // Each event has: timestamp, type, camera, confidence
      // Click event → see video clip
      ```
+
    - **Czas**: 2.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Live view working
 - Health visible
 - History browsable
 
 ### Blok 2: Automation management
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Rule editor with validation**
    - **Metryka**: Visual rule builder
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```typescript
      const editor = useRuleEditor();
      const rule = editor.createRule({
@@ -90,41 +106,49 @@ Stworzyć intuicyjny interfejs webowy do zarządzania systemem detekcji z podgl�
      assert(rule.isValid());
      assert(editor.validateRule(rule).errors.length === 0);
      ```
+
    - **Czas**: 3h
 
 2. **[ ] Automation testing interface**
    - **Metryka**: Test rules before activation
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```typescript
      const tester = useAutomationTester();
      const result = await tester.simulate(automation, mockData);
      assert(result.would_trigger === true);
      assert(result.actions_would_execute.length > 0);
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Enable/disable controls**
    - **Metryka**: Quick automation control
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```typescript
      const controls = useAutomationControls();
      await controls.toggle('morning_routine');
      assert(controls.getStatus('morning_routine') === 'disabled');
      // Change reflected immediately
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Rules editable
 - Testing possible
 - Easy control
 
 ### Blok 3: Responsive design and deployment
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Mobile responsive layout**
    - **Metryka**: Works on phone/tablet
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```typescript
      // Test responsive breakpoints
      const breakpoints = {
@@ -134,20 +158,24 @@ Stworzyć intuicyjny interfejs webowy do zarządzania systemem detekcji z podgl�
      };
      // All layouts render correctly
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Docker deployment**
    - **Metryka**: Containerized UI
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker build -t detektor-ui .
      docker run -p 3001:80 detektor-ui
      curl http://localhost:3001
      # UI accessible
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Mobile friendly
 - Containerized
 - Deploy ready
@@ -175,7 +203,7 @@ Stworzyć intuicyjny interfejs webowy do zarządzania systemem detekcji z podgl�
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Management API ready
   - WebSocket support
 - **Blokuje**: End user adoption
@@ -189,7 +217,7 @@ Stworzyć intuicyjny interfejs webowy do zarządzania systemem detekcji z podgl�
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - UI not loading
    - Features broken
    - Performance issues

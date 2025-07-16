@@ -1,12 +1,15 @@
 # Faza 2 / Zadanie 5: Health Checks i Service Discovery
 
 ## Cel zadania
+
 Zaimplementować kompleksowy system health checks dla wszystkich serwisów, z integracją service discovery i automated recovery.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza health check patterns**
    - **Metryka**: Best practices research
    - **Walidacja**: Decision document
@@ -19,7 +22,8 @@ Zaimplementować kompleksowy system health checks dla wszystkich serwisów, z in
 
 ### Blok 1: Health check framework
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Health check interface**
    - **Metryka**: Liveness, readiness, startup probes
    - **Walidacja**: `pytest tests/test_health_checks.py`
@@ -37,7 +41,8 @@ Zaimplementować kompleksowy system health checks dla wszystkich serwisów, z in
 
 ### Blok 2: Service-specific health checks
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] RTSP stream health validation**
    - **Metryka**: Frame rate, quality checks
    - **Walidacja**: Degraded stream detection
@@ -55,7 +60,8 @@ Zaimplementować kompleksowy system health checks dla wszystkich serwisów, z in
 
 ### Blok 3: Service discovery integration
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Consul service registration**
    - **Metryka**: Auto-registration on startup
    - **Walidacja**: `consul catalog services`
@@ -73,7 +79,8 @@ Zaimplementować kompleksowy system health checks dla wszystkich serwisów, z in
 
 ### Blok 4: Automated recovery
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Circuit breaker integration**
    - **Metryka**: Automatic service isolation
    - **Walidacja**: Circuit breaker test

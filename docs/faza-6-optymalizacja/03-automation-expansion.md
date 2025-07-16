@@ -1,39 +1,47 @@
 # Faza 6 / Zadanie 3: Rozbudowa automatyzacji z monitoringiem
 
 ## Cel zadania
+
 Rozszerzyć zestaw automatyzacji do 20+ reguł z pełnym monitoringiem, walidacją i niskim poziomem false positives (<1%).
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Current automation inventory**
    - **Metryka**: List existing automations
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      python list_automations.py --active
      # Shows <10 basic automations
      cat automations/*.yaml | grep -c "^name:"
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] False positive baseline**
    - **Metryka**: Current false positive rate
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      stats = get_automation_statistics(days=7)
      print(f"Current false positive rate: {stats.false_positive_rate}%")
      assert stats.false_positive_rate < 5  # Need improvement
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Advanced automation rules
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Context-aware automations**
    - **Metryka**: Time/presence based rules
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # Example automation
      - name: "Morning routine"
@@ -50,22 +58,26 @@ Rozszerzyć zestaw automatyzacji do 20+ reguł z pełnym monitoringiem, walidacj
            entity: person.owner
            state: home
      ```
+
    - **Czas**: 2.5h
 
 2. **[ ] Multi-trigger combinations**
    - **Metryka**: Complex trigger logic
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      automation = get_automation("presence_and_gesture")
      assert len(automation.triggers) >= 2
      assert automation.mode == "single"  # Prevent multiple runs
      assert automation.has_cooldown == True
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Smart scene detection**
    - **Metryka**: Recognize activity patterns
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      scenes = ["cooking", "movie_night", "party", "sleeping"]
      for scene in scenes:
@@ -73,19 +85,23 @@ Rozszerzyć zestaw automatyzacji do 20+ reguł z pełnym monitoringiem, walidacj
          assert automation.confidence_threshold > 0.8
          assert len(automation.required_detections) > 2
      ```
+
    - **Czas**: 3h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - 20+ automations defined
 - Complex logic supported
 - Scenes recognized
 
 ### Blok 2: False positive reduction
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Confidence thresholds tuning**
    - **Metryka**: Optimal thresholds per automation
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      thresholds = optimize_confidence_thresholds()
      for automation, threshold in thresholds.items():
@@ -93,22 +109,26 @@ Rozszerzyć zestaw automatyzacji do 20+ reguł z pełnym monitoringiem, walidacj
          # Validate reduces false positives
          assert test_with_threshold(automation, threshold).fp_rate < 0.01
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Debouncing and cooldowns**
    - **Metryka**: Prevent rapid triggers
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      config = get_debounce_config()
      assert config.motion_cooldown >= 30  # seconds
      assert config.gesture_debounce >= 2   # seconds
      assert config.voice_command_timeout >= 5
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] Validation rules**
    - **Metryka**: Secondary confirmation
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      validation:
        person_at_door:
@@ -118,30 +138,36 @@ Rozszerzyć zestaw automatyzacji do 20+ reguł z pełnym monitoringiem, walidacj
            - confidence: ">0.85"
          within_seconds: 5
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - False positives <1%
 - Validations working
 - No automation storms
 
 ### Blok 3: Monitoring and management
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Automation health dashboard**
    - **Metryka**: Status of all automations
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      # Automation health score
-     (sum(automation_success_total) / 
+     (sum(automation_success_total) /
       sum(automation_triggered_total)) * 100
      # Should be >98%
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] A/B testing framework**
    - **Metryka**: Test automation variants
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      test = create_ab_test(
          automation="morning_routine",
@@ -151,9 +177,11 @@ Rozszerzyć zestaw automatyzacji do 20+ reguł z pełnym monitoringiem, walidacj
      assert test.split_ratio == 0.5
      assert test.min_sample_size >= 100
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - All automations monitored
 - A/B testing possible
 - Easy management
@@ -181,7 +209,7 @@ Rozszerzyć zestaw automatyzacji do 20+ reguł z pełnym monitoringiem, walidacj
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Detection services stable
   - HA integration working
 - **Blokuje**: Production deployment
@@ -195,7 +223,7 @@ Rozszerzyć zestaw automatyzacji do 20+ reguł z pełnym monitoringiem, walidacj
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - False positives >5%
    - Automation loops
    - User complaints

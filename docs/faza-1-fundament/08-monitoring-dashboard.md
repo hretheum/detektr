@@ -1,40 +1,48 @@
 # Faza 1 / Zadanie 8: Podstawowe dashboardy i alerty
 
 ## Cel zadania
+
 Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów dla monitorowania infrastruktury, zapewniając proaktywne wykrywanie problemów od samego początku projektu.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja Grafana i Prometheus działają**
    - **Metryka**: Grafana dostępna, Prometheus zbiera metryki
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s http://admin:admin@localhost:3000/api/health | jq '.database'
      # "ok"
      curl -s http://localhost:9090/api/v1/query?query=up | jq '.status'
      # "success"
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Weryfikacja metryk systemowych dostępne**
    - **Metryka**: node_exporter, cadvisor eksportują metryki
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s http://localhost:9090/api/v1/targets | \
        jq '.data.activeTargets[] | select(.labels.job | contains("node")) | .health'
      # "up"
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: System monitoring dashboards
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Dashboard: System Overview**
    - **Metryka**: CPU, RAM, Disk, Network dla serwera
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Import dashboard
      curl -X POST http://admin:admin@localhost:3000/api/dashboards/import \
@@ -42,89 +50,107 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
        -d @dashboards/system-overview.json
      # Verify panels load data
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Dashboard: Docker Containers**
    - **Metryka**: Container stats, restart counts, resource limits
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check container metrics exist
      curl -s http://localhost:9090/api/v1/query?query=container_memory_usage_bytes | \
        jq '.data.result | length'
      # > 5 (liczba kontenerów)
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Dashboard: GPU Monitoring**
    - **Metryka**: GPU utilization, memory, temperature, power
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # NVIDIA GPU metrics
      curl -s http://localhost:9090/api/v1/query?query=nvidia_gpu_utilization | \
        jq '.data.result[0].value[1]'
      # Should show percentage
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - All system resources monitored
 - Historical data visible (1h, 24h, 7d)
 - Drill-down capability do specific containers
 
 ### Blok 2: Application monitoring dashboards
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Dashboard: Service Health Overview**
    - **Metryka**: Health status wszystkich serwisów, uptime
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Service health panel shows green/red status
      # Based on /health endpoint checks
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Dashboard: Tracing Overview**
    - **Metryka**: Request rate, error rate, duration (RED metrics)
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Prometheus queries for trace metrics
      curl -s http://localhost:9090/api/v1/query?query=traces_spans_total | \
        jq '.data.result | length'
      # > 0
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Dashboard: Frame Pipeline**
    - **Metryka**: Frames/second, processing stages, queue depths
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Custom metrics from frame tracking
      curl -s http://localhost:9090/api/v1/query?query=frame_processing_stage | \
        jq '.data.result[0].metric.stage'
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Application-specific metrics visible
 - Service dependencies mapped
 - Performance trends clear
 
 ### Blok 3: Alerting rules configuration
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Infrastructure alerts (CPU, memory, disk)**
    - **Metryka**: 10+ infrastructure alert rules
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s http://localhost:9090/api/v1/rules | \
        jq '.data.groups[] | select(.name=="infrastructure") | .rules | length'
      # >= 10
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Service alerts (down, high error rate)**
    - **Metryka**: Alert gdy service down >1min, error rate >5%
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Test alert by stopping service
      docker stop example-service
@@ -132,39 +158,47 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
      curl -s http://localhost:9090/api/v1/alerts | jq '.data.alerts[] | .labels.alertname'
      # Should show "ServiceDown"
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Custom alerts dla frame pipeline**
    - **Metryka**: Frame drop rate, processing latency alerts
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # Alert rule example
      - alert: HighFrameDropRate
        expr: rate(frames_dropped_total[5m]) > 0.01
        for: 2m
      ```
+
    - **Czas**: 0.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - All critical conditions have alerts
 - Alert fatigue minimized (no noisy alerts)
 - Clear severity levels (critical, warning, info)
 
 ### Blok 4: Alert notification setup
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Konfiguracja Alertmanager**
    - **Metryka**: Alertmanager running, routers configured
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s http://localhost:9093/api/v1/status | jq '.data.uptime'
      # Shows uptime
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Notification channels (email/Slack/webhook)**
    - **Metryka**: Test notification delivered do każdego kanału
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Send test alert
      curl -X POST http://localhost:9093/api/v1/alerts \
@@ -172,19 +206,23 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
        -d '[{"labels":{"alertname":"TestAlert","severity":"warning"}}]'
      # Check notification received
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Alert dashboard w Grafana**
    - **Metryka**: Unified view wszystkich alertów
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Grafana alert list panel
      curl -s http://localhost:3000/api/alerts | jq '. | length'
      # Shows configured alerts
      ```
+
    - **Czas**: 0.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Notifications delivered <1min from trigger
 - Proper routing based on severity
 - Alert history preserved

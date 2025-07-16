@@ -1,63 +1,75 @@
 # Faza 6 / Zadanie 4: Scaling to Multiple Nodes
 
 ## Cel zadania
+
 Przekształcić system w skalowalną horyzontalnie architekturę zdolną do obsługi 100+ kamer poprzez dystrybucję obciążenia między wieloma węzłami.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Kubernetes cluster operational**
    - **Metryka**: K8s cluster z min. 3 worker nodes
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check cluster nodes
      kubectl get nodes | grep Ready | wc -l
      # Should return >= 3
      kubectl top nodes  # All nodes < 80% CPU
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Service mesh ready**
    - **Metryka**: Istio/Linkerd installed
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check service mesh
      kubectl get pods -n istio-system | grep Running | wc -l
      # Should return > 5
      istioctl analyze  # No critical issues
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Stateless service refactoring
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Extract shared state to external stores**
    - **Metryka**: Zero in-memory shared state
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from state_analyzer import scan_services
      analysis = scan_services()
      assert len(analysis.stateful_components) == 0
      assert all(s.uses_external_state for s in analysis.services)
      ```
+
    - **Czas**: 3h
 
 2. **[ ] Session affinity removal**
    - **Metryka**: Any instance can handle any request
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Test round-robin with chaos
      ./scripts/test_stateless.sh --kill-random-pods
      # All requests should succeed
      grep "failed: 0" test_results.log
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Distributed locking implementation**
    - **Metryka**: Concurrent operations safe
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      lock_test = run_distributed_lock_test(
          concurrent_workers=50,
@@ -66,41 +78,49 @@ Przekształcić system w skalowalną horyzontalnie architekturę zdolną do obs�
      assert lock_test.race_conditions == 0
      assert lock_test.deadlocks == 0
      ```
+
    - **Czas**: 2.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Services fully stateless
 - Ready for replication
 - Concurrency safe
 
 ### Blok 2: Load distribution
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Camera-to-node sharding**
    - **Metryka**: Even distribution of cameras
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      distribution = analyze_camera_distribution()
      assert distribution.std_deviation < 0.1  # Even spread
      assert all(n.camera_count > 0 for n in distribution.nodes)
      assert distribution.rebalance_needed == False
      ```
+
    - **Czas**: 2.5h
 
 2. **[ ] Work queue partitioning**
    - **Metryka**: Parallel processing without conflicts
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      queue_test = test_partitioned_queues(partitions=10)
      assert queue_test.message_ordering_preserved == True
      assert queue_test.partition_efficiency > 0.9
      assert queue_test.cross_partition_traffic == 0
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Dynamic load balancing**
    - **Metryka**: Automatic rebalancing under load
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Start uneven load test
      ./load_test.sh --uneven --duration=300
@@ -108,19 +128,23 @@ Przekształcić system w skalowalną horyzontalnie architekturę zdolną do obs�
      kubectl logs -l app=load-balancer | grep "rebalanced" | wc -l
      # Should show rebalancing events
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Load evenly distributed
 - Auto-rebalancing active
 - No hotspots
 
 ### Blok 3: Kubernetes deployment
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Helm charts creation**
    - **Metryka**: Parameterized deployments
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Lint helm charts
      helm lint charts/detektor
@@ -129,11 +153,13 @@ Przekształcić system w skalowalną horyzontalnie architekturę zdolną do obs�
      # Template generation works
      helm template charts/detektor | kubectl apply --dry-run=client -f -
      ```
+
    - **Czas**: 2.5h
 
 2. **[ ] Horizontal Pod Autoscaler**
    - **Metryka**: Auto-scaling based on load
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # Check HPA configured
      kubectl get hpa -o yaml | grep -E "minReplicas: 3|maxReplicas: 50"
@@ -141,11 +167,13 @@ Przekształcić system w skalowalną horyzontalnie architekturę zdolną do obs�
      kubectl run -i --tty load-generator --image=busybox /bin/sh
      # Generate load and verify scaling
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Pod disruption budgets**
    - **Metryka**: High availability maintained
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check PDBs exist
      kubectl get pdb | grep detektor
@@ -153,30 +181,36 @@ Przekształcić system w skalowalną horyzontalnie architekturę zdolną do obs�
      kubectl get pdb detektor-detection -o jsonpath='{.spec.minAvailable}'
      # Should return 2 or more
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - K8s deployment ready
 - Auto-scaling configured
 - HA guaranteed
 
 ### Blok 4: Multi-node testing
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] 100 camera load test**
    - **Metryka**: System handles 100 concurrent cameras
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      load_test = run_scaled_test(cameras=100, duration_min=30)
      assert load_test.processed_fps > 2900  # ~29 FPS per camera
      assert load_test.failed_frames_percent < 0.1
      assert load_test.p99_latency_ms < 200
      ```
+
    - **Czas**: 2.5h
 
 2. **[ ] Node failure resilience**
    - **Metryka**: Zero downtime during node failure
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Start continuous test
      ./scripts/continuous_test.sh &
@@ -186,20 +220,24 @@ Przekształcić system w skalowalną horyzontalnie architekturę zdolną do obs�
      # Check test still passing
      kill -0 $TEST_PID && echo "Test survived node failure"
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Scale-up/down testing**
    - **Metryka**: Graceful scaling without data loss
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      scale_test = test_scaling_operations()
      assert scale_test.scale_up_time_seconds < 60
      assert scale_test.scale_down_graceful == True
      assert scale_test.events_lost == 0
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - 100+ cameras supported
 - Fault tolerant
 - Elastic scaling
@@ -241,7 +279,7 @@ Przekształcić system w skalowalną horyzontalnie architekturę zdolną do obs�
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Scaling failures
    - Data inconsistency
    - Performance degradation

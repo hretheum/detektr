@@ -1,12 +1,15 @@
 # Faza 3 / Zadanie 5: GPU Resource Optimization
 
 ## Cel zadania
+
 Zoptymalizować wykorzystanie GPU GTX 4070 Super dla równoległego przetwarzania wielu modeli AI, minimalizując memory footprint i maksymalizując throughput.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] GPU profiling baseline**
    - **Metryka**: Current GPU usage patterns
    - **Walidacja**: nsight profiler report
@@ -19,7 +22,8 @@ Zoptymalizować wykorzystanie GPU GTX 4070 Super dla równoległego przetwarzani
 
 ### Blok 1: Model optimization
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Model quantization (INT8)**
    - **Metryka**: 4x memory reduction
    - **Walidacja**: Accuracy vs baseline
@@ -37,7 +41,8 @@ Zoptymalizować wykorzystanie GPU GTX 4070 Super dla równoległego przetwarzani
 
 ### Blok 2: GPU memory management
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Unified memory pool**
    - **Metryka**: Zero memory fragmentation
    - **Walidacja**: Memory allocation test
@@ -55,7 +60,8 @@ Zoptymalizować wykorzystanie GPU GTX 4070 Super dla równoległego przetwarzani
 
 ### Blok 3: Multi-model scheduling
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] GPU task scheduler**
    - **Metryka**: Fair resource allocation
    - **Walidacja**: Scheduling fairness test
@@ -73,7 +79,8 @@ Zoptymalizować wykorzystanie GPU GTX 4070 Super dla równoległego przetwarzani
 
 ### Blok 4: Monitoring i auto-tuning
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Real-time GPU metrics**
    - **Metryka**: Memory, utilization, temp
    - **Walidacja**: Metrics accuracy

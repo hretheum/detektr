@@ -11,6 +11,7 @@ Hobbystyczny system przechwytywania obrazu z kamery IP z wykorzystaniem AI do ro
 ## Cel Projektu
 
 Stworzenie kompletnego systemu który:
+
 - Przechwytuje strumień RTSP z kamer IP
 - Rozpoznaje twarze, gesty i obiekty za pomocą AI
 - Integruje się z Home Assistant dla automatyzacji
@@ -80,10 +81,12 @@ open http://localhost:9090    # Prometheus
 
 Ten projekt czerpie proven patterns z:
 
-### 🎯 [eofek/detektor](https://github.com/eofek/detektor) 
+### 🎯 [eofek/detektor](https://github.com/eofek/detektor)
+
 *Repozytorium autorskie - kod dostępny do wykorzystania*
 
 **Adoptowane patterns**:
+
 - Metrics abstraction layer dla Prometheus
 - Redis Streams event-driven architecture
 - GPU monitoring z comprehensive checks
@@ -91,6 +94,7 @@ Ten projekt czerpie proven patterns z:
 - Event acknowledgement dla reliability
 
 **Ulepszenia względem eofek/detektor**:
+
 - Uproszczona architektura (mniej over-engineering)
 - Rozszerzenie AI models (YOLO, gesture detection)
 - Home Assistant integration (czego brakuje w oryginale)
@@ -129,7 +133,7 @@ git commit    # Zapisz zmiany
 ## Porty Serwisów
 
 - **8001**: rtsp-capture
-- **8002**: face-recognition  
+- **8002**: face-recognition
 - **8003**: object-detection
 - **8004**: ha-bridge
 - **8005**: llm-intent
@@ -148,6 +152,7 @@ git commit    # Zapisz zmiany
 **Aktualny stan**: Faza 0 ukończona, gotowość do Fazy 1
 
 **Metryki jakości**:
+
 - 📊 Dokumentacja: 100% tasks decomposed
 - 🔐 Security: SOPS configured, zero secrets in code
 - 🧪 Testing: TDD setup ready
@@ -156,9 +161,10 @@ git commit    # Zapisz zmiany
 
 ## Kontrybuowanie
 
-Ten projekt realizuje podejście **observability-first** i **TDD**. 
+Ten projekt realizuje podejście **observability-first** i **TDD**.
 
 Przed rozpoczęciem pracy:
+
 1. Przeczytaj [CLAUDE.md](./CLAUDE.md) - zasady projektu
 2. Sprawdź aktualną fazę w [architektura_systemu.md](./architektura_systemu.md)
 3. Użyj `/nakurwiaj` dla automatycznego wykonania bloków zadań

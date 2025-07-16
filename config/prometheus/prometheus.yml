@@ -3,25 +3,25 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'prometheus'
+  - job_name: "prometheus"
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ["localhost:9090"]
 
-  - job_name: 'detektor-services'
+  - job_name: "detektor-services"
     static_configs:
       - targets:
-          - 'rtsp-capture:8000'
-          - 'face-recognition:8001'
-          - 'object-detection:8002'
-          - 'gesture-detection:8003'
-          - 'automation-engine:8004'
+          - "rtsp-capture:8000"
+          - "face-recognition:8001"
+          - "object-detection:8002"
+          - "gesture-detection:8003"
+          - "automation-engine:8004"
         labels:
-          environment: 'production'
-          
-  - job_name: 'redis'
+          environment: "production"
+
+  - job_name: "redis"
     static_configs:
-      - targets: ['redis:6379']
-        
-  - job_name: 'postgres'
+      - targets: ["redis:6379"]
+
+  - job_name: "postgres"
     static_configs:
-      - targets: ['postgres:5432']
+      - targets: ["postgres:5432"]

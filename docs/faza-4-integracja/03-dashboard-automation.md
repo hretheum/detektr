@@ -1,130 +1,158 @@
 # Faza 4 / Zadanie 3: Dashboard Automation Execution
 
 ## Cel zadania
+
 Stworzyć dashboard wizualizujący wykonywanie automatyzacji w czasie rzeczywistym z historią i statystykami.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja automation metrics**
    - **Metryka**: HA bridge eksportuje metryki automatyzacji
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl localhost:8004/metrics | grep -E "automation_executed|action_success"
      # Metrics present with values
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Test data generation**
    - **Metryka**: Generate sample automations
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      python generate_test_automations.py --count 100
      # 100 test automations executed
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Core automation panels
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Automation trigger frequency**
    - **Metryka**: Bar chart of triggers by type
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      sum by (trigger_type) (
        rate(automation_triggered_total[1h])
      )
      # Shows motion, time, state triggers
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Success/failure pie chart**
    - **Metryka**: Visual success rate
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```javascript
      panel.targets[0].expr.includes("automation_success_total")
      panel.targets[1].expr.includes("automation_failed_total")
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Execution timeline**
    - **Metryka**: Gantt-style automation history
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```sql
      -- Query returns automation timeline
-     SELECT name, start_time, end_time, status 
-     FROM automation_executions 
+     SELECT name, start_time, end_time, status
+     FROM automation_executions
      ORDER BY start_time DESC
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Key metrics visible
 - Real-time updates
 - Historical view
 
 ### Blok 2: Detailed analytics
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Top triggered automations**
    - **Metryka**: Table of most active automations
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      topk(10, sum by (automation_name) (
        automation_triggered_total
      ))
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Latency distribution heatmap**
    - **Metryka**: Show execution time patterns
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Heatmap shows time-of-day patterns
      curl http://localhost:3000/api/panels/automation-latency-heatmap
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] Entity interaction graph**
    - **Metryka**: Which entities trigger which actions
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```javascript
      // Node graph panel configured
      panel.options.nodeGraph.enabled === true
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Deep insights available
 - Patterns visible
 - Optimization opportunities clear
 
 ### Blok 3: Alerting and drill-down
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Failed automation alerts**
    - **Metryka**: Alert on repeated failures
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      - alert: AutomationFailureRate
        expr: rate(automation_failed_total[5m]) > 0.1
        annotations:
          description: "{{ $labels.automation_name }} failing"
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Trace link integration**
    - **Metryka**: Click to see automation trace
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```javascript
      panel.fieldConfig.defaults.links[0].title === "View Trace"
      panel.fieldConfig.defaults.links[0].url.includes("jaeger")
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Proactive alerting
 - Easy debugging
 - Full context available
@@ -152,7 +180,7 @@ Stworzyć dashboard wizualizujący wykonywanie automatyzacji w czasie rzeczywist
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Automation metrics collected
   - Historical data available
 - **Blokuje**: Automation optimization
@@ -166,7 +194,7 @@ Stworzyć dashboard wizualizujący wykonywanie automatyzacji w czasie rzeczywist
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Dashboard not loading
    - Queries timing out
    - Wrong data shown

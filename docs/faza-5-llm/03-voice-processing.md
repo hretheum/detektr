@@ -1,12 +1,15 @@
 # Faza 5 / Zadanie 3: Voice Processing z Whisper
 
 ## Cel zadania
+
 Zaimplementować przetwarzanie komend głosowych wykorzystując Whisper ASR, z obsługą języka polskiego, wake word detection i noise suppression.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza Whisper models (base, small, medium)**
    - **Metryka**: Speed vs accuracy tradeoff
    - **Walidacja**: Benchmark results
@@ -19,7 +22,8 @@ Zaimplementować przetwarzanie komend głosowych wykorzystując Whisper ASR, z o
 
 ### Blok 1: Audio capture pipeline
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Audio stream interface**
    - **Metryka**: Continuous audio capture
    - **Walidacja**: `pytest tests/test_audio_stream.py`
@@ -37,7 +41,8 @@ Zaimplementować przetwarzanie komend głosowych wykorzystując Whisper ASR, z o
 
 ### Blok 2: Wake word detection
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Wake word engine (Porcupine/custom)**
    - **Metryka**: "Detektor" detection >95%
    - **Walidacja**: Wake word accuracy test
@@ -55,7 +60,8 @@ Zaimplementować przetwarzanie komend głosowych wykorzystując Whisper ASR, z o
 
 ### Blok 3: Speech-to-text processing
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Whisper integration**
    - **Metryka**: Polish language support
    - **Walidacja**: WER <10% for Polish
@@ -73,7 +79,8 @@ Zaimplementować przetwarzanie komend głosowych wykorzystując Whisper ASR, z o
 
 ### Blok 4: Command processing
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Command grammar definition**
    - **Metryka**: Natural language commands
    - **Walidacja**: Grammar coverage test

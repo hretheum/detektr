@@ -1,12 +1,15 @@
 # Faza 0 / Zadanie 4: Przygotowanie środowiska developerskiego
 
 ## Cel zadania
+
 Skonfigurować środowisko developerskie umożliwiające wygodną pracę z Mac OS z wykorzystaniem GPU na serwerze Ubuntu, z pełnym wsparciem dla remote development.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja połączenia SSH Mac → Ubuntu**
    - **Metryka**: SSH key-based auth działa
    - **Walidacja**: `ssh ubuntu-server hostname`
@@ -19,7 +22,8 @@ Skonfigurować środowisko developerskie umożliwiające wygodną pracę z Mac O
 
 ### Blok 1: Remote Docker development
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Konfiguracja Docker context**
    - **Metryka**: Docker commands z Mac → Ubuntu
    - **Walidacja**: `docker --context ubuntu ps`
@@ -37,7 +41,8 @@ Skonfigurować środowisko developerskie umożliwiające wygodną pracę z Mac O
 
 ### Blok 2: GPU development support
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] CUDA toolkit na Mac (opcjonalne)**
    - **Metryka**: CUDA headers dla IntelliSense
    - **Walidacja**: VS Code rozpoznaje CUDA types
@@ -55,7 +60,8 @@ Skonfigurować środowisko developerskie umożliwiające wygodną pracę z Mac O
 
 ### Blok 3: Development workflow
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Automated sync Mac ↔ Ubuntu**
    - **Metryka**: Code changes auto-sync
    - **Walidacja**: mutagen/rsync working
@@ -73,7 +79,8 @@ Skonfigurować środowisko developerskie umożliwiające wygodną pracę z Mac O
 
 ### Blok 4: DevContainer setup
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] .devcontainer configuration**
    - **Metryka**: Full env in container
    - **Walidacja**: `devcontainer up` works

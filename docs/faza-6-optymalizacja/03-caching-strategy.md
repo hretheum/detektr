@@ -1,51 +1,61 @@
 # Faza 6 / Zadanie 3: Multi-level Caching Implementation
 
 ## Cel zadania
+
 Zaprojektować i wdrożyć wielopoziomową strategię cachowania minimalizującą powtarzalne obliczenia i dostępy do baz danych, zwiększając throughput systemu.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Cache infrastructure ready**
    - **Metryka**: Redis cluster operational
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check Redis cluster health
      redis-cli --cluster check localhost:6379 | grep "All 16384 slots covered"
      # Memory available
      redis-cli INFO memory | grep used_memory_human | awk -F: '{print $2}'
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Performance metrics baseline**
    - **Metryka**: Current cache hit rates documented
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      metrics = get_current_metrics()
      assert metrics.cache_hit_rate >= 0  # May be 0 if no caching yet
      assert metrics.db_query_rate > 100  # queries/sec showing need for cache
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Cache architecture design
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Multi-tier cache strategy**
    - **Metryka**: 3-tier cache design documented
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      design = load_cache_design("docs/cache-architecture.yaml")
      assert len(design.tiers) == 3  # L1: memory, L2: Redis, L3: disk
      assert all(t.ttl_seconds > 0 for t in design.tiers)
      assert design.tiers[0].size_mb < design.tiers[1].size_mb
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Cache key design patterns**
    - **Metryka**: Consistent key naming across services
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from cache_utils import validate_key_pattern
      test_keys = [
@@ -55,30 +65,36 @@ Zaprojektować i wdrożyć wielopoziomową strategię cachowania minimalizując�
      ]
      assert all(validate_key_pattern(k) for k in test_keys)
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] Invalidation strategy**
    - **Metryka**: Cache coherence guaranteed
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      strategy = CacheInvalidationStrategy()
      assert strategy.supports_cascade_invalidation == True
      assert strategy.max_propagation_delay_ms < 100
      assert len(strategy.invalidation_patterns) > 5
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Architecture documented
 - Patterns established
 - Invalidation planned
 
 ### Blok 2: L1 Memory cache implementation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] In-process LRU cache**
    - **Metryka**: Sub-millisecond access time
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from cache_benchmarks import test_memory_cache
      results = test_memory_cache(operations=10000)
@@ -86,21 +102,25 @@ Zaprojektować i wdrożyć wielopoziomową strategię cachowania minimalizując�
      assert results.hit_rate > 0.8
      assert results.memory_overhead_percent < 10
      ```
+
    - **Czas**: 2.5h
 
 2. **[ ] Detection results caching**
    - **Metryka**: 90% reduction in re-detection
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      cache_test = run_detection_cache_test()
      assert cache_test.cache_hits / cache_test.total_requests > 0.9
      assert cache_test.gpu_time_saved_percent > 85
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Configuration cache layer**
    - **Metryka**: Zero config DB queries in hot path
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Monitor DB queries during load test
      pg_stat_statements_reset();
@@ -110,60 +130,72 @@ Zaprojektować i wdrożyć wielopoziomową strategię cachowania minimalizując�
      psql -c "SELECT count(*) FROM pg_stat_statements WHERE query LIKE '%config%'" \
        | grep -E "^\s*0"
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Memory cache operational
 - Hit rate >80%
 - Latency reduced
 
 ### Blok 3: L2 Redis cache layer
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Redis connection pooling**
    - **Metryka**: <5ms connection overhead
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      pool_stats = redis_connection_pool.get_stats()
      assert pool_stats.avg_connection_time_ms < 5
      assert pool_stats.pool_efficiency > 0.9
      assert pool_stats.connections_created < 100  # Good reuse
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Frame metadata caching**
    - **Metryka**: 95% cache hit for recent frames
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      frame_cache_test = test_frame_metadata_cache()
      assert frame_cache_test.hit_rate_1min_window > 0.95
      assert frame_cache_test.memory_used_mb < 1000
      assert frame_cache_test.eviction_rate < 0.05
      ```
+
    - **Czas**: 2.5h
 
 3. **[ ] Aggregated events cache**
    - **Metryka**: 10x reduction in aggregation compute
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      before = measure_aggregation_cpu(cache_enabled=False)
      after = measure_aggregation_cpu(cache_enabled=True)
      assert before.cpu_seconds / after.cpu_seconds > 10
      assert after.result_accuracy == 1.0  # No data loss
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Redis cache integrated
 - Significant CPU savings
 - Data consistency maintained
 
 ### Blok 4: Cache monitoring and optimization
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Cache metrics dashboard**
    - **Metryka**: Real-time cache performance visible
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check Grafana dashboard exists
      curl -s http://localhost:3000/api/dashboards/uid/cache-performance \
@@ -172,11 +204,13 @@ Zaprojektować i wdrożyć wielopoziomową strategię cachowania minimalizując�
      curl -s http://localhost:9090/api/v1/query?query=cache_hit_rate \
        | jq '.data.result | length' | grep -E "^[1-9]"
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Auto-tuning cache sizes**
    - **Metryka**: Optimal memory allocation
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      tuner = CacheSizeAutoTuner()
      recommendations = tuner.analyze_last_24h()
@@ -184,20 +218,24 @@ Zaprojektować i wdrożyć wielopoziomową strategię cachowania minimalizując�
      assert recommendations.hit_rate_improvement > 0.05
      tuner.apply_recommendations()
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Cache warmup strategies**
    - **Metryka**: <30s cold start time
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Restart system and measure warmup
      docker-compose restart
      time_to_90_percent_hitrate=$(measure_cache_warmup_time.py)
      test $time_to_90_percent_hitrate -lt 30 && echo "OK"
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Cache observable
 - Self-optimizing
 - Fast warmup
@@ -238,7 +276,7 @@ Zaprojektować i wdrożyć wielopoziomową strategię cachowania minimalizując�
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Cache corruption
    - Performance degradation
    - Memory exhaustion

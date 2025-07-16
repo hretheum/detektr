@@ -1,40 +1,48 @@
 # Faza 4 / Zadanie 4: Trace od detekcji do wykonania automatyzacji
 
 ## Cel zadania
+
 Implementować kompletny distributed tracing pokazujący całą ścieżkę od wykrycia obiektu do wykonania akcji w Home Assistant.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja trace continuity**
    - **Metryka**: Trace context propaguje przez wszystkie serwisy
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Trigger full automation
      trace = trigger_and_get_trace("motion_detected")
      services = [span.service_name for span in trace.spans]
-     assert all(svc in services for svc in 
+     assert all(svc in services for svc in
                 ["rtsp-capture", "object-detection", "ha-bridge"])
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] HA trace integration test**
    - **Metryka**: HA actions appear in traces
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check if HA spans are captured
      curl "http://localhost:16686/api/services" | jq '.data[]' | grep home-assistant
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Decision tracing
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Rule evaluation spans**
    - **Metryka**: Each rule check creates span
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      trace = get_automation_trace()
      rule_spans = [s for s in trace.spans if "rule_eval" in s.name]
@@ -43,30 +51,36 @@ Implementować kompletny distributed tracing pokazujący całą ścieżkę od wy
          assert "rule.name" in span.attributes
          assert "rule.result" in span.attributes
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Decision tree visualization**
    - **Metryka**: Show why automation triggered
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      decision = extract_decision_tree(trace)
      assert decision.root.name == "automation_trigger"
      assert len(decision.conditions_checked) > 0
      assert decision.final_action is not None
      ```
+
    - **Czas**: 2.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Decision process visible
 - Rule evaluation tracked
 - Logic path clear
 
 ### Blok 2: Action execution tracing
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] HA API call spans**
    - **Metryka**: Each HA call fully traced
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      ha_spans = get_spans_by_service("ha-bridge")
      for span in ha_spans:
@@ -74,22 +88,26 @@ Implementować kompletny distributed tracing pokazujący całą ścieżkę od wy
          assert "ha.entity_id" in span.attributes
          assert "ha.response_code" in span.attributes
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] State verification spans**
    - **Metryka**: Track if action had effect
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      verify_span = get_span("verify_state_change")
      assert verify_span.attributes["state.before"] != \
             verify_span.attributes["state.after"]
      assert verify_span.attributes["change.confirmed"] == True
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Error propagation**
    - **Metryka**: Failures tracked through trace
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Force HA error
      failed_trace = trigger_with_ha_error()
@@ -97,19 +115,23 @@ Implementować kompletny distributed tracing pokazujący całą ścieżkę od wy
      assert len(error_spans) > 0
      assert "home-assistant" in error_spans[-1].attributes["error.source"]
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - HA actions fully traced
 - State changes verified
 - Errors properly tracked
 
 ### Blok 3: Trace analysis tools
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Automation trace analyzer**
    - **Metryka**: Extract insights from traces
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      python analyze_automation_trace.py --trace-id abc123
      # Output:
@@ -118,19 +140,23 @@ Implementować kompletny distributed tracing pokazujący całą ścieżkę od wy
      # - Rules evaluated: 5
      # - Actions executed: 2
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Trace comparison for optimization**
    - **Metryka**: Compare fast vs slow automations
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      comparison = compare_automation_traces(fast_id, slow_id)
      print(comparison.largest_diff)  # "ha_api_call: +500ms"
      print(comparison.suggestions)   # ["Cache entity states"]
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Insights extractable
 - Optimizations identifiable
 - Comparisons easy
@@ -158,7 +184,7 @@ Implementować kompletny distributed tracing pokazujący całą ścieżkę od wy
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - All services traced
   - HA bridge instrumented
 - **Blokuje**: Performance optimization
@@ -172,7 +198,7 @@ Implementować kompletny distributed tracing pokazujący całą ścieżkę od wy
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Traces incomplete
    - Performance degraded
    - Storage full

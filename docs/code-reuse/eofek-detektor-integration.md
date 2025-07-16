@@ -2,15 +2,15 @@
 
 ## Przegląd
 
-**Repozytorium źródłowe**: https://github.com/eofek/detektor  
-**Status prawny**: Własność autora projektu Detektor - kod dostępny do swobodnego wykorzystania  
+**Repozytorium źródłowe**: <https://github.com/eofek/detektor>
+**Status prawny**: Własność autora projektu Detektor - kod dostępny do swobodnego wykorzystania
 **Strategia**: Selective adoption - proven patterns bez over-engineering
 
 ## Komponenty do Bezpośredniego Wykorzystania
 
 ### 1. 📊 Metrics System (WYSOKIE PRIORITET)
 
-**Źródło**: `src/infrastructure/metrics/`  
+**Źródło**: `src/infrastructure/metrics/`
 **Destination**: `src/shared/metrics/`
 
 ```python
@@ -18,19 +18,20 @@
 class MetricsAdapter:
     def __init__(self, service_name):
         self.service_name = service_name
-    
+
     def increment(self, metric_name):
         # Implementation from eofek/detektor
 ```
 
 **Files to copy**:
+
 - `metrics_adapter.py` → `src/shared/metrics/adapter.py`
 - `prometheus_exporter.py` → `src/shared/metrics/prometheus.py`
 - `gpu_metrics.py` → `src/shared/metrics/gpu.py`
 
 ### 2. 🔄 Redis Streams Event System
 
-**Źródło**: `src/infrastructure/messaging/`  
+**Źródło**: `src/infrastructure/messaging/`
 **Destination**: `src/shared/events/`
 
 ```python
@@ -46,15 +47,17 @@ async def publish_event(self, event_type, data):
 ```
 
 **Files to copy**:
+
 - `redis_publisher.py` → `src/shared/events/publisher.py`
 - `event_consumer.py` → `src/shared/events/consumer.py`
 
 ### 3. 🎥 Stream Forwarder Base
 
-**Źródło**: `services/stream-forwarder/`  
+**Źródło**: `services/stream-forwarder/`
 **Destination**: `services/rtsp-capture/`
 
 **Key components**:
+
 - RTSP connection management
 - Frame extraction logic
 - Auto-reconnect mechanism
@@ -62,7 +65,7 @@ async def publish_event(self, event_type, data):
 
 ### 4. 🐳 Docker Organization
 
-**Źródło**: `docker/`  
+**Źródło**: `docker/`
 **Destination**: `docker/`
 
 ```yaml
@@ -77,6 +80,7 @@ services:
 ```
 
 **Files to copy**:
+
 - `docker/development/` patterns
 - `docker/production/` patterns
 - Multi-stage Dockerfile approaches
@@ -121,16 +125,19 @@ class HomeAssistantBridge:
 ## Plan Implementacji
 
 ### Faza 1: Core Infrastructure
+
 1. **[✅ GOTOWE]** Skopiuj metrics system pattern
 2. **[⏳ TODO]** Adaptuj Redis Streams event architecture
 3. **[⏳ TODO]** Zintegruj Docker organization patterns
 
 ### Faza 2: AI Services Base
+
 1. **[⏳ TODO]** Wykorzystaj MediaPipe face detection base
 2. **[⏳ TODO]** Rozszerz o YOLO object detection
 3. **[⏳ TODO]** Dodaj gesture recognition (nowy komponent)
 
 ### Faza 3: Stream Processing
+
 1. **[⏳ TODO]** Adaptuj stream-forwarder dla RTSP capture
 2. **[⏳ TODO]** Zintegruj z naszym frame tracking system
 3. **[⏳ TODO]** Dodaj GPU optimization patterns
@@ -138,6 +145,7 @@ class HomeAssistantBridge:
 ## Konkretne Code Snippets do Wykorzystania
 
 ### GPU Detection Logic
+
 ```python
 # FROM: eofek/detektor/src/infrastructure/gpu.py
 import tensorflow as tf
@@ -151,6 +159,7 @@ def setup_gpu():
 ```
 
 ### Health Check Pattern
+
 ```python
 # FROM: eofek/detektor/src/infrastructure/health.py
 class HealthChecker:
@@ -163,6 +172,7 @@ class HealthChecker:
 ```
 
 ### Metrics Export
+
 ```python
 # FROM: eofek/detektor/src/infrastructure/metrics.py
 METRICS = {
@@ -217,6 +227,6 @@ Dla każdego skopiowanego komponentu:
 
 ---
 
-**Status**: Plan Ready  
-**Priorytet**: Wysoki - znacznie przyspieszy development  
+**Status**: Plan Ready
+**Priorytet**: Wysoki - znacznie przyspieszy development
 **Odpowiedzialny**: Team Lead (using /nakurwiaj automation)

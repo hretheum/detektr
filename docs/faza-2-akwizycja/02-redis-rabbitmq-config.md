@@ -1,124 +1,152 @@
 # Faza 2 / Zadanie 2: Konfiguracja Redis/RabbitMQ z metrykami Prometheus
 
 ## Cel zadania
+
 Skonfigurować wysokowydajny message broker (Redis/RabbitMQ) do kolejkowania klatek z pełnym monitoringiem Prometheus, zapewniając throughput >100 msg/s.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja dostępności portów**
    - **Metryka**: Porty 6379, 5672, 15672, 15692 wolne
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      netstat -tuln | grep -E ':(6379|5672|15672|15692)'
      # Brak output = porty wolne
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Weryfikacja zasobów systemowych**
    - **Metryka**: Min 4GB RAM free, 10GB disk space
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      free -h | grep Mem | awk '{print $7}'
      df -h / | tail -1 | awk '{print $4}'
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Redis setup z persistence
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Konfiguracja Redis z AOF i RDB**
    - **Metryka**: Redis persistence enabled, maxmemory-policy set
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker exec redis redis-cli CONFIG GET appendonly
      docker exec redis redis-cli CONFIG GET save
      # appendonly: yes, save: configured
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Redis exporter dla Prometheus**
    - **Metryka**: Metryki Redis dostępne na :9121/metrics
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s localhost:9121/metrics | grep redis_up
      # redis_up 1
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Performance tuning Redis**
    - **Metryka**: >10k ops/sec, latency <1ms
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker exec redis redis-benchmark -q -n 100000
      # SET: >10000 requests per second
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Redis stabilny pod load
 - Persistence bez data loss
 - Prometheus scraping działa
 
 ### Blok 2: RabbitMQ setup (alternatywa)
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Deploy RabbitMQ z management plugin**
    - **Metryka**: RabbitMQ UI dostępne na :15672
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -u guest:guest http://localhost:15672/api/overview | jq .rabbitmq_version
      # Returns version string
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Konfiguracja Prometheus plugin**
    - **Metryka**: Metryki na :15692/metrics
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s localhost:15692/metrics | grep rabbitmq_build_info
      # rabbitmq_build_info{...} 1
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Queue configuration i policies**
    - **Metryka**: Queue z TTL, max-length, durability
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      rabbitmqctl list_queues name durable messages_ready
      # frame_queue true 0
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - RabbitMQ cluster healthy
 - Queues configured correctly
 - Monitoring operational
 
 ### Blok 3: Integration testing i dashboards
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Load test message broker**
    - **Metryka**: 1000 msg/s sustained for 10 min
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      python load_test_broker.py --duration 600 --rate 1000
      # Success rate: >99.9%
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Grafana dashboard dla broker metrics**
    - **Metryka**: Dashboard pokazuje throughput, latency, errors
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s http://admin:admin@localhost:3000/api/dashboards/uid/broker-metrics | jq .dashboard.title
      # "Message Broker Metrics"
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Load test passing
 - Dashboard operational
 - Alerts configured
@@ -158,7 +186,7 @@ Skonfigurować wysokowydajny message broker (Redis/RabbitMQ) do kolejkowania kla
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Message loss detected
    - Throughput <50 msg/s
    - Memory >90%

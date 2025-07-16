@@ -28,7 +28,8 @@ age-keygen -o ~/.config/sops/age/keys.txt
 age-keygen -y ~/.config/sops/age/keys.txt
 ```
 
-**WAŻNE**: 
+**WAŻNE**:
+
 - Klucz prywatny (`keys.txt`) - NIGDY nie commituj!
 - Klucz publiczny (zaczyna się od `age1...`) - możesz bezpiecznie udostępniać
 
@@ -36,6 +37,7 @@ age-keygen -y ~/.config/sops/age/keys.txt
 
 1. Skopiuj swój klucz publiczny
 2. Edytuj `.sops.yaml` i zamień `AGE-PUBLIC-KEY-HERE` na swój klucz:
+
    ```yaml
    creation_rules:
      - path_regex: \.env$
@@ -44,13 +46,15 @@ age-keygen -y ~/.config/sops/age/keys.txt
 
 ### 4. Praca z sekretami
 
-#### Pierwsze użycie - stwórz .env z .env.example:
+#### Pierwsze użycie - stwórz .env z .env.example
+
 ```bash
 cp .env.example .env
 # Edytuj .env i wypełnij prawdziwymi wartościami
 ```
 
-#### Szyfrowanie pliku .env:
+#### Szyfrowanie pliku .env
+
 ```bash
 # Opcja 1: Edytuj bezpośrednio (SOPS otworzy edytor)
 sops .env
@@ -60,7 +64,8 @@ sops -e .env > .env.encrypted
 mv .env.encrypted .env
 ```
 
-#### Odszyfrowanie do użycia:
+#### Odszyfrowanie do użycia
+
 ```bash
 # Wyświetl odszyfrowaną zawartość
 sops -d .env
@@ -70,7 +75,8 @@ sops -d .env > .env.decrypted
 # Pamiętaj usunąć po użyciu!
 ```
 
-#### Edycja zaszyfrowanego pliku:
+#### Edycja zaszyfrowanego pliku
+
 ```bash
 # SOPS automatycznie odszyfruje, otworzy edytor, i zaszyfruje po zapisaniu
 sops .env
@@ -88,21 +94,24 @@ sops .env
 
 ## 🤝 Współpraca zespołowa
 
-### Dodawanie nowego członka zespołu:
+### Dodawanie nowego członka zespołu
 
 1. Poproś o klucz publiczny age
 2. Dodaj klucz do `.sops.yaml`:
+
    ```yaml
    age: >-
      age1klucz-osoby-1,
      age1klucz-osoby-2
    ```
+
 3. Re-encrypt wszystkie pliki:
+
    ```bash
    sops updatekeys .env
    ```
 
-### Dołączanie do projektu:
+### Dołączanie do projektu
 
 1. Wygeneruj klucze: `age-keygen -o ~/.config/sops/age/keys.txt`
 2. Wyślij klucz publiczny do team lead
@@ -110,7 +119,8 @@ sops .env
 
 ## 🐳 Integracja z Docker
 
-### Development:
+### Development
+
 ```bash
 # Odszyfruj przed uruchomieniem
 sops -d .env > .env.decrypted
@@ -118,28 +128,31 @@ docker-compose --env-file .env.decrypted up
 rm .env.decrypted  # Usuń po użyciu!
 ```
 
-### Automatyzacja (Makefile):
+### Automatyzacja (Makefile)
+
 ```makefile
 .PHONY: up down
 
 up:
-	@sops -d .env > .env.decrypted
-	@docker-compose --env-file .env.decrypted up -d
-	@rm .env.decrypted
+ @sops -d .env > .env.decrypted
+ @docker-compose --env-file .env.decrypted up -d
+ @rm .env.decrypted
 
 down:
-	@docker-compose down
+ @docker-compose down
 ```
 
 ## 🚨 Bezpieczeństwo
 
-### Co robić:
+### Co robić
+
 - ✅ Commituj zaszyfrowane pliki `.env`
 - ✅ Używaj silnych, unikalnych wartości dla każdego sekretu
 - ✅ Regularnie rotuj klucze API
 - ✅ Używaj różnych sekretów dla dev/staging/prod
 
-### Czego NIE robić:
+### Czego NIE robić
+
 - ❌ NIE commituj odszyfrowanych plików
 - ❌ NIE commituj klucza prywatnego age
 - ❌ NIE używaj słabych haseł "na szybko"
@@ -148,15 +161,18 @@ down:
 ## 🆘 Troubleshooting
 
 ### "Failed to get the data key required to decrypt"
+
 - Sprawdź czy masz klucz prywatny: `ls ~/.config/sops/age/keys.txt`
 - Sprawdź czy Twój klucz publiczny jest w `.sops.yaml`
 
 ### "Could not load age keys"
+
 ```bash
 export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
 ```
 
 ### Zgubiłem klucz prywatny
+
 - Poproś kogoś z zespołu o odszyfrowanie i re-encrypt z nowym kluczem
 - Bez klucza prywatnego nie odszyfrujesz plików!
 

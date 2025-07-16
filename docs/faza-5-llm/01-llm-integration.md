@@ -1,12 +1,15 @@
 # Faza 5 / Zadanie 1: LLM API Integration (OpenAI/Anthropic)
 
 ## Cel zadania
+
 Zintegrować Large Language Models dla zaawansowanej analizy intencji użytkownika, interpretacji złożonych komend i kontekstowego podejmowania decyzji.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza API OpenAI vs Anthropic**
    - **Metryka**: Cost/performance comparison
    - **Walidacja**: Decision matrix complete
@@ -19,7 +22,8 @@ Zintegrować Large Language Models dla zaawansowanej analizy intencji użytkowni
 
 ### Blok 1: LLM abstraction layer
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: LLM provider interface**
    - **Metryka**: Provider-agnostic design
    - **Walidacja**: `pytest tests/test_llm_interface.py`
@@ -37,7 +41,8 @@ Zintegrować Large Language Models dla zaawansowanej analizy intencji użytkowni
 
 ### Blok 2: Prompt engineering framework
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Prompt template system**
    - **Metryka**: Reusable prompt templates
    - **Walidacja**: Template rendering test
@@ -55,7 +60,8 @@ Zintegrować Large Language Models dla zaawansowanej analizy intencji użytkowni
 
 ### Blok 3: Cost control i optimization
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Token counting i budgeting**
    - **Metryka**: Accurate token prediction
    - **Walidacja**: Token count accuracy
@@ -73,7 +79,8 @@ Zintegrować Large Language Models dla zaawansowanej analizy intencji użytkowni
 
 ### Blok 4: Integration i monitoring
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] LLM metrics collection**
    - **Metryka**: Latency, tokens, cost tracked
    - **Walidacja**: Metrics dashboard

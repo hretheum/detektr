@@ -1,12 +1,15 @@
 # Faza 2 / Zadanie 3: Metadata Store z TimescaleDB
 
 ## Cel zadania
+
 Zaprojektować i zaimplementować wydajny system przechowywania metadanych klatek wykorzystując TimescaleDB, z automatyczną retencją i agregacją danych czasowych.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza wymagań dla time-series data**
    - **Metryka**: Schema design dla 1M records/day
    - **Walidacja**: Capacity planning document
@@ -19,7 +22,8 @@ Zaprojektować i zaimplementować wydajny system przechowywania metadanych klate
 
 ### Blok 1: Database schema design
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Domain models dla metadata**
    - **Metryka**: Pydantic models z validation
    - **Walidacja**: `pytest tests/test_metadata_models.py`
@@ -37,7 +41,8 @@ Zaprojektować i zaimplementować wydajny system przechowywania metadanych klate
 
 ### Blok 2: Repository pattern implementation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Repository interface**
    - **Metryka**: CRUD operations z async support
    - **Walidacja**: Interface coverage 100%
@@ -55,7 +60,8 @@ Zaprojektować i zaimplementować wydajny system przechowywania metadanych klate
 
 ### Blok 3: Data lifecycle management
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Continuous aggregates setup**
    - **Metryka**: 1min, 1h, 1d aggregates
    - **Walidacja**: Materialized views populated
@@ -73,7 +79,8 @@ Zaprojektować i zaimplementować wydajny system przechowywania metadanych klate
 
 ### Blok 4: Integration i monitoring
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Query performance optimization**
    - **Metryka**: All queries <10ms
    - **Walidacja**: pg_stat_statements analysis

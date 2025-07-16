@@ -1,40 +1,48 @@
 # Faza 4 / Zadanie 2: HA Bridge service z tracingiem akcji
 
 ## Cel zadania
+
 Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie akcji z pełnym śledzeniem i obsługą błędów.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja HA API access**
    - **Metryka**: API token valid, endpoints accessible
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -H "Authorization: Bearer $HA_TOKEN" \
        http://localhost:8123/api/states | jq length
      # Returns >0 entities
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Test HA service calls**
    - **Metryka**: Can control test entity
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -X POST -H "Authorization: Bearer $HA_TOKEN" \
        http://localhost:8123/api/services/light/turn_on \
        -d '{"entity_id":"light.test"}'
      # Returns 200 OK
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: HA API client library
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Async HA client z retry**
    - **Metryka**: Handles rate limits, retries failures
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      client = HAClient(retry_policy=ExponentialBackoff())
      # Force 429 rate limit
@@ -42,11 +50,13 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
      assert response.success
      assert client.retry_count > 0
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Entity state cache**
    - **Metryka**: Cache hit rate >80%, fresh data
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # First call - cache miss
      state1 = await client.get_state("sensor.temperature")
@@ -55,40 +65,48 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
      assert client.cache_hits == 1
      assert state1 == state2
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Service call validation**
    - **Metryka**: Validate params before sending
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Invalid service call
      with pytest.raises(ValidationError):
          await client.call_service("invalid.service", bad_param=True)
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Robust HA communication
 - Efficient with caching
 - Fail-safe operations
 
 ### Blok 2: Action execution engine
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Action queue processor**
    - **Metryka**: Sequential execution, priority support
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      queue.add(TurnOnLight(priority=HIGH))
      queue.add(SendNotification(priority=LOW))
      executed = await queue.process_all()
      assert executed[0].action_type == "TurnOnLight"
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Conditional action logic**
    - **Metryka**: If-then-else, time conditions
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      action = ConditionalAction(
          condition="sensor.motion == 'on'",
@@ -98,41 +116,49 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
      result = await executor.execute(action)
      assert result.executed == (motion_state == "on")
      ```
+
    - **Czas**: 2.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Complex automations supported
 - Reliable execution
 - Flexible conditions
 
 ### Blok 3: Observability
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Action trace spans**
    - **Metryka**: Every action traced end-to-end
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      with tracer.start_span("execute_automation"):
          result = await bridge.execute_action(action)
-     
+
      # Check trace has all steps
      trace = get_latest_trace()
      assert "validate_action" in trace.span_names
      assert "call_ha_service" in trace.span_names
      assert "verify_result" in trace.span_names
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Action metrics dashboard**
    - **Metryka**: Success rate, latency, frequency
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      rate(ha_actions_total[5m])
      histogram_quantile(0.95, ha_action_duration_bucket)
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Full visibility
 - Performance tracked
 - Debugging enabled
@@ -160,7 +186,7 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Home Assistant running
   - API token configured
 - **Blokuje**: Automation execution
@@ -174,7 +200,7 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Actions failing >10%
    - HA overloaded
    - Infinite loops detected

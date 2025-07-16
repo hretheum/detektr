@@ -1,164 +1,202 @@
 # Faza 1 / Zadanie 3: Setup repozytorium Git z podstawową strukturą
 
 ## Cel zadania
+
 Utworzenie kompletnej struktury repozytorium zgodnej z Clean Architecture, konfiguracja CI/CD oraz pre-commit hooks dla zachowania jakości kodu od samego początku projektu.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Weryfikacja dostępu do Git i GitHub**
    - **Metryka**: Git zainstalowany, SSH keys skonfigurowane
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      git --version && ssh -T git@github.com
      # Powinno zwrócić wersję git i "Hi username! You've successfully authenticated"
      ```
+
    - **Czas**: 0.5h
 
 2. **[x] Weryfikacja narzędzi developerskich**
    - **Metryka**: Python 3.11+, pre-commit, poetry/pip-tools zainstalowane
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      python --version | grep -E "3\.(11|12)" && pre-commit --version
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Struktura katalogów Clean Architecture
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie głównej struktury katalogów**
    - **Metryka**: Struktura zgodna z DDD i Clean Architecture utworzona
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      tree -d -L 3 | grep -E "(domain|infrastructure|application|interfaces)" | wc -l
      # Powinno zwrócić >= 20 katalogów
      ```
+
    - **Czas**: 1h
 
 2. **[x] Utworzenie struktury dla bounded contexts**
    - **Metryka**: 5 contexts (monitoring, detection, management, automation, integration)
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      ls -1 src/contexts/ | wc -l
      # Powinno zwrócić 5
      ```
+
    - **Czas**: 1.5h
 
-3. **[x] Konfiguracja Python packages z __init__.py**
+3. **[x] Konfiguracja Python packages z **init**.py**
    - **Metryka**: Wszystkie katalogi są prawidłowymi Python packages
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      find src -type d -not -path '*/\.*' -exec test -f {}/__init__.py \; -print | wc -l
      # Liczba powinna odpowiadać liczbie katalogów w src/
      ```
+
    - **Czas**: 0.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Struktura katalogów zgodna z wzorcem z architektura_systemu.md
 - Każdy bounded context ma layers: domain, application, infrastructure
 - Python imports działają poprawnie między modułami
 
 ### Blok 2: Konfiguracja CI/CD z GitHub Actions
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie workflow dla CI**
    - **Metryka**: .github/workflows/ci.yml z test, lint, type-check jobs
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      gh workflow list | grep "CI"
      # Powinno pokazać workflow CI
      ```
+
    - **Czas**: 1.5h
 
 2. **[x] Konfiguracja Docker build w CI**
    - **Metryka**: Build wszystkich serwisów w CI pipeline
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Po pushu do GitHub
      gh run list --limit 1 | grep "CI.*completed.*success"
      ```
+
    - **Czas**: 1h
 
 3. **[x] Setup code coverage i quality gates**
    - **Metryka**: Coverage >80% required, codecov integration
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # W .github/workflows/ci.yml
      grep -E "(codecov|coverage)" .github/workflows/ci.yml
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - CI pipeline przechodzi dla initial commit
 - Coverage report generowany automatycznie
 - Build time <5 minut
 
 ### Blok 3: Pre-commit hooks i code quality
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Konfiguracja pre-commit z Python linters**
    - **Metryka**: black, isort, flake8, mypy skonfigurowane
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      pre-commit run --all-files
      # Wszystkie hooki powinny przejść
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Dodanie security scanning (bandit, safety)**
    - **Metryka**: Skanowanie security w pre-commit
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      pre-commit run bandit --all-files && pre-commit run safety --all-files
      ```
+
    - **Czas**: 0.5h
 
 3. **[ ] Konfiguracja commit message validation**
    - **Metryka**: Conventional commits enforced
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      echo "test: bad message" | commitlint
      # Powinno zwrócić błąd
      ```
+
    - **Czas**: 0.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Pre-commit automatycznie instaluje się przy pierwszym commicie
 - Wszystkie pliki Python przechodzą linting
 - Commit messages follow conventional format
 
 ### Blok 4: Dokumentacja i tooling setup
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Utworzenie głównych plików dokumentacji**
    - **Metryka**: README.md, CONTRIBUTING.md, ARCHITECTURE.md utworzone
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      ls -1 *.md | grep -E "(README|CONTRIBUTING|ARCHITECTURE)" | wc -l
      # Powinno zwrócić 3
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Setup MkDocs dla dokumentacji**
    - **Metryka**: MkDocs skonfigurowany z material theme
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      mkdocs build && ls -la site/index.html
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Utworzenie Makefile z common tasks**
    - **Metryka**: Make targets dla: test, lint, run, build
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      make help | grep -E "(test|lint|run|build)" | wc -l
      # Powinno zwrócić >= 4
      ```
+
    - **Czas**: 0.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Dokumentacja builduje się bez błędów
 - Makefile upraszcza common operations
 - README zawiera quick start guide

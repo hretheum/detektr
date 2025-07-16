@@ -3,6 +3,7 @@
 ## Założenia Bazowe
 
 ### Parametry Wejściowe
+
 - Liczba kamer: 1-8
 - FPS per kamera: 10
 - Rozdzielczość: 1920x1080 (Full HD)
@@ -69,18 +70,21 @@
 ## Rekomendacje Sprzętowe
 
 ### Minimalne (1-2 kamery)
+
 - CPU: i5 lub Ryzen 5 (4 cores)
 - RAM: 8 GB
 - GPU: GTX 1660 (6GB VRAM)
 - Storage: 256 GB SSD
 
 ### Rekomendowane (4 kamery)
+
 - CPU: i7 lub Ryzen 7 (8 cores)
 - RAM: 16 GB
 - GPU: RTX 3060 (12GB VRAM)
 - Storage: 512 GB SSD
 
 ### Maksymalne (8 kamer)
+
 - CPU: i7/i9 lub Ryzen 9 (16 cores)
 - RAM: 32-64 GB
 - GPU: RTX 4070 Super (12-16GB VRAM)
@@ -113,6 +117,7 @@ iftop -i eth0
 ## Skalowanie Horyzontalne
 
 Przy przekroczeniu limitów:
+
 1. Detection services: scale to 2-3 instances
 2. Database: read replicas
 3. Message queue: cluster mode

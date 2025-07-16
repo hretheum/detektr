@@ -3,6 +3,7 @@
 ## 🚀 Quick Start
 
 1. **Clone & Setup**
+
    ```bash
    git clone git@github.com:hretheum/detektr.git
    cd detektr
@@ -10,6 +11,7 @@
    ```
 
 2. **Configure Secrets**
+
    ```bash
    cp .env.example .env
    # Edit .env with your values
@@ -17,6 +19,7 @@
    ```
 
 3. **Start Development**
+
    ```bash
    make up      # Start all services
    make logs    # View logs
@@ -47,21 +50,25 @@ detektr/
 ### Before Committing
 
 1. **Format Code**
+
    ```bash
    make format
    ```
 
 2. **Run Linters**
+
    ```bash
    make lint
    ```
 
 3. **Run Tests**
+
    ```bash
    make test
    ```
 
 4. **Pre-commit Hooks**
+
    ```bash
    make pre-commit
    ```
@@ -69,6 +76,7 @@ detektr/
 ### Git Workflow
 
 1. Create feature branch from `develop`
+
    ```bash
    git checkout -b feature/your-feature develop
    ```
@@ -76,6 +84,7 @@ detektr/
 2. Make changes following TDD approach
 
 3. Commit with conventional commits:
+
    ```
    feat: add face recognition service
    fix: correct frame tracking ID format
@@ -98,17 +107,20 @@ make test-cov      # With coverage report
 ## 🏗️ Architecture Guidelines
 
 ### Clean Architecture
+
 - **Domain**: Business logic, entities, value objects
 - **Application**: Use cases, DTOs, interfaces
 - **Infrastructure**: External dependencies, databases
 - **Interfaces**: API controllers, CLI commands
 
 ### Domain-Driven Design
+
 - Each bounded context is independent
 - Communicate via events/messages
 - Shared kernel for common types
 
 ### Observability First
+
 - Every service exports metrics
 - Distributed tracing with OpenTelemetry
 - Structured logging with correlation IDs

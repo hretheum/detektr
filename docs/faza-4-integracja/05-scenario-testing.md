@@ -1,41 +1,49 @@
 # Faza 4 / Zadanie 5: Testowanie scenariuszy z pełną widocznością
 
 ## Cel zadania
+
 Utworzyć kompleksowy framework testowania scenariuszy end-to-end z automatyczną weryfikacją i pełną observability każdego testu.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja test fixtures**
    - **Metryka**: Test videos, HA mock ready
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      ls -la /test-fixtures/scenarios/
      # person_at_door.mp4, gesture_stop.mp4, pet_in_kitchen.mp4
      docker ps | grep ha-mock
      # Home Assistant mock running
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Scenario definitions ready**
    - **Metryka**: YAML scenarios defined
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      find /scenarios -name "*.yaml" | wc -l
      # >10 scenario files
      yamllint /scenarios/*.yaml
      # All valid YAML
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Test framework core
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Scenario runner implementation**
    - **Metryka**: Execute scenarios from YAML
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      runner = ScenarioRunner()
      result = runner.run("person_at_door.yaml")
@@ -43,11 +51,13 @@ Utworzyć kompleksowy framework testowania scenariuszy end-to-end z automatyczn�
      assert len(result.steps) > 0
      assert result.trace_id is not None
      ```
+
    - **Czas**: 2.5h
 
 2. **[ ] Assertion framework**
    - **Metryka**: Verify expected outcomes
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # Scenario file
      assertions:
@@ -58,11 +68,13 @@ Utworzyć kompleksowy framework testowania scenariuszy end-to-end z automatyczn�
          entity: "light.entrance"
          state: "on"
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Test isolation mechanism**
    - **Metryka**: Each test runs clean
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Run same test twice
      result1 = runner.run("test.yaml")
@@ -70,29 +82,35 @@ Utworzyć kompleksowy framework testowania scenariuszy end-to-end z automatyczn�
      assert result1.initial_state == result2.initial_state
      assert no_side_effects_detected()
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Framework functional
 - Tests repeatable
 - Assertions comprehensive
 
 ### Blok 2: Scenario implementation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Core scenarios implementation**
    - **Metryka**: 10+ scenarios automated
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      python run_all_scenarios.py
      # Summary: 10/10 passed
      # Each scenario <30s execution
      ```
+
    - **Czas**: 3h
 
 2. **[ ] Edge case scenarios**
    - **Metryka**: Handle failures, timeouts
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Scenarios that should fail
      edge_cases = ["no_person_detected", "ha_timeout", "low_confidence"]
@@ -100,29 +118,35 @@ Utworzyć kompleksowy framework testowania scenariuszy end-to-end z automatyczn�
          result = runner.run(f"{scenario}.yaml")
          assert result.handled_gracefully
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - All scenarios covered
 - Edge cases handled
 - Reliable execution
 
 ### Blok 3: Observability integration
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Test execution dashboard**
    - **Metryka**: Real-time test progress
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # During test run
      curl http://localhost:3000/api/dashboards/test-execution
      # Shows current scenario, step, status
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Test report generation**
    - **Metryka**: HTML reports with traces
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      python generate_test_report.py --run-id latest
      # Creates report.html with:
@@ -130,11 +154,13 @@ Utworzyć kompleksowy framework testowania scenariuszy end-to-end z automatyczn�
      # - Trace links
      # - Performance metrics
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] CI/CD integration**
    - **Metryka**: Tests run on every commit
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # .github/workflows/scenarios.yml
      - name: Run E2E Scenarios
@@ -142,9 +168,11 @@ Utworzyć kompleksowy framework testowania scenariuszy end-to-end z automatyczn�
      - name: Upload results
        uses: actions/upload-artifact@v3
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Full visibility
 - Automated reporting
 - CI/CD ready
@@ -172,7 +200,7 @@ Utworzyć kompleksowy framework testowania scenariuszy end-to-end z automatyczn�
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Full system deployed
   - Test fixtures prepared
 - **Blokuje**: Production confidence
@@ -186,7 +214,7 @@ Utworzyć kompleksowy framework testowania scenariuszy end-to-end z automatyczn�
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Tests blocking deployment
    - False positives >10%
    - Infrastructure issues

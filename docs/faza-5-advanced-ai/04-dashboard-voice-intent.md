@@ -1,142 +1,172 @@
 # Faza 5 / Zadanie 4: Dashboard Voice & Intent Processing
 
 ## Cel zadania
+
 Stworzyć dashboard monitorujący przetwarzanie komend głosowych i rozpoznawanie intencji z metrykami jakości i kosztów API.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja voice/LLM metrics**
    - **Metryka**: Both services export metrics
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl localhost:8006/metrics | grep -E "stt_|whisper_"
      curl localhost:8005/metrics | grep -E "llm_|intent_"
      # Both return relevant metrics
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Cost tracking enabled**
    - **Metryka**: API costs calculated
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from llm_client import get_usage_stats
      stats = get_usage_stats()
      assert "total_cost" in stats
      assert "tokens_used" in stats
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Voice processing panels
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Voice commands timeline**
    - **Metryka**: Show commands over time
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      rate(voice_commands_total[5m])
      # Time series of voice activity
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] WER tracking gauge**
    - **Metryka**: Real-time accuracy metric
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```javascript
      panel.targets[0].expr === "avg(stt_wer_score)"
      panel.fieldConfig.defaults.thresholds.steps[0].value === 0.1
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Language distribution**
    - **Metryka**: Commands by language
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      sum by (language) (voice_commands_total)
      # Shows pl, en, etc.
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Voice metrics visible
 - Quality tracked
 - Patterns clear
 
 ### Blok 2: Intent processing panels
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Intent recognition rate**
    - **Metryka**: Success/failure breakdown
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
-     rate(intent_recognition_success[5m]) / 
+     rate(intent_recognition_success[5m]) /
      rate(intent_recognition_total[5m])
      # Should be >0.95
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] API latency heatmap**
    - **Metryka**: LLM response times
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Heatmap shows time-of-day patterns
      curl http://localhost:3000/api/panels/llm-latency-heatmap
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] Intent type distribution**
    - **Metryka**: Most common intents
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      topk(10, sum by (intent_type) (
        intent_recognized_total
      ))
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Intent metrics complete
 - Performance visible
 - Usage patterns clear
 
 ### Blok 3: Cost tracking
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] API cost gauge**
    - **Metryka**: Real-time cost tracking
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      llm_api_cost_dollars_total
      # Shows cumulative cost
      increase(llm_api_cost_dollars_total[24h])
      # Daily cost
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Cost breakdown table**
    - **Metryka**: Cost by model/service
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```javascript
      // Table shows cost breakdown
      panel.targets[0].format === "table"
      panel.transformations[0].id === "groupBy"
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] Budget alerts**
    - **Metryka**: Alert before limit
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      - alert: APIBudgetWarning
        expr: llm_api_cost_dollars_total > 40
        annotations:
          summary: "API costs at ${{ $value }}, budget $50"
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Costs tracked
 - Budgets monitored
 - Alerts configured
@@ -164,7 +194,7 @@ Stworzyć dashboard monitorujący przetwarzanie komend głosowych i rozpoznawani
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Voice/LLM services running
   - Metrics exported
 - **Blokuje**: Cost optimization
@@ -178,7 +208,7 @@ Stworzyć dashboard monitorujący przetwarzanie komend głosowych i rozpoznawani
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Dashboard errors
    - Cost data wrong
    - Queries too slow

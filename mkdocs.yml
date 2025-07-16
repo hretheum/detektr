@@ -110,43 +110,43 @@ plugins:
 
 nav:
   - Home:
-    - Overview: index.md
-    - Quick Start: quickstart.md
-    - Architecture: architecture.md
+      - Overview: index.md
+      - Quick Start: quickstart.md
+      - Architecture: architecture.md
   - Requirements:
-    - Overview: requirements/index.md
-    - Functional: requirements/functional-requirements.md
-    - Non-Functional: requirements/non-functional-requirements.md
-    - Use Cases: requirements/use-cases.md
-    - Actors: requirements/actors.md
+      - Overview: requirements/index.md
+      - Functional: requirements/functional-requirements.md
+      - Non-Functional: requirements/non-functional-requirements.md
+      - Use Cases: requirements/use-cases.md
+      - Actors: requirements/actors.md
   - Development:
-    - Getting Started: development/getting-started.md
-    - Environment Setup: development/environment.md
-    - Contributing: CONTRIBUTING.md
-    - Style Guide: style-guide.md
+      - Getting Started: development/getting-started.md
+      - Environment Setup: development/environment.md
+      - Contributing: CONTRIBUTING.md
+      - Style Guide: style-guide.md
   - Architecture:
-    - System Overview: architecture/overview.md
-    - Component Design: architecture/components.md
-    - Data Flow: architecture/data-flow.md
-    - Deployment: architecture/deployment.md
+      - System Overview: architecture/overview.md
+      - Component Design: architecture/components.md
+      - Data Flow: architecture/data-flow.md
+      - Deployment: architecture/deployment.md
   - API Reference:
-    - Overview: api/overview.md
-    - Authentication: api/authentication.md
-    - Detection Services: api/detection.md
-    - Automation: api/automation.md
+      - Overview: api/overview.md
+      - Authentication: api/authentication.md
+      - Detection Services: api/detection.md
+      - Automation: api/automation.md
   - Operations:
-    - Installation: operations/installation.md
-    - Configuration: operations/configuration.md
-    - Monitoring: operations/monitoring.md
-    - Troubleshooting: operations/troubleshooting.md
+      - Installation: operations/installation.md
+      - Configuration: operations/configuration.md
+      - Monitoring: operations/monitoring.md
+      - Troubleshooting: operations/troubleshooting.md
   - Phase Documentation:
-    - Phase 0 - Documentation: faza-0-dokumentacja/
-    - Phase 1 - Foundation: faza-1-fundament/
-    - Phase 2 - Acquisition: faza-2-akwizycja/
-    - Phase 3 - Detection: faza-3-detekcja/
-    - Phase 4 - Integration: faza-4-integracja/
-    - Phase 5 - LLM: faza-5-llm/
-    - Phase 6 - Optimization: faza-6-optymalizacja/
+      - Phase 0 - Documentation: faza-0-dokumentacja/
+      - Phase 1 - Foundation: faza-1-fundament/
+      - Phase 2 - Acquisition: faza-2-akwizycja/
+      - Phase 3 - Detection: faza-3-detekcja/
+      - Phase 4 - Integration: faza-4-integracja/
+      - Phase 5 - LLM: faza-5-llm/
+      - Phase 6 - Optimization: faza-6-optymalizacja/
 
 extra:
   version:

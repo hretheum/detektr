@@ -4,15 +4,15 @@ Metrics architecture adopted from eofek/detektor with abstraction layer pattern.
 
 ## Pattern Overview
 
-Based on proven approach from [eofek/detektor analysis](../../../docs/analysis/eofek-detektor-analysis.md):  
-**Source**: https://github.com/eofek/detektor (repozytorium autorskie)
+Based on proven approach from [eofek/detektor analysis](../../../docs/analysis/eofek-detektor-analysis.md):
+**Source**: <https://github.com/eofek/detektor> (repozytorium autorskie)
 
 ```python
 # Metrics adapter pattern (from eofek/detektor)
 class DetectionMetrics:
     def increment_detections(self):
         detection_metrics.increment_detections()
-    
+
     def observe_detection_time(self, time):
         detection_metrics.observe_detection_time(time)
 ```
@@ -20,8 +20,9 @@ class DetectionMetrics:
 ## Key Metrics
 
 From eofek/detektor analysis:
+
 - `frames_processed`: Counter
-- `frames_dropped`: Counter  
+- `frames_dropped`: Counter
 - `processing_delay`: Histogram
 - `gpu_usage`: Gauge
 - `detection_time`: Histogram

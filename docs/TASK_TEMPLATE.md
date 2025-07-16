@@ -3,7 +3,7 @@
 ```markdown
 # Faza X / Zadanie Y: [Nazwa zadania]
 
-<!-- 
+<!--
 LLM PROMPT dla całego zadania:
 Analizując to zadanie, upewnij się że:
 1. Cel jest jasny i biznesowo uzasadniony
@@ -16,7 +16,7 @@ Analizując to zadanie, upewnij się że:
 [1-2 zdania opisujące co chcemy osiągnąć i dlaczego to ważne dla projektu]
 
 ## Blok 0: Prerequisites check
-<!-- 
+<!--
 LLM PROMPT: Ten blok jest OBOWIĄZKOWY dla każdego zadania.
 Sprawdź czy wszystkie zależności są spełnione ZANIM rozpoczniesz główne zadanie.
 -->
@@ -35,7 +35,7 @@ Sprawdź czy wszystkie zależności są spełnione ZANIM rozpoczniesz główne z
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: [Nazwa logicznej grupy zadań]
-<!-- 
+<!--
 LLM PROMPT dla bloku:
 Dekomponując ten blok:
 1. Każde zadanie atomowe musi być wykonalne w MAX 3h
@@ -46,7 +46,7 @@ Dekomponując ten blok:
 
 #### Zadania atomowe:
 1. **[ ] [Nazwa zadania atomowego]**
-   <!-- 
+   <!--
    LLM PROMPT dla zadania atomowego:
    To zadanie musi:
    - Mieć JEDEN konkretny deliverable
@@ -55,7 +55,7 @@ Dekomponując ten blok:
    - NIE wymagać czekania na zewnętrzne zależności
    -->
    - **Metryka**: [Konkretna liczba/procent/stan - np. "Response time <100ms w 95% przypadków"]
-   - **Walidacja**: 
+   - **Walidacja**:
      ```bash
      # LLM PROMPT: Podaj DOKŁADNĄ komendę lub skrypt
      # który JEDNOZNACZNIE potwierdzi osiągnięcie metryki
@@ -64,12 +64,12 @@ Dekomponując ten blok:
    - **Czas**: [MAX 3h, realistically estimated]
 
 2. **[ ] [Nazwa zadania atomowego]**
-   - **Metryka**: 
-   - **Walidacja**: 
-   - **Czas**: 
+   - **Metryka**:
+   - **Walidacja**:
+   - **Czas**:
 
 #### Metryki sukcesu bloku:
-<!-- 
+<!--
 LLM PROMPT dla metryk bloku:
 Metryki muszą potwierdzać że blok osiągnął swój cel.
 Powinny być:
@@ -90,7 +90,7 @@ Powinny być:
 [...]
 
 ## Całościowe metryki sukcesu zadania
-<!-- 
+<!--
 LLM PROMPT dla metryk całościowych:
 Te metryki muszą:
 1. Potwierdzać osiągnięcie celu biznesowego zadania
@@ -104,7 +104,7 @@ Te metryki muszą:
 3. **[Kategoria]**: [Opis metryki z wartością docelową]
 
 ## Deliverables
-<!-- 
+<!--
 LLM PROMPT: Lista WSZYSTKICH artefaktów które powstaną.
 Każdy deliverable musi:
 1. Mieć konkretną ścieżkę w filesystem
@@ -117,7 +117,7 @@ Każdy deliverable musi:
 3. [...]
 
 ## Narzędzia
-<!-- 
+<!--
 LLM PROMPT: Wymień TYLKO narzędzia faktycznie używane w zadaniach.
 Dla każdego podaj:
 1. Dokładną nazwę i wersję (jeśli istotna)
@@ -134,7 +134,7 @@ Dla każdego podaj:
 - **Blokuje**: [Zadania które czekają na to zadanie]
 
 ## Ryzyka i mitigacje
-<!-- 
+<!--
 LLM PROMPT dla ryzyk:
 Identyfikuj REALNE ryzyka które mogą wystąpić podczas realizacji.
 Dla każdego ryzyka:
@@ -149,7 +149,7 @@ Dla każdego ryzyka:
 | [Opis] | Niskie/Średnie/Wysokie | Niski/Średni/Wysoki | [Jak zapobiec] | [Jak wcześnie wykryć] |
 
 ## Rollback Plan
-<!-- 
+<!--
 LLM PROMPT: KAŻDE zadanie musi mieć plan cofnięcia zmian.
 Opisz:
 1. Jak wykryć że coś poszło źle
@@ -171,7 +171,7 @@ Po ukończeniu tego zadania, przejdź do:
 
 ## Instrukcje dla LLM przy wypełnianiu szablonu
 
-### KRYTYCZNE ZASADY:
+### KRYTYCZNE ZASADY
 
 1. **Reguła 3h**: ŻADNE zadanie atomowe nie może trwać >3h
 2. **Reguła jednego outcome**: Zadanie atomowe = jeden deliverable
@@ -179,7 +179,7 @@ Po ukończeniu tego zadania, przejdź do:
 4. **Reguła kompletności**: Suma zadań atomowych = 100% zakresu bloku
 5. **Reguła wykonalności**: Zadanie może wykonać jedna osoba bez przerw
 
-### Struktura dekompozycji:
+### Struktura dekompozycji
 
 ```
 Zadanie główne (dni/tygodnie)
@@ -187,48 +187,53 @@ Zadanie główne (dni/tygodnie)
 └── Blok zadań (4-8h)
     └── Zadanie atomowe (1-3h)
         └── Konkretna czynność
-        └── Mierzalna metryka  
+        └── Mierzalna metryka
         └── Automatyczna walidacja
 ```
 
-### Przykłady dobrych zadań atomowych:
+### Przykłady dobrych zadań atomowych
 
 ✅ DOBRE:
+
 - "Utworzenie klasy DatabaseConnection z connection pooling"
 - "Napisanie unit testów dla modułu authentication (80% coverage)"
 - "Konfiguracja nginx reverse proxy dla /api/* endpoints"
 
 ❌ ZŁE:
+
 - "Implementacja backendu" (za ogólne)
-- "Testowanie systemu" (za szerokie)  
+- "Testowanie systemu" (za szerokie)
 - "Optymalizacja wydajności" (niemierzalne)
 
-### Szacowanie czasu:
+### Szacowanie czasu
 
 1. Oszacuj optymistycznie
-2. Dodaj 50% na debugging  
+2. Dodaj 50% na debugging
 3. Dodaj 20% na dokumentację
 4. Zaokrąglij w górę do 0.5h
 5. Jeśli >3h, podziel zadanie
 
-### Tworzenie metryk:
+### Tworzenie metryk
 
 Dobra metryka odpowiada na pytania:
+
 - Co dokładnie mierzymy? (np. "response time")
 - Jaka jest wartość docelowa? (np. "<100ms")
 - W jakich warunkach? (np. "dla 95% requestów")
 - Jak zmierzymy? (np. "k6 load test wynik")
 
-### Prompty do copy-paste:
+### Prompty do copy-paste
 
 Gdy tworzysz blok zadań, użyj:
+
 ```
-Zdekomponuj [nazwa bloku] na zadania atomowe (max 3h każde), 
-gdzie każde zadanie ma jeden mierzalny output i może być 
+Zdekomponuj [nazwa bloku] na zadania atomowe (max 3h każde),
+gdzie każde zadanie ma jeden mierzalny output i może być
 wykonane bez przerw przez jedną osobę.
 ```
 
 Gdy tworzysz metrykę, użyj:
+
 ```
 Stwórz mierzalną metrykę dla [zadanie], która ma:
 - konkretną wartość docelową z jednostką

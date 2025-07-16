@@ -69,7 +69,7 @@ jobs:
         run: |
           # Build all services defined in docker-compose
           docker-compose build
-          
+
           # Tag and push with version
           VERSION=${GITHUB_REF#refs/tags/}
           for service in $(docker-compose config --services); do

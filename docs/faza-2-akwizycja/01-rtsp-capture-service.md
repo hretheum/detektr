@@ -1,6 +1,6 @@
 # Faza 2 / Zadanie 1: Serwis RTSP Stream Capture
 
-<!-- 
+<!--
 LLM CONTEXT PROMPT:
 RTSP capture service bazuje na eofek/detektor stream-forwarder patterns (docs/analysis/eofek-detektor-analysis.md):
 - Docker organization pattern z metrics export
@@ -12,6 +12,7 @@ RTSP capture service bazuje na eofek/detektor stream-forwarder patterns (docs/an
 -->
 
 ## Cel zadania
+
 Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z automatycznym reconnect, frame buffering i metrykami wydajności od początku.
 
 **Pattern Source**: Adoptuje eofek/detektor stream-forwarder architecture z uproszczeniami.
@@ -19,7 +20,9 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza protokołu RTSP i wybór biblioteki**
    - **Metryka**: Wybrana biblioteka obsługuje H.264/H.265, reconnect
    - **Walidacja**: Proof of concept z test stream
@@ -32,7 +35,8 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 
 ### Blok 1: Implementacja core RTSP client
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Testy dla RTSP connection manager**
    - **Metryka**: 100% coverage dla connection logic
    - **Walidacja**: `pytest tests/test_rtsp_connection.py -v`
@@ -50,7 +54,8 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 
 ### Blok 2: Buffering i queue management
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Testy dla frame buffer**
    - **Metryka**: Tests dla overflow, underflow, threading
    - **Walidacja**: `pytest tests/test_frame_buffer.py --cov`
@@ -68,7 +73,8 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 
 ### Blok 3: Observability i monitoring
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] OpenTelemetry instrumentation**
    - **Metryka**: Trace per frame, span per operation
    - **Walidacja**: Jaeger pokazuje full trace
@@ -86,7 +92,8 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 
 ### Blok 4: Containerization i deployment
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Multi-stage Dockerfile z optimization**
    - **Metryka**: Image size <100MB
    - **Walidacja**: `docker images | grep rtsp-capture`

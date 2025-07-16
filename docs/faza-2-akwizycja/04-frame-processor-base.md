@@ -1,12 +1,15 @@
 # Faza 2 / Zadanie 4: Frame Processor Base Service
 
 ## Cel zadania
+
 Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwisów AI, z wbudowanym tracingiem, metrykami i obsługą błędów.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Design pattern dla processor pipeline**
    - **Metryka**: Extensible architecture design
    - **Walidacja**: Architecture review checklist
@@ -19,7 +22,8 @@ Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwis
 
 ### Blok 1: Base processor abstraction
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Abstract base processor class**
    - **Metryka**: 100% coverage base functionality
    - **Walidacja**: `pytest tests/test_base_processor.py`
@@ -37,7 +41,8 @@ Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwis
 
 ### Blok 2: Observability integration
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Automatic OpenTelemetry tracing**
    - **Metryka**: Every method traced
    - **Walidacja**: Jaeger shows full traces
@@ -55,7 +60,8 @@ Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwis
 
 ### Blok 3: Frame lifecycle management
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Frame state machine**
    - **Metryka**: State transitions tracked
    - **Walidacja**: State diagram validation
@@ -73,7 +79,8 @@ Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwis
 
 ### Blok 4: Testing framework
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Test fixtures dla frame processing**
    - **Metryka**: Reusable test data
    - **Walidacja**: Fixture coverage

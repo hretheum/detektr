@@ -1,6 +1,6 @@
 # System Detekcji i Automatyzacji Wizyjnej
 
-<!-- 
+<!--
 LLM CONTEXT PROMPT:
 To jest główny dokument architektury systemu detekcji wizyjnej.
 Projekt: Hobbystyczny system rozpoznawania obrazu z kamery IP + automatyzacja Home Assistant
@@ -10,7 +10,7 @@ Fazy: 0-6, każda z zadaniami zdekomponowanymi na bloki i zadania atomowe
 INSPIRACJE: Bazujemy na proven patterns z eofek/detektor (docs/analysis/eofek-detektor-analysis.md):
 - Source: https://github.com/eofek/detektor (repozytorium autorskie - kod dostępny)
 - Metrics architecture pattern z abstraction layer
-- Event-driven communication przez Redis Streams  
+- Event-driven communication przez Redis Streams
 - GPU monitoring patterns
 - Error handling (Circuit Breaker, Adaptive Backoff)
 - Ale UNIKAMY: over-engineering, microservices complexity, external lock-in
@@ -46,23 +46,27 @@ System składa się z następujących głównych komponentów:
 ### 1.2 Komponenty Systemu
 
 #### 1.2.1 Warstwa Akwizycji Obrazu
+
 - **RTSP Stream Capture Service**: Kontener odbierający strumień z kamery IP
 - **Frame Buffer**: Redis/RabbitMQ do kolejkowania klatek do przetwarzania
 - **Metadata Store**: PostgreSQL/TimescaleDB do przechowywania metadanych klatek
 
 #### 1.2.2 Warstwa Przetwarzania AI
+
 - **Face Recognition Service**: MediaPipe Face Detection + InsightFace embeddings (proven pattern z eofek/detektor)
 - **Object Detection Service**: YOLO v8 (rozszerzenie względem eofek/detektor)
 - **Gesture Detection Service**: MediaPipe Hands + custom gesture recognition
 - **Voice Processing Service**: Whisper (STT) + TTS
 
 #### 1.2.3 Warstwa Integracji
+
 - **Event Bus**: Redis Streams z event acknowledgement (pattern z eofek/detektor)
 - **Intent Recognition Service**: Połączenie z LLM (OpenAI/Anthropic)
 - **Home Assistant Bridge**: MQTT/REST API (rozszerzenie - czego brakuje w eofek/detektor)
 - **Metrics Adapter**: Abstraction layer dla Prometheus (adoptowane z eofek/detektor)
 
 #### 1.2.4 Warstwa Observability
+
 - **Distributed Tracing**: Jaeger
 - **Metrics**: Prometheus + Grafana
 - **Logging**: ELK Stack (Elasticsearch, Logstash, Kibana)
@@ -83,37 +87,37 @@ services:
       - FRAME_RATE=10
     volumes:
       - frame-storage:/data/frames
-    
+
   # Kolejka
   redis:
     image: redis:alpine
-    
+
   # Baza danych
   postgres:
     image: timescale/timescaledb:latest-pg15
-    
+
   # AI Services
   face-recognition:
     build: ./services/face-recognition
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
-      
+
   gesture-detection:
     build: ./services/gesture-detection
     runtime: nvidia
-    
+
   # Integracja
   mqtt-broker:
     image: eclipse-mosquitto
-    
+
   # Observability
   jaeger:
     image: jaegertracing/all-in-one
-    
+
   prometheus:
     image: prom/prometheus
-    
+
   grafana:
     image: grafana/grafana
 ```
@@ -140,7 +144,7 @@ class BaseService:
         self.tracer = trace.get_tracer(service_name)
         self.meter = metrics.get_meter(service_name)
         self.logger = self._setup_logging(service_name)
-        
+
         # Automatyczne metryki
         self.request_counter = self.meter.create_counter(
             f"{service_name}_requests_total"
@@ -148,7 +152,7 @@ class BaseService:
         self.latency_histogram = self.meter.create_histogram(
             f"{service_name}_latency_seconds"
         )
-        
+
     @traced  # Decorator automatycznie dodający span
     async def process_frame(self, frame_id: str):
         # Logika przetwarzania z automatycznym tracingiem
@@ -158,11 +162,13 @@ class BaseService:
 ### 1.5 Tracking Klatek
 
 Każda klatka otrzymuje unikalny UUID przy wejściu do systemu:
+
 ```
 frame_id: {timestamp}_{camera_id}_{sequence_number}
 ```
 
 Metadane klatki:
+
 - Timestamp akwizycji
 - Status przetwarzania
 - Wykryte obiekty/twarze/gesty
@@ -171,7 +177,7 @@ Metadane klatki:
 
 ## 2. Etapy Realizacji Projektu
 
-<!-- 
+<!--
 LLM NAVIGATION PROMPT:
 Każda faza ma zadania z linkami do dekompozycji.
 Status projektu sprawdź w:
@@ -196,11 +202,13 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - 100% wymagań niefunkcjonalnych zmapowanych
      - Macierz śledzenia wymagań utworzona
    - **Walidacja**:
+
      ```bash
      # Sprawdzenie kompletności
      grep -c "^- \*\*RF[0-9]\{3\}" docs/requirements/functional-requirements.md
      # Powinno zwrócić ≥20
      ```
+
    - **Sukces**: Wszystkie stakeholders zaakceptowali wymagania
    - **[Szczegóły →](docs/faza-0-dokumentacja/01-analiza-wymagan.md)**
 
@@ -210,10 +218,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - CI/CD pipeline skonfigurowany
      - Pre-commit hooks działają
    - **Walidacja**:
+
      ```bash
      pre-commit run --all-files
      gh workflow list
      ```
+
    - **Sukces**: Pierwszy commit przechodzi przez CI
    - **[Szczegóły →](docs/faza-0-dokumentacja/02-struktura-projektu.md)**
 
@@ -223,10 +233,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Każde zadanie ma 3-7 zadań atomowych
      - Wszystkie mają metryki i walidację
    - **Walidacja**:
+
      ```bash
      find docs/faza-* -name "*.md" | wc -l
      # Powinno zwrócić ≥40 plików
      ```
+
    - **Sukces**: Każde zadanie ma dokument z dekompozycją
    - **[Szczegóły →](docs/faza-0-dokumentacja/03-dekompozycja-zadan.md)**
 
@@ -236,10 +248,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Remote development przez SSH działa
      - GPU forwarding skonfigurowany
    - **Walidacja**:
+
      ```bash
      docker run --rm hello-world
      ssh ubuntu-server "nvidia-smi"
      ```
+
    - **Sukces**: Można developować z Mac'a na Ubuntu
    - **[Szczegóły →](docs/faza-0-dokumentacja/04-srodowisko-dev.md)**
 
@@ -249,10 +263,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Style guide utworzony
      - Automated docs generation działa
    - **Walidacja**:
+
      ```bash
      mkdocs build
      vale docs/ # linter dokumentacji
      ```
+
    - **Sukces**: Dokumentacja generuje się automatycznie
    - **[Szczegóły →](docs/faza-0-dokumentacja/05-szablon-dokumentacji.md)**
 
@@ -279,10 +295,10 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **[Szczegóły →](docs/faza-1-fundament/03-git-repository-setup.md)**
 
 4. **Deploy stack observability: Jaeger, Prometheus, Grafana, Loki**
-   - **Metryki**: 
-     - Jaeger UI: http://localhost:16686
-     - Prometheus: http://localhost:9090
-     - Grafana: http://localhost:3000
+   - **Metryki**:
+     - Jaeger UI: <http://localhost:16686>
+     - Prometheus: <http://localhost:9090>
+     - Grafana: <http://localhost:3000>
      - Loki query: `{job="detektor"}`
    - **Walidacja**: `curl -s http://localhost:9090/-/healthy | grep "Prometheus Server is Healthy"`
    - **Sukces**: Wszystkie 4 UI dostępne, health check OK
@@ -311,15 +327,17 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 #### Zadania i Metryki
 
 1. **Implementacja RTSP capture service z OpenTelemetry**
-   - **Metryki**: 
+   - **Metryki**:
      - FPS capture rate: 10-30 fps
      - Frame loss: <0.1%
      - Latency: <50ms
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl http://localhost:8001/metrics | grep rtsp_frames_captured_total
      # Trace w Jaeger: service="rtsp-capture" operation="capture_frame"
      ```
+
    - **Sukces**: Stable 10+ FPS, traces pokazują każdą klatkę
    - **[Szczegóły →](docs/faza-2-akwizycja/01-rtsp-capture-service.md)**
 
@@ -329,10 +347,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Message throughput: >100 msg/s
      - Redis memory: <2GB
    - **Walidacja**:
+
      ```bash
      redis-cli INFO stats | grep instantaneous_ops_per_sec
      curl http://localhost:15692/metrics | grep rabbitmq_queue_messages
      ```
+
    - **Sukces**: Prometheus scrape działa, metryki widoczne
    - **[Szczegóły →](docs/faza-2-akwizycja/02-redis-rabbitmq-config.md)**
 
@@ -342,21 +362,25 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Query latency p99: <100ms
      - Hypertable compression: >10:1
    - **Walidacja**:
+
      ```sql
      SELECT * FROM timescaledb_information.hypertables;
      SELECT * FROM pg_stat_activity WHERE state = 'active';
      ```
+
    - **Sukces**: Hypertable utworzona, continuous aggregates działają
    - **[Szczegóły →](docs/faza-2-akwizycja/03-postgresql-timescale.md)**
 
 4. **Frame tracking z distributed tracing od wejścia**
    - **Metryka**: Każda klatka ma trace_id i span przez cały pipeline
    - **Walidacja**:
+
      ```python
      # Test script sprawdzający frame metadata
      assert frame.trace_id is not None
      assert len(frame.processing_spans) > 0
      ```
+
    - **Sukces**: 100% klatek ma kompletny trace
    - **[Szczegóły →](docs/faza-2-akwizycja/04-frame-tracking.md)**
 
@@ -389,10 +413,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Inference time: <100ms/frame
      - GPU utilization: 40-80%
    - **Walidacja**:
+
      ```bash
      pytest tests/test_face_recognition.py --benchmark
      nvidia-smi dmon -s um -i 0 # GPU monitoring
      ```
+
    - **Sukces**: mAP >0.95, p99 latency <100ms
    - **[Szczegóły →](docs/faza-3-ai-services/01-face-recognition-service.md)**
 
@@ -402,11 +428,13 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - FPS: >10 na 1080p
      - Memory usage: <4GB VRAM
    - **Walidacja**:
+
      ```python
      # Benchmark script
      results = model.val(data='test_dataset.yaml')
      print(f"mAP: {results.box.map}")
      ```
+
    - **Sukces**: Detects persons, animals, vehicles reliably
    - **[Szczegóły →](docs/faza-3-ai-services/02-object-detection.md)**
 
@@ -416,10 +444,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Latency p99: <10ms
      - Partition lag: <100
    - **Walidacja**:
+
      ```bash
      kafka-run-class kafka.tools.ConsumerOffsetChecker
      nats-top -s localhost:8222
      ```
+
    - **Sukces**: Zero message loss pod load testem
    - **[Szczegóły →](docs/faza-3-ai-services/03-event-bus-setup.md)**
 
@@ -436,10 +466,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 5. **Trace: pełny flow od klatki do wyniku AI**
    - **Metryka**: End-to-end trace pokazuje wszystkie kroki
    - **Walidacja**:
+
      ```
      Jaeger: frame_capture → queue → ai_inference → result_publish
      Each span has: duration, GPU metrics, result count
      ```
+
    - **Sukces**: <5% traces z missing spans
    - **[Szczegóły →](docs/faza-3-ai-services/05-end-to-end-tracing.md)**
 
@@ -462,10 +494,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Publish latency: <50ms
      - Active subscriptions: correct count
    - **Walidacja**:
+
      ```bash
      mosquitto_sub -h localhost -t "detektor/#" -v
      curl http://localhost:9090/metrics | grep mqtt_messages_published_total
      ```
+
    - **Sukces**: Wszystkie eventy docierają do HA
    - **[Szczegóły →](docs/faza-4-integracja/01-mqtt-bridge.md)**
 
@@ -475,11 +509,13 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Action execution time: <500ms
      - Retry rate: <5%
    - **Walidacja**:
+
      ```python
      # Test HA integration
      response = ha_client.call_service('light.turn_on', entity_id='light.living_room')
      assert response.status == 'success'
      ```
+
    - **Sukces**: Trace pokazuje: detection → decision → HA call → result
    - **[Szczegóły →](docs/faza-4-integracja/02-ha-bridge-service.md)**
 
@@ -496,18 +532,20 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 4. **Trace: od detekcji do wykonania automatyzacji**
    - **Metryka**: Complete trace z wszystkimi krokami
    - **Walidacja**:
+
      ```
-     Trace path: object_detected → intent_recognized → 
-                 automation_triggered → ha_service_called → 
+     Trace path: object_detected → intent_recognized →
+                 automation_triggered → ha_service_called →
                  action_completed
      ```
+
    - **Sukces**: E2E latency <2s w 95% przypadków
    - **[Szczegóły →](docs/faza-4-integracja/04-automation-tracing.md)**
 
 5. **Testowanie scenariuszy z pełną widocznością**
    - **Scenariusze**:
      - Person at door → notification
-     - Gesture stop → turn off music  
+     - Gesture stop → turn off music
      - Pet in kitchen → alert
    - **Walidacja**: Automated test suite z assertions
    - **Sukces**: 10/10 scenariuszy działa poprawnie
@@ -523,12 +561,14 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Processing latency: <150ms
      - False positive rate: <5%
    - **Walidacja**:
+
      ```python
      # Test gesture recognition
      gestures = ['stop', 'thumbs_up', 'wave', 'point', 'peace']
      accuracy = test_gesture_model(test_dataset, gestures)
      assert accuracy > 0.9
      ```
+
    - **Sukces**: MediaPipe tracks 21 hand landmarks reliably
    - **[Szczegóły →](docs/faza-5-advanced-ai/01-gesture-detection.md)**
 
@@ -538,10 +578,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Processing time: <2s for 10s audio
      - Memory usage: <2GB
    - **Walidacja**:
+
      ```bash
      # Benchmark Whisper
      python benchmark_whisper.py --language pl --model medium
      ```
+
    - **Sukces**: Real-time factor <0.2 (5x faster than real-time)
    - **[Szczegóły →](docs/faza-5-advanced-ai/02-voice-processing.md)**
 
@@ -551,12 +593,14 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - API latency p99: <3s
      - Cost per request: <$0.02
    - **Walidacja**:
+
      ```python
      # Track API usage
      metrics = llm_client.get_usage_stats()
      assert metrics['cost_today'] < daily_budget
      assert metrics['success_rate'] > 0.95
      ```
+
    - **Sukces**: Circuit breaker działa, costs tracked in Grafana
    - **[Szczegóły →](docs/faza-5-advanced-ai/03-llm-integration.md)**
 
@@ -573,10 +617,12 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 5. **End-to-end trace: głos → intent → akcja**
    - **Metryka**: Complete voice command execution trace
    - **Walidacja**:
+
      ```
      Trace: audio_capture → whisper_stt → text_normalization →
             llm_intent → action_mapping → ha_execution
      ```
+
    - **Sukces**: Voice to action <5s w 90% przypadków
    - **[Szczegóły →](docs/faza-5-advanced-ai/05-voice-to-action-trace.md)**
 
@@ -590,13 +636,15 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Baseline performance metrics
      - Resource utilization patterns
    - **Walidacja**:
+
      ```sql
      -- Jaeger slow queries
-     SELECT operation_name, percentile_cont(0.95) 
+     SELECT operation_name, percentile_cont(0.95)
      WITHIN GROUP (ORDER BY duration) as p95_latency
      FROM spans GROUP BY operation_name
      ORDER BY p95_latency DESC LIMIT 10;
      ```
+
    - **Sukces**: Bottleneck analysis report z rekomendacjami
    - **[Szczegóły →](docs/faza-6-optymalizacja/01-bottleneck-analysis.md)**
 
@@ -651,6 +699,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 ## 3. Struktura Dokumentacji
 
 ### 3.1 Dokumentacja Techniczna
+
 ```
 docs/
 ├── requirements/
@@ -680,6 +729,7 @@ docs/
 ### 3.2 Wymagania - Szablon
 
 #### Wymagania Funkcjonalne
+
 - **RF001**: System musi przechwytywać obraz z kamery IP w rozdzielczości min. 1080p
 - **RF002**: System musi wykrywać twarze z dokładnością >95%
 - **RF003**: System musi rozpoznawać podstawowe gesty (min. 5 typów)
@@ -687,6 +737,7 @@ docs/
 - **RF005**: System musi umożliwiać sterowanie głosowe w języku polskim
 
 #### Wymagania Niefunkcjonalne
+
 - **RNF001**: Latencja end-to-end < 2 sekundy
 - **RNF002**: System musi przetwarzać min. 10 FPS
 - **RNF003**: Dostępność systemu > 99%
@@ -694,6 +745,7 @@ docs/
 - **RNF005**: System musi działać na podanej konfiguracji sprzętowej
 
 #### Przypadki Użycia
+
 - **UC001**: Wykrycie osoby przy drzwiach → powiadomienie + zapis
 - **UC002**: Gest "stop" → wyłączenie muzyki
 - **UC003**: Komenda głosowa → wykonanie automatyzacji
@@ -701,7 +753,7 @@ docs/
 
 ## 4. Praktyki Development i Architektura
 
-<!-- 
+<!--
 LLM DEVELOPMENT PROMPT:
 Ta sekcja definiuje HOW we write code w projekcie.
 Kluczowe zasady:
@@ -720,11 +772,13 @@ Przy implementacji nowego serwisu:
 ### 4.1 Test-Driven Development (TDD)
 
 #### Cykl TDD
+
 1. **RED**: Napisz test który nie przechodzi
-2. **GREEN**: Napisz minimalny kod aby test przeszedł  
+2. **GREEN**: Napisz minimalny kod aby test przeszedł
 3. **REFACTOR**: Popraw kod zachowując zielone testy
 
 #### Struktura Testów
+
 ```python
 # tests/unit/test_frame_processor.py
 import pytest
@@ -735,26 +789,27 @@ class TestFrameProcessor:
         # Given
         processor = FrameProcessor()
         frame_data = Mock()
-        
+
         # When
         result = processor.process(frame_data)
-        
+
         # Then
         assert result.frame_id is not None
         assert isinstance(result.frame_id, str)
-        
+
     def test_should_emit_telemetry_on_processing(self):
         # Given
         processor = FrameProcessor()
         with patch('opentelemetry.trace.get_tracer') as mock_tracer:
             # When
             processor.process(Mock())
-            
+
             # Then
             mock_tracer.return_value.start_span.assert_called_once()
 ```
 
 #### Poziomy Testów
+
 - **Unit Tests**: 80% pokrycia, <100ms na test
 - **Integration Tests**: Testowanie granic serwisów
 - **E2E Tests**: Kluczowe scenariusze biznesowe
@@ -763,6 +818,7 @@ class TestFrameProcessor:
 ### 4.2 Wzorce Architektoniczne
 
 #### Clean Architecture / Hexagonal Architecture
+
 ```
 services/
 ├── face-recognition/
@@ -783,11 +839,13 @@ services/
 ```
 
 #### Domain-Driven Design (DDD)
+
 - **Bounded Contexts**: Frame Processing, AI Detection, Home Automation
 - **Aggregates**: Frame, DetectionResult, AutomationAction
 - **Domain Events**: FrameCaptured, ObjectDetected, ActionTriggered
 
 #### SOLID Principles
+
 ```python
 # Single Responsibility
 class FrameCapture:
@@ -810,7 +868,7 @@ class Readable(Protocol):
     def read(self) -> bytes:
         pass
 
-class Writable(Protocol):  
+class Writable(Protocol):
     def write(self, data: bytes) -> None:
         pass
 ```
@@ -818,12 +876,13 @@ class Writable(Protocol):
 ### 4.3 Wzorce Projektowe
 
 #### Repository Pattern
+
 ```python
 class FrameRepository(ABC):
     @abstractmethod
     async def save(self, frame: Frame) -> None:
         pass
-    
+
     @abstractmethod
     async def get_by_id(self, frame_id: str) -> Optional[Frame]:
         pass
@@ -831,7 +890,7 @@ class FrameRepository(ABC):
 class PostgresFrameRepository(FrameRepository):
     def __init__(self, connection_pool):
         self._pool = connection_pool
-        
+
     async def save(self, frame: Frame) -> None:
         # Implementacja z tracingiem
         with self.tracer.start_as_current_span("save_frame"):
@@ -839,6 +898,7 @@ class PostgresFrameRepository(FrameRepository):
 ```
 
 #### Event Sourcing dla Frame Tracking
+
 ```python
 @dataclass
 class FrameEvent:
@@ -846,29 +906,30 @@ class FrameEvent:
     event_type: str
     timestamp: datetime
     data: Dict[str, Any]
-    
+
 class FrameEventStore:
     async def append(self, event: FrameEvent) -> None:
         # Zapisz event z metrykami
         pass
-        
+
     async def get_frame_history(self, frame_id: str) -> List[FrameEvent]:
         # Odtwórz historię klatki
         pass
 ```
 
 #### Circuit Breaker dla External Services
+
 ```python
 class LLMServiceCircuitBreaker:
     def __init__(self, failure_threshold: int = 5):
         self._failure_count = 0
         self._threshold = failure_threshold
         self._is_open = False
-        
+
     async def call_llm(self, prompt: str) -> str:
         if self._is_open:
             raise CircuitOpenError()
-            
+
         try:
             result = await self._llm_client.complete(prompt)
             self._failure_count = 0
@@ -883,6 +944,7 @@ class LLMServiceCircuitBreaker:
 ### 4.4 Praktyki CI/CD
 
 #### Pre-commit Hooks
+
 ```yaml
 # .pre-commit-config.yaml
 repos:
@@ -898,6 +960,7 @@ repos:
 ```
 
 #### GitHub Actions Pipeline
+
 ```yaml
 # .github/workflows/ci.yml
 name: CI
@@ -918,6 +981,7 @@ jobs:
 ### 4.5 Code Quality Standards
 
 #### Type Hints i Static Analysis
+
 ```python
 from typing import Protocol, TypeVar, Generic
 
@@ -932,22 +996,23 @@ def create_pipeline(processors: list[Processor[Frame]]) -> Pipeline[Frame]:
 ```
 
 #### Documentation Standards
+
 ```python
 def detect_objects(frame: Frame, confidence: float = 0.8) -> list[Detection]:
     """
     Detect objects in a given frame.
-    
+
     Args:
         frame: Input frame to process
         confidence: Minimum confidence threshold (0.0-1.0)
-        
+
     Returns:
         List of detected objects with bounding boxes
-        
+
     Raises:
         InvalidFrameError: If frame is corrupted
         ModelNotLoadedError: If detection model not initialized
-        
+
     Example:
         >>> frame = capture_frame()
         >>> detections = detect_objects(frame, confidence=0.9)
@@ -958,6 +1023,7 @@ def detect_objects(frame: Frame, confidence: float = 0.8) -> list[Detection]:
 ## 5. Technologie i Narzędzia
 
 ### Backend
+
 - **Python 3.11+**: Główny język implementacji
 - **FastAPI**: REST API
 - **OpenCV**: Przetwarzanie obrazu
@@ -965,6 +1031,7 @@ def detect_objects(frame: Frame, confidence: float = 0.8) -> list[Detection]:
 - **Celery**: Kolejkowanie zadań
 
 ### AI/ML
+
 - **YOLO v8**: Detekcja obiektów
 - **FaceNet/InsightFace**: Rozpoznawanie twarzy
 - **MediaPipe**: Detekcja gestów
@@ -972,12 +1039,14 @@ def detect_objects(frame: Frame, confidence: float = 0.8) -> list[Detection]:
 - **OpenAI/Anthropic API**: LLM dla intent recognition
 
 ### Infrastructure
+
 - **Docker + Docker Compose**: Konteneryzacja
 - **NVIDIA Container Toolkit**: GPU w kontenerach
 - **Traefik**: Reverse proxy
 - **MinIO**: Object storage dla klatek
 
 ### Observability
+
 - **OpenTelemetry**: Standard dla telemetrii
 - **Jaeger**: Distributed tracing
 - **Prometheus**: Metryki
@@ -995,16 +1064,19 @@ def detect_objects(frame: Frame, confidence: float = 0.8) -> list[Detection]:
 ## 6. Estymacja Kosztów
 
 ### Koszty jednorazowe
+
 - Kamera IP PoE: 300-500 PLN
 - Switch PoE: 200-300 PLN
 - Kable, akcesoria: 100 PLN
 
 ### Koszty miesięczne
+
 - LLM API (OpenAI/Anthropic): ~$20-50/miesiąc
 - Backup storage (opcjonalnie): ~$5/miesiąc
 - Domena + SSL (opcjonalnie): ~$10/rok
 
 ### Infrastruktura
+
 - Serwer Ubuntu: już posiadany
 - Home Assistant: już posiadany
 - Wszystkie usługi self-hosted: $0

@@ -1,6 +1,6 @@
 # Projekt Detektor - Zasady i Wzorce
 
-<!-- 
+<!--
 LLM PROJECT CONTEXT:
 Ten plik jest "pamięcią projektu" - zawiera kluczowe decyzje i wzorce.
 Używaj go gdy:
@@ -19,6 +19,7 @@ WORKFLOW STARTOWY:
 ## 🐍 Python Environment Management
 
 **UŻYWAMY VENV** - Standardowe środowiska wirtualne Python
+
 ```bash
 # Tworzenie środowiska
 python3 -m venv venv
@@ -37,6 +38,7 @@ deactivate
 ```
 
 **DLACZEGO VENV?**
+
 - Wbudowane w Python (nie wymaga dodatkowych narzędzi)
 - Proste i przewidywalne
 - Dobrze wspierane przez IDE
@@ -44,6 +46,7 @@ deactivate
 - Kompatybilne ze wszystkimi systemami
 
 **KONWENCJE:**
+
 - Nazwa środowiska: `venv` (nie `.venv` - chcemy widzieć folder)
 - Dodaj `venv/` do `.gitignore`
 - Używaj `requirements.txt` dla głównych zależności
@@ -53,7 +56,9 @@ deactivate
 ## Główne Zasady Projektu
 
 ### 🚨 ZASADA ZERO - NAJWYŻSZY PRIORYTET 🚨
+
 **NO HARDCODED SECRETS - ABSOLUTNY ZAKAZ**
+
 - NIGDY nie hardkoduj kluczy API, haseł, tokenów, connection strings
 - NIGDY nie używaj sekretów jako fallback/default values
 - WSZYSTKIE sekrety TYLKO w plikach .env (zaszyfrowanych przez SOPS)
@@ -61,13 +66,15 @@ deactivate
 - Przykład ZŁY: `api_key = os.getenv('OPENAI_API_KEY', 'sk-12345...')` ❌
 
 **🔐 UŻYWAMY SOPS - Workflow dla nowych sekretów:**
+
 1. **Edytuj zaszyfrowany .env**: `make secrets-edit` lub `sops .env`
 2. **Dodaj nowy sekret** w edytorze
 3. **Zapisz i zamknij** - SOPS automatycznie zaszyfruje
 4. **Commituj zaszyfrowany .env** - to jest bezpieczne!
 5. **Używaj w kodzie**: `os.getenv('NOWY_SEKRET')`
 
-### Pozostałe zasady (w kolejności ważności):
+### Pozostałe zasady (w kolejności ważności)
+
 1. **Test-Driven Development (TDD)** - ZAWSZE pisz test przed implementacją
 2. **Observability First** - Każdy serwis ma wbudowany tracing i metryki od początku
 3. **Clean Architecture** - Separacja warstw: domain, infrastructure, application
@@ -77,13 +84,14 @@ deactivate
 
 ## Wzorce do Stosowania
 
-<!-- 
+<!--
 LLM IMPLEMENTATION GUIDE:
 Poniższe wzorce są OBOWIĄZKOWE dla każdego nowego komponentu.
 Copy-paste i dostosuj do swojego serwisu.
 -->
 
 ### Architektura Serwisu
+
 ```
 service-name/
 ├── domain/           # Pure business logic
@@ -93,25 +101,30 @@ service-name/
 ```
 
 ### Bazowa Klasa Serwisu
+
 Każdy serwis dziedziczy po `BaseService` z automatycznym observability.
 
 ### Testowanie
+
 - Unit: 80% coverage, <100ms/test
 - Integration: Granice serwisów
 - E2E: Scenariusze biznesowe
 - Performance: Baseline metrics
 
 ### Tracking Klatek
+
 Format ID: `{timestamp}_{camera_id}_{sequence_number}`
 Każda klatka ma pełną historię (Event Sourcing).
 
 ### Wzorce Projektowe
+
 - Repository Pattern dla dostępu do danych
 - Circuit Breaker dla external services
 - Event Sourcing dla frame tracking
 - Dependency Injection
 
 ### Standards
+
 - Type hints everywhere
 - Docstrings w formacie Google
 - Pre-commit hooks (black, flake8, mypy)
@@ -119,7 +132,7 @@ Każda klatka ma pełną historię (Event Sourcing).
 
 ## Komendy do Pamiętania
 
-<!-- 
+<!--
 LLM QUICK REFERENCE:
 Te komendy używaj podczas development i debugging.
 Każdy serwis ma te same porty względne:
@@ -154,11 +167,13 @@ docker exec -it service-name nvidia-smi
 ```
 
 ## Bounded Contexts
+
 1. **Frame Processing** - Capture, buffering, storage
-2. **AI Detection** - Face, gesture, object recognition  
+2. **AI Detection** - Face, gesture, object recognition
 3. **Home Automation** - HA integration, action execution
 
 ## Ważne Decyzje
+
 - GPU tylko dla AI services
 - LLM w chmurze (OpenAI/Anthropic)
 - Lokalne modele: YOLO, MediaPipe, Whisper
@@ -167,28 +182,31 @@ docker exec -it service-name nvidia-smi
 
 ## Patterns z eofek/detektor do Adoptowania
 
-**Reference**: `docs/analysis/eofek-detektor-analysis.md`  
-**Source Repository**: https://github.com/eofek/detektor (autorskie - kod dostępny do wykorzystania)
+**Reference**: `docs/analysis/eofek-detektor-analysis.md`
+**Source Repository**: <https://github.com/eofek/detektor> (autorskie - kod dostępny do wykorzystania)
 
-### ✅ CO ADOPTUJEMY:
+### ✅ CO ADOPTUJEMY
+
 - **Metrics abstraction layer** - ich pattern dla Prometheus
 - **Redis Streams** zamiast Kafka - prostsze, proven solution
 - **GPU monitoring patterns** - comprehensive GPU checks
 - **Docker organization** - env-specific configs
 - **Event acknowledgement** - dla reliability
 
-### 🚫 CZEGO UNIKAMY:
+### 🚫 CZEGO UNIKAMY
+
 - **Over-engineering** - za dużo mikroservisów
 - **External dependencies lock-in** - tight coupling z Telegram/Cloudflare
 - **Complex event flows** - trudne do debug
 
-### 🔧 KONKRETNE IMPLEMENTACJE:
+### 🔧 KONKRETNE IMPLEMENTACJE
+
 ```python
 # Metrics adapter pattern (z eofek/detektor)
 class DetectionMetrics:
     def increment_detections(self):
         detection_metrics.increment_detections()
-    
+
     def observe_detection_time(self, time):
         detection_metrics.observe_detection_time(time)
 
@@ -205,7 +223,8 @@ async def publish_event(self, event_type, data):
 
 ## Zarządzanie Sekretami - PRZYKŁADY
 
-### ✅ DOBRZE - Używanie zmiennych środowiskowych:
+### ✅ DOBRZE - Używanie zmiennych środowiskowych
+
 ```python
 import os
 from pathlib import Path
@@ -225,7 +244,8 @@ if not db_url:
     raise ValueError("DATABASE_URL not set in environment")
 ```
 
-### ❌ ŹLE - Hardkodowane wartości:
+### ❌ ŹLE - Hardkodowane wartości
+
 ```python
 # NIGDY TAK NIE RÓB!
 api_key = "sk-1234567890abcdef"  # ❌
@@ -233,7 +253,8 @@ api_key = os.getenv('OPENAI_API_KEY', 'sk-default')  # ❌
 db_url = "postgresql://user:pass@localhost/db"  # ❌
 ```
 
-### Docker Compose z sekretami:
+### Docker Compose z sekretami
+
 ```yaml
 services:
   app:
@@ -244,7 +265,7 @@ services:
       - .env.decrypted  # Makefile automatycznie odszyfruje
 ```
 
-### 🔐 SOPS - Szybkie komendy:
+### 🔐 SOPS - Szybkie komendy
 
 ```bash
 # Pierwsza konfiguracja (tylko raz)
@@ -268,7 +289,8 @@ make secrets-decrypt  # Tworzy .env.decrypted
 # 3. sops updatekeys .env
 ```
 
-### ⚠️ WAŻNE przy SOPS:
+### ⚠️ WAŻNE przy SOPS
+
 - ✅ Commituj zaszyfrowany `.env` (wygląda jak JSON z encrypted values)
 - ❌ NIGDY nie commituj `.env.decrypted` ani `keys.txt`
 - ✅ Każdy developer ma własny klucz age

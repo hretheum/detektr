@@ -1,6 +1,6 @@
 # Faza 3 / Zadanie 2: Face Recognition z FaceNet/InsightFace
 
-<!-- 
+<!--
 LLM CONTEXT PROMPT:
 Face recognition service bazuje na proven patterns z eofek/detektor (docs/analysis/eofek-detektor-analysis.md):
 - MediaPipe Face Detection jako foundation (już przetestowane)
@@ -12,6 +12,7 @@ Face recognition service bazuje na proven patterns z eofek/detektor (docs/analys
 -->
 
 ## Cel zadania
+
 Zaimplementować system rozpoznawania twarzy dla zarejestrowanych użytkowników, z wysoką dokładnością i odpornością na różne warunki oświetleniowe.
 
 **Pattern Source**: Rozszerza eofek/detektor MediaPipe face detection o embeddings i similarity search.
@@ -19,7 +20,9 @@ Zaimplementować system rozpoznawania twarzy dla zarejestrowanych użytkowników
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza FaceNet vs InsightFace vs DeepFace**
    - **Metryka**: Accuracy, speed, model size comparison
    - **Walidacja**: Benchmark results document
@@ -32,7 +35,8 @@ Zaimplementować system rozpoznawania twarzy dla zarejestrowanych użytkowników
 
 ### Blok 1: Face detection pipeline
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Face detection interface**
    - **Metryka**: Multiple detector support
    - **Walidacja**: `pytest tests/test_face_detection.py`
@@ -50,7 +54,8 @@ Zaimplementować system rozpoznawania twarzy dla zarejestrowanych użytkowników
 
 ### Blok 2: Face embedding i matching
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Face embedding storage**
    - **Metryka**: Vector database interface
    - **Walidacja**: Storage/retrieval tests
@@ -68,7 +73,8 @@ Zaimplementować system rozpoznawania twarzy dla zarejestrowanych użytkowników
 
 ### Blok 3: User management
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Face enrollment API**
    - **Metryka**: Register new users
    - **Walidacja**: Enrollment flow test
@@ -86,7 +92,8 @@ Zaimplementować system rozpoznawania twarzy dla zarejestrowanych użytkowników
 
 ### Blok 4: Privacy i security
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Face data encryption**
    - **Metryka**: Embeddings encrypted at rest
    - **Walidacja**: Encryption verification

@@ -1,129 +1,157 @@
 # Faza 3 / Zadanie 3: Event bus (Kafka/NATS) z pełnym monitoringiem
 
 ## Cel zadania
+
 Wdrożyć skalowalny event bus do komunikacji między serwisami AI z gwarancją dostarczenia i pełną observability.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Porównanie Kafka vs NATS**
    - **Metryka**: Decyzja techniczna z uzasadnieniem
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Test both options
      docker run -d --name test-kafka confluentinc/cp-kafka:latest
      docker run -d --name test-nats nats:latest
      # Document pros/cons
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Weryfikacja zasobów**
    - **Metryka**: 8GB RAM, 20GB disk dla Kafka/Zookeeper
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      free -h | grep Mem | awk '{print $7}'
      df -h /var/lib/docker | tail -1 | awk '{print $4}'
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Event bus deployment
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Kafka cluster setup (3 brokers)**
    - **Metryka**: Cluster healthy, replication working
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      kafka-topics --bootstrap-server localhost:9092 --list
      kafka-broker-api-versions --bootstrap-server localhost:9092
      # All 3 brokers responding
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Topic creation z retention**
    - **Metryka**: Topics dla każdego event type
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      kafka-topics --describe --topic detection-events
      # Partitions: 6, Replication: 2, Retention: 7d
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Schema registry setup**
    - **Metryka**: Avro schemas versioned
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl http://localhost:8081/subjects
      # ["detection-events-value", "frame-events-value"]
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Kafka cluster operational
 - Topics properly configured
 - Schema evolution ready
 
 ### Blok 2: Producer/Consumer libraries
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Event producer z retry logic**
    - **Metryka**: 99.99% delivery guarantee
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      producer = EventProducer(retry_policy=ExponentialBackoff())
      results = [producer.send(event) for _ in range(10000)]
      assert sum(r.success for r in results) >= 9999
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Consumer z exactly-once semantics**
    - **Metryka**: No duplicate processing
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Process same events twice
      processed = consume_with_dedup(events)
      assert len(set(processed)) == len(events)
      ```
+
    - **Czas**: 2.5h
 
 3. **[ ] Dead letter queue handling**
    - **Metryka**: Failed events captured
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Send malformed event
      kafka-console-consumer --topic detection-events-dlq
      # Should show failed event
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Reliable messaging achieved
 - Error handling robust
 - Performance acceptable
 
 ### Blok 3: Monitoring integration
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Kafka exporter setup**
    - **Metryka**: Lag, throughput, errors in Prometheus
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl localhost:9308/metrics | grep kafka_
      # Shows consumer lag, broker metrics
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Event flow dashboard**
    - **Metryka**: Visualize event flow between services
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Grafana shows event rates
      curl http://localhost:3000/api/dashboards/uid/event-flow
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Complete visibility
 - Performance tracked
 - Alerts configured
@@ -163,7 +191,7 @@ Wdrożyć skalowalny event bus do komunikacji między serwisami AI z gwarancją 
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Message loss detected
    - Lag growing unbounded
    - Cluster unstable

@@ -1,17 +1,19 @@
 # Kontekst Projektu Detektor - dla LLM
 
-<!-- 
+<!--
 META LLM PROMPT:
 Ten plik służy do szybkiego wprowadzenia LLM w kontekst projektu.
 Wczytaj go na początku każdej nowej sesji/konwersacji.
 -->
 
 ## O projekcie
-**Nazwa**: System Detekcji i Automatyzacji Wizyjnej  
-**Typ**: Projekt hobbystyczny  
+
+**Nazwa**: System Detekcji i Automatyzacji Wizyjnej
+**Typ**: Projekt hobbystyczny
 **Cel**: Przechwytywanie obrazu z kamery IP + AI rozpoznawanie + automatyzacja Home Assistant
 
 ## Stack technologiczny
+
 - **Serwer**: Ubuntu z GTX 4070 Super (16GB VRAM), i7, 64GB RAM
 - **Infrastruktura**: Docker, Docker Compose, container-first
 - **Języki**: Python 3.11+, FastAPI
@@ -21,21 +23,25 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 - **Message Bus**: Redis Streams (adoptowane z eofek/detektor)
 
 ## Influences - eofek/detektor Analysis
-**Reference**: `docs/analysis/eofek-detektor-analysis.md`  
-**Source Repository**: https://github.com/eofek/detektor (własność autora - kod dostępny do wykorzystania)
+
+**Reference**: `docs/analysis/eofek-detektor-analysis.md`
+**Source Repository**: <https://github.com/eofek/detektor> (własność autora - kod dostępny do wykorzystania)
 
 **ADOPTUJEMY**:
+
 - Metrics abstraction layer pattern
 - Redis Streams event-driven architecture
 - GPU monitoring patterns
 - Docker organization (dev/prod configs)
 
 **UNIKAMY**:
+
 - Over-engineering (za dużo mikroservisów)
 - Complex event flows
 - External dependencies lock-in
 
 ## Struktura dokumentacji
+
 ```
 /architektura_systemu.md     # Główny dokument, fazy projektu
 /CLAUDE.md                   # Zasady i wzorce projektu
@@ -45,6 +51,7 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 ```
 
 ## Workflow wykonywania zadań
+
 1. **Start**: Sprawdź aktualną fazę w `architektura_systemu.md`
 2. **Wybierz zadanie**: Znajdź [ ] checkbox (nieukończone)
 3. **Otwórz dekompozycję**: Kliknij link "Szczegóły →"
@@ -52,6 +59,7 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 5. **Waliduj**: Po każdym bloku - testy, metryki, git commit
 
 ## Kluczowe zasady
+
 - **TDD zawsze** - test first, code second
 - **Observability first** - tracing/metrics od początku
 - **Container first** - wszystko w Dockerze
@@ -59,11 +67,13 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 - **Zadania atomowe** - max 3h na zadanie
 
 ## Bounded Contexts
+
 1. **Frame Processing** - Capture, buffering, storage
 2. **AI Detection** - Face, gesture, object recognition
 3. **Home Automation** - HA integration, action execution
 
 ## Fazy projektu
+
 - **Faza 0**: Dokumentacja i planowanie
 - **Faza 1**: Fundament z observability
 - **Faza 2**: Akwizycja i storage
@@ -73,6 +83,7 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 - **Faza 6**: Optymalizacja i refinement
 
 ## Porty serwisów
+
 - 8001: rtsp-capture
 - 8002: face-recognition
 - 8003: object-detection
@@ -83,18 +94,21 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 - 3000: Grafana
 
 ## Gdzie szukać czego
+
 - **Jak coś zrobić**: `/CLAUDE.md`
 - **Co zrobić**: `/architektura_systemu.md`
 - **Szczegóły zadania**: `/docs/faza-*/`
 - **Szablon nowego zadania**: `/docs/TASK_TEMPLATE.md`
 
 ## Komendy projektu
+
 - `/nakurwiaj <blok>` - automatyczne wykonanie bloku zadań
 - `docker-compose up -d` - start całego stacku
 - `docker-compose logs -f service-name` - logi serwisu
 - `curl http://localhost:800X/health` - health check
 
 ## Na co uważać
+
 1. Blok 0 (Prerequisites) - ZAWSZE wykonaj pierwszy
 2. Metryki sukcesu - każde zadanie ma kryteria
 3. Rollback plan - każde zadanie można cofnąć

@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  
+
 jobs:
   pr-title:
     name: Validate PR Title
@@ -35,7 +35,7 @@ jobs:
             The subject "{subject}" found in the pull request title "{title}"
             doesn't match the configured pattern. Please ensure that the subject
             starts with an uppercase letter.
-            
+
   size-label:
     name: Add Size Label
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
           l_max_size: 1000
           xl_label: 'size/XL'
           fail_if_xl: false
-          
+
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest

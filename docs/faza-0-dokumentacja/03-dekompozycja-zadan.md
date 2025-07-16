@@ -1,12 +1,15 @@
 # Faza 0 / Zadanie 3: Dekompozycja wszystkich zadań projektowych
 
 ## Cel zadania
+
 Utworzenie szczegółowych dokumentów dekompozycji dla wszystkich zadań w fazach 1-6, zapewnienie spójności i kompletności planowania.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[x] Przegląd wszystkich faz i zadań**
    - **Metryka**: Lista wszystkich zadań z architektura_systemu.md
    - **Walidacja**: `grep -E "^\d+\." architektura_systemu.md | wc -l`
@@ -19,7 +22,8 @@ Utworzenie szczegółowych dokumentów dekompozycji dla wszystkich zadań w faza
 
 ### Blok 1: Dekompozycja Fazy 1 (Fundament)
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie dokumentów dla zadań 1-8 Fazy 1**
    - **Metryka**: 8 plików .md w docs/faza-1-fundament/
    - **Walidacja**: `ls docs/faza-1-fundament/*.md | wc -l` = 8
@@ -32,7 +36,8 @@ Utworzenie szczegółowych dokumentów dekompozycji dla wszystkich zadań w faza
 
 ### Blok 2: Dekompozycja Fazy 2 (Akwizycja)
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie dokumentów dla zadań 1-5 Fazy 2**
    - **Metryka**: 5 plików .md w docs/faza-2-akwizycja/
    - **Walidacja**: `ls docs/faza-2-akwizycja/*.md | wc -l` = 5
@@ -45,7 +50,8 @@ Utworzenie szczegółowych dokumentów dekompozycji dla wszystkich zadań w faza
 
 ### Blok 3: Dekompozycja Fazy 3 (Detekcja AI)
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie dokumentów dla zadań 1-6 Fazy 3**
    - **Metryka**: 6 plików .md w docs/faza-3-detekcja/
    - **Walidacja**: `ls docs/faza-3-detekcja/*.md | wc -l` = 6
@@ -58,7 +64,8 @@ Utworzenie szczegółowych dokumentów dekompozycji dla wszystkich zadań w faza
 
 ### Blok 4: Dekompozycja Fazy 4 (Integracja)
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie dokumentów dla zadań 1-5 Fazy 4**
    - **Metryka**: 5 plików .md w docs/faza-4-integracja/
    - **Walidacja**: `ls docs/faza-4-integracja/*.md | wc -l` = 5
@@ -71,7 +78,8 @@ Utworzenie szczegółowych dokumentów dekompozycji dla wszystkich zadań w faza
 
 ### Blok 5: Dekompozycja Fazy 5 (LLM)
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie dokumentów dla zadań 1-4 Fazy 5**
    - **Metryka**: 4 pliki .md w docs/faza-5-llm/
    - **Walidacja**: `ls docs/faza-5-llm/*.md | wc -l` = 4
@@ -84,7 +92,8 @@ Utworzenie szczegółowych dokumentów dekompozycji dla wszystkich zadań w faza
 
 ### Blok 6: Dekompozycja Fazy 6 (Optymalizacja)
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie dokumentów dla zadań 1-5 Fazy 6**
    - **Metryka**: 5 plików .md w docs/faza-6-optymalizacja/
    - **Walidacja**: `ls docs/faza-6-optymalizacja/*.md | wc -l` = 5
@@ -97,7 +106,8 @@ Utworzenie szczegółowych dokumentów dekompozycji dla wszystkich zadań w faza
 
 ### Blok 7: Cross-cutting concerns
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie diagramów architektury**
    - **Metryka**: Min. 10 diagramów PlantUML/Mermaid
    - **Walidacja**: `find docs -name "*.puml" -o -name "*.mmd" | wc -l`

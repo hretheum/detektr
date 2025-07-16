@@ -1,12 +1,15 @@
 # Faza 5 / Zadanie 4: Conversation Memory i Context
 
 ## Cel zadania
+
 Implementacja systemu pamięci konwersacyjnej, przechowującego kontekst rozmów z użytkownikiem dla lepszego zrozumienia intencji i personalizacji interakcji.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza conversation memory patterns**
    - **Metryka**: Memory architecture design
    - **Walidacja**: Design document review
@@ -19,7 +22,8 @@ Implementacja systemu pamięci konwersacyjnej, przechowującego kontekst rozmów
 
 ### Blok 1: Memory storage architecture
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Conversation memory interface**
    - **Metryka**: CRUD for conversations
    - **Walidacja**: `pytest tests/test_memory_interface.py`
@@ -37,7 +41,8 @@ Implementacja systemu pamięci konwersacyjnej, przechowującego kontekst rozmów
 
 ### Blok 2: Context extraction i summarization
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Conversation segmentation**
    - **Metryka**: Logical session detection
    - **Walidacja**: Segmentation accuracy
@@ -55,7 +60,8 @@ Implementacja systemu pamięci konwersacyjnej, przechowującego kontekst rozmów
 
 ### Blok 3: Contextual retrieval
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Semantic search implementation**
    - **Metryka**: Vector similarity search
    - **Walidacja**: Relevance test
@@ -73,7 +79,8 @@ Implementacja systemu pamięci konwersacyjnej, przechowującego kontekst rozmów
 
 ### Blok 4: Privacy i user control
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Memory encryption**
    - **Metryka**: E2E encryption
    - **Walidacja**: Security audit

@@ -1,12 +1,15 @@
 # Faza 3 / Zadanie 3: Gesture Detection z MediaPipe
 
 ## Cel zadania
+
 Zaimplementować detekcję gestów dłoni wykorzystując MediaPipe, umożliwiając kontrolę systemu przez predefiniowane gesty.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza dostępnych gesture models**
    - **Metryka**: MediaPipe vs OpenPose comparison
    - **Walidacja**: Performance benchmark
@@ -19,7 +22,8 @@ Zaimplementować detekcję gestów dłoni wykorzystując MediaPipe, umożliwiaj�
 
 ### Blok 1: Hand detection i tracking
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Hand detector interface**
    - **Metryka**: Multi-hand support
    - **Walidacja**: `pytest tests/test_hand_detection.py`
@@ -37,7 +41,8 @@ Zaimplementować detekcję gestów dłoni wykorzystując MediaPipe, umożliwiaj�
 
 ### Blok 2: Gesture classification
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Gesture classifier**
    - **Metryka**: Pluggable classifiers
    - **Walidacja**: Classifier interface tests
@@ -55,7 +60,8 @@ Zaimplementować detekcję gestów dłoni wykorzystując MediaPipe, umożliwiaj�
 
 ### Blok 3: Temporal gesture sequences
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Gesture sequence detection**
    - **Metryka**: Swipe, circle, wave patterns
    - **Walidacja**: Sequence recognition test
@@ -73,7 +79,8 @@ Zaimplementować detekcję gestów dłoni wykorzystując MediaPipe, umożliwiaj�
 
 ### Blok 4: Integration z automation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Gesture to command mapping**
    - **Metryka**: Configurable mappings
    - **Walidacja**: Command execution test

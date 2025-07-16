@@ -1,12 +1,15 @@
 # Faza 0 / Zadanie 5: Szablon dokumentacji technicznej
 
 ## Cel zadania
+
 Utworzyć kompletny system templates dla dokumentacji technicznej z automated generation, style guide i quality assurance.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza potrzeb dokumentacyjnych**
    - **Metryka**: Lista wszystkich typów dokumentów
    - **Walidacja**: Documentation taxonomy complete
@@ -19,7 +22,8 @@ Utworzyć kompletny system templates dla dokumentacji technicznej z automated ge
 
 ### Blok 1: Templates creation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] API Documentation template**
    - **Metryka**: OpenAPI 3.0 compliant
    - **Walidacja**: Generated docs from spec
@@ -42,7 +46,8 @@ Utworzyć kompletny system templates dla dokumentacji technicznej z automated ge
 
 ### Blok 2: Style guide i quality
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Documentation style guide**
    - **Metryka**: Writing standards defined
    - **Walidacja**: Style guide document
@@ -60,7 +65,8 @@ Utworzyć kompletny system templates dla dokumentacji technicznej z automated ge
 
 ### Blok 3: Automated generation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] MkDocs setup z themes**
    - **Metryka**: Professional doc site
    - **Walidacja**: `mkdocs serve` works
@@ -78,7 +84,8 @@ Utworzyć kompletny system templates dla dokumentacji technicznej z automated ge
 
 ### Blok 4: Documentation CI/CD
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Documentation PR checks**
    - **Metryka**: Quality gates in CI
    - **Walidacja**: PR fails on style issues
@@ -120,5 +127,6 @@ Utworzyć kompletny system templates dla dokumentacji technicznej z automated ge
 ## Następne kroki
 
 Po ukończeniu tego zadania:
+
 - Faza 0 COMPLETED ✅
 - Przejdź do Fazy 1: Fundament z Observability

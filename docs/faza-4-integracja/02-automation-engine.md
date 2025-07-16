@@ -1,14 +1,17 @@
 # Faza 4 / Zadanie 2: Rule engine for if-then-else automation
 
 ## Cel zadania
+
 Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych automatyzacji z warunkami, akcjami i integracją z Home Assistant.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja event bus**
    - **Metryka**: Event bus przyjmuje i dystrybuuje eventy
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Send test event
      curl -X POST http://localhost:8003/events \
@@ -17,11 +20,13 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
      # Check propagation
      docker logs detektor-event-bus --tail 50 | grep "test.event"
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Test action executors**
    - **Metryka**: Podstawowe akcje (MQTT, HTTP, log) działają
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from src.automation.actions import ActionRegistry
      registry = ActionRegistry()
@@ -29,19 +34,22 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
      assert "http_request" in registry.available_actions()
      assert "log_message" in registry.available_actions()
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Rule definition and storage
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Rule schema design**
    - **Metryka**: Elastyczny format YAML/JSON dla złożonych reguł
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from src.automation.rules import RuleSchema
-     
+
      # Test complex rule parsing
      rule_yaml = """
      name: "Motion Light Control"
@@ -61,7 +69,7 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
      actions:
        - type: mqtt_publish
          topic: homeassistant/light/entrance/set
-         payload: 
+         payload:
            state: "on"
            brightness: 80
        - type: delay
@@ -71,34 +79,36 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
          payload:
            state: "off"
      """
-     
+
      rule = RuleSchema.parse(rule_yaml)
      assert rule.name == "Motion Light Control"
      assert len(rule.triggers) == 1
      assert len(rule.conditions) == 2
      assert len(rule.actions) == 3
      ```
+
    - **Czas**: 2.5h
 
 2. **[ ] Rule repository with PostgreSQL**
    - **Metryka**: CRUD operations, versioning, validation
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from src.automation.repositories import RuleRepository
-     
+
      repo = RuleRepository()
-     
+
      # Test CRUD
      rule_id = repo.create(rule_data)
      assert rule_id is not None
-     
+
      rule = repo.get(rule_id)
      assert rule.version == 1
-     
+
      repo.update(rule_id, updated_data)
      rule = repo.get(rule_id)
      assert rule.version == 2
-     
+
      # Test validation
      try:
          repo.create(invalid_rule_data)
@@ -106,53 +116,59 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
      except ValidationError:
          pass
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Rule import/export API**
    - **Metryka**: RESTful API dla zarządzania regułami
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Create rule via API
      curl -X POST http://localhost:8003/api/rules \
           -H "Content-Type: application/yaml" \
           --data-binary @test_rule.yaml
-     
+
      # List rules
      curl http://localhost:8003/api/rules | jq '.rules | length'
      # Should return count > 0
-     
+
      # Export rules
      curl http://localhost:8003/api/rules/export > rules_backup.yaml
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Kompletny model reguł
 - Persistent storage z wersjonowaniem
 - RESTful API dla zarządzania
 
 ### Blok 2: Rule execution engine
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Event matching and filtering**
    - **Metryka**: Wydajne dopasowanie eventów do triggerów
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from src.automation.engine import RuleEngine
-     
+
      engine = RuleEngine()
      engine.load_rules()
-     
+
      # Test event matching
      matched_rules = engine.match_event({
          "type": "motion_detected",
          "camera_id": "front_door",
          "timestamp": "2024-01-15T22:00:00Z"
      })
-     
+
      assert len(matched_rules) > 0
      assert all(r.has_matching_trigger() for r in matched_rules)
-     
+
      # Performance test
      import time
      start = time.time()
@@ -161,16 +177,18 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
      elapsed = time.time() - start
      assert elapsed < 1.0  # 10k matches in <1s
      ```
+
    - **Czas**: 2.5h
 
 2. **[ ] Condition evaluation engine**
    - **Metryka**: Obsługa złożonych warunków z AND/OR/NOT
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from src.automation.conditions import ConditionEvaluator
-     
+
      evaluator = ConditionEvaluator()
-     
+
      # Complex condition test
      conditions = {
          "and": [
@@ -182,27 +200,29 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
              {"not": {"state": {"entity": "input_boolean.vacation", "is": "on"}}}
          ]
      }
-     
+
      context = {
          "sensor.temperature": 26,
          "binary_sensor.window": "closed",
          "fan.bedroom": "off",
          "input_boolean.vacation": "off"
      }
-     
+
      result = evaluator.evaluate(conditions, context)
      assert result == True
      ```
+
    - **Czas**: 2.5h
 
 3. **[ ] Action execution with retry**
    - **Metryka**: Reliable action execution, automatic retry on failure
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from src.automation.actions import ActionExecutor
-     
+
      executor = ActionExecutor()
-     
+
      # Test retry logic
      action = {
          "type": "http_request",
@@ -213,41 +233,45 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
              "backoff": 2
          }
      }
-     
+
      result = executor.execute(action)
      assert result.success == True
      assert result.attempts <= 3
-     
+
      # Test action chaining
      actions = [
          {"type": "log", "message": "Starting sequence"},
          {"type": "delay", "seconds": 1},
          {"type": "mqtt_publish", "topic": "test/action", "payload": "done"}
      ]
-     
+
      results = executor.execute_sequence(actions)
      assert all(r.success for r in results)
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Szybkie dopasowanie eventów (<0.1ms per event)
 - Złożone warunki z pełną logiką boolowską
 - Niezawodne wykonanie akcji z retry
 
 ### Blok 3: Monitoring and debugging
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Rule execution tracing**
    - **Metryka**: Pełny trace każdego wykonania reguły
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Enable tracing
      engine = RuleEngine(tracing=True)
-     
+
      # Execute rule
      trace_id = engine.process_event(test_event)
-     
+
      # Get execution trace
      trace = engine.get_trace(trace_id)
      assert trace.trigger_match_time < 0.001  # <1ms
@@ -255,11 +279,13 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
      assert trace.total_execution_time < 0.1   # <100ms
      assert len(trace.action_results) > 0
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Rule performance metrics**
    - **Metryka**: Prometheus metrics dla każdej reguły
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check Prometheus metrics
      curl http://localhost:8003/metrics | grep -E "automation_rule_"
@@ -269,15 +295,17 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
      # automation_rule_failures_total{rule="..."}
      # automation_rule_condition_evaluations_total{rule="...",result="true"}
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] Debug UI for rule testing**
    - **Metryka**: Web UI do testowania reguł bez skutków
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Access debug UI
      curl http://localhost:8003/debug/rules
-     
+
      # Test rule execution
      curl -X POST http://localhost:8003/debug/rules/test \
           -H "Content-Type: application/json" \
@@ -288,9 +316,11 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
               }'
      # Returns execution plan without running actions
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Pełna observability wykonania reguł
 - Metryki wydajności dla każdej reguły
 - Możliwość debugowania bez side effects
@@ -323,12 +353,12 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Event bus operational
   - PostgreSQL database
   - Redis cache
   - MQTT broker for actions
-- **Blokuje**: 
+- **Blokuje**:
   - Advanced automations
   - Scene management
   - Scheduled tasks
@@ -344,7 +374,7 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Rule execution errors >1%
    - Performance degradation
    - Action failures cascade

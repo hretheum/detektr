@@ -1,76 +1,92 @@
 # Faza 2 / Zadanie 6: Alerty - frame drop, latency, queue size
 
 ## Cel zadania
+
 Skonfigurować system alertów dla krytycznych metryk pipeline'u z automatyczną eskalacją i integracją z systemami powiadomień.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja Alertmanager**
    - **Metryka**: Alertmanager running, API dostępne
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl http://localhost:9093/-/healthy
      curl http://localhost:9093/api/v2/status | jq .cluster.status
      # "ready"
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Test notification channels**
    - **Metryka**: Email/Slack webhook working
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      amtool alert add test_alert --annotation=test=true
      # Check if notification received
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Alert rules definition
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Frame drop rate alerts**
    - **Metryka**: Alert gdy frame loss >1% przez 2 min
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # prometheus/rules/frame_pipeline.yml
      - alert: HighFrameDropRate
        expr: rate(frames_dropped_total[2m]) / rate(frames_captured_total[2m]) > 0.01
        for: 2m
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Processing latency alerts**
    - **Metryka**: p95 latency >200ms triggers warning
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      histogram_quantile(0.95, rate(frame_processing_duration_bucket[5m])) > 0.2
      # Test with synthetic slow processing
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] Queue saturation alerts**
    - **Metryka**: Queue >5000 items = critical
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Fill queue artificially
      redis-cli LPUSH frame_queue $(seq 1 5001)
      # Alert should fire within 1 min
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - All alert rules active
 - Thresholds properly tuned
 - No false positives
 
 ### Blok 2: Alert routing i grouping
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Alertmanager routing config**
    - **Metryka**: Alerts routed by severity
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # alertmanager/config.yml
      route:
@@ -80,45 +96,55 @@ Skonfigurować system alertów dla krytycznych metryk pipeline'u z automatyczną
          - match: {severity: critical}
            receiver: pagerduty
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Alert suppression rules**
    - **Metryka**: Maintenance mode stops alerts
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      amtool silence add alertname=".*" --comment="Maintenance"
      # No alerts fire during silence
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Smart routing working
 - Alert fatigue minimized
 - Escalation paths clear
 
 ### Blok 3: Integration i dokumentacja
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Grafana alert integration**
    - **Metryka**: Alerts visible in dashboards
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl http://localhost:3000/api/alerts | jq '.[].state'
      # Shows current alert states
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Runbook links i docs**
    - **Metryka**: Each alert has runbook URL
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      annotations:
        runbook_url: "https://docs/alerts/{{ .GroupLabels.alertname }}"
      # All URLs resolve correctly
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Full integration achieved
 - Documentation complete
 - Operators confident
@@ -146,7 +172,7 @@ Skonfigurować system alertów dla krytycznych metryk pipeline'u z automatyczną
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Metrics collection working
   - Notification channels configured
 - **Blokuje**: Production readiness
@@ -160,7 +186,7 @@ Skonfigurować system alertów dla krytycznych metryk pipeline'u z automatyczną
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Too many false alerts
    - Alerts not firing
    - Notification failures

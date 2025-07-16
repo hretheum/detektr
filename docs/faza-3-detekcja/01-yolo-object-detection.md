@@ -1,12 +1,15 @@
 # Faza 3 / Zadanie 1: YOLO Object Detection Service
 
 ## Cel zadania
+
 Zaimplementować serwis detekcji obiektów wykorzystując YOLO v8 na GPU, z optymalizacją dla real-time processing i wysoką dokładnością detekcji osób i zwierząt.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza modeli YOLO (v8, v9)**
    - **Metryka**: Benchmark accuracy vs speed
    - **Walidacja**: Comparison matrix documented
@@ -19,7 +22,8 @@ Zaimplementować serwis detekcji obiektów wykorzystując YOLO v8 na GPU, z opty
 
 ### Blok 1: YOLO integration
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Object detection interface**
    - **Metryka**: Abstract interface dla różnych modeli
    - **Walidacja**: `pytest tests/test_detection_interface.py`
@@ -37,7 +41,8 @@ Zaimplementować serwis detekcji obiektów wykorzystując YOLO v8 na GPU, z opty
 
 ### Blok 2: Custom training dla projektu
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Dataset preparation**
    - **Metryka**: 1000+ images z annotations
    - **Walidacja**: Dataset validation script
@@ -55,7 +60,8 @@ Zaimplementować serwis detekcji obiektów wykorzystując YOLO v8 na GPU, z opty
 
 ### Blok 3: Real-time processing optimization
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Batch processing implementation**
    - **Metryka**: Process 4 streams simultaneously
    - **Walidacja**: GPU utilization >80%
@@ -73,7 +79,8 @@ Zaimplementować serwis detekcji obiektów wykorzystując YOLO v8 na GPU, z opty
 
 ### Blok 4: Integration i monitoring
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Detection result publisher**
    - **Metryka**: Publish to event bus <5ms
    - **Walidacja**: Event flow test

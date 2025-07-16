@@ -1,12 +1,15 @@
 # Faza 0 / Zadanie 2: Utworzenie struktury projektu i repozytorium
 
 ## Cel zadania
+
 Utworzenie kompletnej struktury katalogów zgodnej z Clean Architecture, konfiguracja narzędzi developerskich, oraz setup CI/CD pipeline.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[x] Weryfikacja narzędzi developerskich**
    - **Metryka**: Docker, docker-compose, git, python3.11+ zainstalowane
    - **Walidacja**: `docker --version && docker-compose --version && git --version && python3 --version`
@@ -19,7 +22,8 @@ Utworzenie kompletnej struktury katalogów zgodnej z Clean Architecture, konfigu
 
 ### Blok 1: Struktura katalogów Clean Architecture
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie struktury głównych katalogów**
    - **Metryka**: Struktura zgodna z hexagonal architecture
    - **Walidacja**: `tree -d -L 3 . | grep -E "(domain|application|infrastructure|interfaces)"`
@@ -35,14 +39,16 @@ Utworzenie kompletnej struktury katalogów zgodnej z Clean Architecture, konfigu
    - **Walidacja**: `ls -la src/shared/`
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Struktura czytelna i skalowalna
 - Separacja concerns zachowana
 - Brak circular dependencies
 
 ### Blok 2: Konfiguracja Docker i docker-compose
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie bazowego docker-compose.yml**
    - **Metryka**: Serwisy: postgres, redis, jaeger, prometheus, grafana
    - **Walidacja**: `docker-compose config | grep -c "services:" # ≥5`
@@ -63,14 +69,16 @@ Utworzenie kompletnej struktury katalogów zgodnej z Clean Architecture, konfigu
    - **Walidacja**: `docker-compose config | grep -c "healthcheck" # ≥5`
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - `docker-compose up -d` uruchamia wszystkie serwisy
 - Serwisy restartują się automatycznie
 - Sekrety nie są commitowane
 
 ### Blok 3: Setup narzędzi developerskich
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Konfiguracja pre-commit hooks**
    - **Metryka**: Hooks dla Python, YAML, Docker, secrets
    - **Walidacja**: `pre-commit run --all-files`
@@ -91,14 +99,16 @@ Utworzenie kompletnej struktury katalogów zgodnej z Clean Architecture, konfigu
    - **Walidacja**: `make help`
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Pre-commit blokuje złe commity
 - Jednolity code style
 - Developer experience smooth
 
 ### Blok 4: CI/CD Pipeline
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] GitHub Actions workflow dla CI**
    - **Metryka**: Lint, test, build na każdy PR
    - **Walidacja**: `.github/workflows/ci.yml` exists
@@ -119,7 +129,8 @@ Utworzenie kompletnej struktury katalogów zgodnej z Clean Architecture, konfigu
    - **Walidacja**: GitHub settings screenshot
    - **Czas**: 0.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Green CI badge na README
 - Automatyczne security scans
 - Controlled release process
@@ -143,7 +154,7 @@ Utworzenie kompletnej struktury katalogów zgodnej z Clean Architecture, konfigu
 ## Narzędzia
 
 - **Docker & docker-compose**: Containerization
-- **Pre-commit**: Git hooks framework  
+- **Pre-commit**: Git hooks framework
 - **GitHub Actions**: CI/CD
 - **Make**: Task automation
 - **Trivy**: Security scanning

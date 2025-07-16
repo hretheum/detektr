@@ -1,6 +1,6 @@
 # Faza 3 / Zadanie 1: Face recognition service z metrykami i tracingiem
 
-<!-- 
+<!--
 LLM TASK CONTEXT:
 To zadanie z Fazy 3 (AI Services).
 Prerequisites: Docker, GPU support, observability stack, message queue
@@ -17,13 +17,15 @@ USE COMMAND: /nakurwiaj 1 (dla Bloku 1), etc.
 -->
 
 ## Cel zadania
+
 Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z pełnym observability (metryki, tracing) i accuracy >95% na test dataset.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Research i wybór modelu AI
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Benchmark 3 modeli face recognition**
    - **Metryka**: Porównanie FaceNet vs InsightFace vs DeepFace
    - **Walidacja**: Tabela z mAP, FPS, VRAM usage
@@ -39,21 +41,25 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
    - **Walidacja**: Decyzja udokumentowana w ADR (Architecture Decision Record)
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Model wybrany na podstawie danych
 - Test dataset reprezentatywny
 - Trade-offs udokumentowane
 
 ### Blok 2: Implementacja serwisu z Clean Architecture
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Setup project structure (domain/infra/app)**
    - **Metryka**: Struktura zgodna z hexagonal architecture
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      tree services/face-recognition -d -L 2
      # domain/, infrastructure/, application/ visible
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Implementacja domain layer (entities, use cases)**
@@ -63,12 +69,14 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
 
 3. **[ ] Implementacja infrastructure (model loader, GPU)**
    - **Metryka**: Model ładuje się <5s, inference <100ms
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Benchmark script
      times = benchmark_inference(n=100)
      assert np.percentile(times, 95) < 0.1  # 100ms
      ```
+
    - **Czas**: 6h
 
 4. **[ ] API layer z FastAPI**
@@ -76,30 +84,36 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
    - **Walidacja**: `curl -X POST localhost:8002/detect -F "image=@test.jpg"`
    - **Czas**: 3h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Clean separation of concerns
 - 100% unit test coverage dla domain
 - API responds <200ms e2e
 
 ### Blok 3: Observability implementation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Integracja OpenTelemetry tracing**
    - **Metryka**: Every request ma trace z spans
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Check trace
      trace = get_trace_by_id(request_id)
      assert len(trace.spans) >= 5  # intake->validate->inference->encode->response
      ```
+
    - **Czas**: 3h
 
 2. **[ ] Implementacja Prometheus metrics**
    - **Metryka**: Request rate, latency, GPU util, accuracy
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl localhost:8002/metrics | grep -E "(face_recognition_requests_total|gpu_utilization)"
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Custom GPU metrics collector**
@@ -112,14 +126,16 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
    - **Walidacja**: Import JSON, all panels show data
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - 100% requests traced
 - Metrics scraping co 15s
 - Dashboard shows real-time data
 
 ### Blok 4: Testing i optymalizacja
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Unit tests z >80% coverage**
    - **Metryka**: Coverage report, all edge cases
    - **Walidacja**: `pytest --cov=face_recognition --cov-report=term-missing`
@@ -132,10 +148,12 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
 
 3. **[ ] Load testing i profiling**
    - **Metryka**: 50+ req/s, latency <100ms p95
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      locust -f tests/load/face_recognition.py --users 100 --spawn-rate 10
      ```
+
    - **Czas**: 3h
 
 4. **[ ] GPU memory optimization**
@@ -143,21 +161,25 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
    - **Walidacja**: Run 10 min pod load, check `nvidia-smi`
    - **Czas**: 4h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - All tests green
 - Performance targets met
 - No memory leaks
 
 ### Blok 5: Containerization i deployment
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Multi-stage Dockerfile z GPU support**
    - **Metryka**: Image <2GB, secure, optimized
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker build -t face-recognition:latest .
      dive face-recognition:latest  # check layers
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Docker Compose integration**
@@ -170,7 +192,8 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
    - **Walidacja**: Kill container, check no lost requests
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Container starts <30s
 - Graceful shutdown
 - Auto-restart on failure
@@ -201,9 +224,9 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Docker z GPU support (Faza 1)
-  - Observability stack (Faza 1) 
+  - Observability stack (Faza 1)
   - Message queue (Faza 2)
 - **Blokuje**: Gesture detection, full pipeline testing
 

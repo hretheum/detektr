@@ -1,12 +1,15 @@
 # Faza 1 / Zadanie 2: Instalacja NVIDIA Container Toolkit
 
 ## Cel zadania
+
 Zainstalować i skonfigurować NVIDIA Container Toolkit, umożliwiając kontenerom Docker dostęp do GPU GTX 4070 Super dla operacji AI/ML.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[x] Weryfikacja sterowników NVIDIA**
    - **Metryka**: NVIDIA Driver 525+ zainstalowany
    - **Walidacja**: `nvidia-smi | grep "Driver Version" | grep -E "5[2-9][0-9]|[6-9][0-9][0-9]"`
@@ -19,7 +22,8 @@ Zainstalować i skonfigurować NVIDIA Container Toolkit, umożliwiając kontener
 
 ### Blok 1: Instalacja NVIDIA Container Toolkit
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Dodanie NVIDIA package repositories**
    - **Metryka**: nvidia-container-toolkit repo aktywne
    - **Walidacja**: `apt-cache policy nvidia-container-toolkit`
@@ -37,7 +41,8 @@ Zainstalować i skonfigurować NVIDIA Container Toolkit, umożliwiając kontener
 
 ### Blok 2: Weryfikacja i testy GPU
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Test podstawowy CUDA container**
    - **Metryka**: GPU widoczne w kontenerze
    - **Walidacja**: `docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi`
@@ -55,7 +60,8 @@ Zainstalować i skonfigurować NVIDIA Container Toolkit, umożliwiając kontener
 
 ### Blok 3: Monitoring GPU
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Setup nvidia_gpu_exporter dla Prometheus**
    - **Metryka**: Metryki GPU dostępne na :9400
    - **Walidacja**: `curl localhost:9400/metrics | grep DCGM_FI_DEV_GPU_TEMP`

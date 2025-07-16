@@ -1,14 +1,17 @@
 # Faza 4 / Zadanie 1: MQTT integration with Home Assistant
 
 ## Cel zadania
+
 Zbudować dwukierunkową integrację MQTT między systemem Detektor a Home Assistant z automatycznym odkrywaniem urządzeń i pełną obsługą stanów.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja infrastruktury MQTT**
    - **Metryka**: MQTT broker dostępny, HA MQTT integration włączona
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check MQTT broker
      docker ps | grep mosquitto
@@ -17,27 +20,32 @@ Zbudować dwukierunkową integrację MQTT między systemem Detektor a Home Assis
      curl -H "Authorization: Bearer $HA_TOKEN" \
           http://homeassistant:8123/api/config | jq '.components | contains(["mqtt"])'
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Test połączenia Detektor-HA**
    - **Metryka**: Bidirectional communication verified
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Send test from Detektor
      mosquitto_pub -h localhost -t "detektor/test/ping" -m "$(date +%s)"
      # Listen in HA
      docker exec homeassistant mosquitto_sub -t "detektor/test/ping" -C 1
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Home Assistant Discovery Protocol
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Implementacja discovery publisher**
    - **Metryka**: Auto-discovery messages dla wszystkich komponentów
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Test discovery messages
      from src.integration.mqtt import DiscoveryPublisher
@@ -49,24 +57,28 @@ Zbudować dwukierunkową integrację MQTT między systemem Detektor a Home Assis
          assert "device" in config
          assert config["device"]["identifiers"][0].startswith("detektor_")
      ```
+
    - **Czas**: 2.5h
 
 2. **[ ] Device registry integration**
    - **Metryka**: Wszystkie urządzenia widoczne w HA jako jeden system
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check HA device registry
      curl -H "Authorization: Bearer $HA_TOKEN" \
           http://homeassistant:8123/api/states | \
-          jq '.[] | select(.attributes.device_class != null) | 
+          jq '.[] | select(.attributes.device_class != null) |
               select(.entity_id | startswith("sensor.detektor_"))'
      # Should show all Detektor sensors
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Entity availability tracking**
    - **Metryka**: Online/offline status dla każdego komponentu
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Kill detection service
      docker stop detektor-detection
@@ -77,41 +89,47 @@ Zbudować dwukierunkową integrację MQTT między systemem Detektor a Home Assis
              jq -r '.state')
      assert [ "$state" = "off" ]
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Wszystkie komponenty auto-discovered
 - Device grouping działa poprawnie
 - Availability tracking w czasie rzeczywistym
 
 ### Blok 2: State synchronization
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Event to entity mapper**
    - **Metryka**: Każdy event type ma odpowiedni entity w HA
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from src.integration.mqtt import EventEntityMapper
      mapper = EventEntityMapper()
-     
+
      # Test all event types
      events = [
          PersonDetectedEvent(camera_id="front", confidence=0.95),
          MotionDetectedEvent(camera_id="back", zones=["entrance"]),
          ObjectDetectedEvent(object_type="car", camera_id="garage")
      ]
-     
+
      for event in events:
          entity = mapper.to_entity(event)
          assert entity.unique_id.startswith(f"detektor_{event.camera_id}")
          assert entity.state in ["on", "off", "detected", "clear"]
          assert entity.attributes["confidence"] if hasattr(event, "confidence") else True
      ```
+
    - **Czas**: 2.5h
 
 2. **[ ] Retain strategy for states**
    - **Metryka**: Critical states retained, temporary states expire
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Publish retained state
      mosquitto_pub -h localhost -t "detektor/camera/front/motion" \
@@ -122,60 +140,68 @@ Zbudować dwukierunkową integrację MQTT między systemem Detektor a Home Assis
      # Check state persisted
      mosquitto_sub -h localhost -t "detektor/camera/front/motion" -C 1
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] Command handling from HA**
    - **Metryka**: HA może kontrolować Detektor (start/stop detection, change settings)
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Test command reception
      import asyncio
      from src.integration.mqtt import CommandHandler
-     
+
      handler = CommandHandler()
      received = []
      handler.on_command = lambda cmd: received.append(cmd)
-     
+
      # Send command from HA
      await handler.start()
      # mosquitto_pub -t "detektor/camera/front/command" -m '{"action": "start_recording"}'
      await asyncio.sleep(2)
-     
+
      assert len(received) == 1
      assert received[0].action == "start_recording"
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Pełna synchronizacja stanów
 - Dwukierunkowa komunikacja
 - Persistence dla critical states
 
 ### Blok 3: Performance and reliability
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Message batching and throttling**
    - **Metryka**: Max 100 msgs/s per topic, batch similar events
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Flood with events
      for i in range(1000):
          bridge.send_event(MotionDetectedEvent(camera_id="front"))
-     
+
      # Check actual messages sent
      stats = bridge.get_stats()
      assert stats.messages_sent < 200  # Should batch
      assert stats.max_rate_per_second <= 100
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Connection resilience**
    - **Metryka**: Auto-reconnect <5s, zero message loss during disconnects
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Start message counter
      ./scripts/mqtt-message-counter.sh start
-     
+
      # Send messages while cycling broker
      for i in {1..100}; do
          mosquitto_pub -t "test/counter" -m "$i"
@@ -184,32 +210,36 @@ Zbudować dwukierunkową integrację MQTT między systemem Detektor a Home Assis
          fi
          sleep 0.1
      done
-     
+
      # Verify all received
      ./scripts/mqtt-message-counter.sh verify 100
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] Integration tests z HA**
    - **Metryka**: E2E flow: detection → MQTT → HA → automation
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Full integration test
      from tests.integration import DetektorHAIntegration
-     
+
      test = DetektorHAIntegration()
      test.setup_automation("person_detected", "turn_on_lights")
-     
+
      # Trigger detection
      test.simulate_person_detection("front_door")
-     
+
      # Verify automation fired
      await asyncio.sleep(2)
      assert test.get_entity_state("light.entrance") == "on"
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Stabilna komunikacja pod obciążeniem
 - Zero message loss
 - Automatyzacje działają niezawodnie
@@ -240,11 +270,11 @@ Zbudować dwukierunkową integrację MQTT między systemem Detektor a Home Assis
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Running MQTT broker
   - Home Assistant z MQTT integration
   - Detection services publishing events
-- **Blokuje**: 
+- **Blokuje**:
   - HA automations
   - Dashboard integration
   - Voice control
@@ -260,7 +290,7 @@ Zbudować dwukierunkową integrację MQTT między systemem Detektor a Home Assis
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - HA entities unavailable
    - Message delivery <99%
    - Automation failures

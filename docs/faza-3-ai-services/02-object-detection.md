@@ -1,94 +1,114 @@
 # Faza 3 / Zadanie 2: Object detection z metrykami GPU i tracingiem
 
 ## Cel zadania
+
 Wdrożyć wysokowydajny serwis detekcji obiektów oparty na YOLO v8 z pełnym monitoringiem GPU i distributed tracing.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja GPU i CUDA**
    - **Metryka**: CUDA 12.0+, GPU memory >4GB free
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      nvidia-smi --query-gpu=name,memory.free,driver_version --format=csv
      docker run --gpus all nvidia/cuda:12.0-base nvidia-smi
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Test YOLO installation**
    - **Metryka**: YOLOv8 imports bez błędów
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      from ultralytics import YOLO
      model = YOLO('yolov8n.pt')
      print(model.model.cuda)  # Should show model on GPU
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: YOLO service implementation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Object detection API tests**
    - **Metryka**: 15+ test cases covering all endpoints
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      pytest tests/unit/test_object_detection_api.py -v
      # All tests FAIL (no implementation yet)
      ```
+
    - **Czas**: 2h
 
 2. **[ ] YOLO v8 service wrapper**
    - **Metryka**: Batch processing, GPU optimization
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Benchmark single vs batch
      single_fps = benchmark_single_inference()
      batch_fps = benchmark_batch_inference(batch_size=8)
      assert batch_fps > single_fps * 5  # Batch much faster
      ```
+
    - **Czas**: 3h
 
 3. **[ ] Multi-model support**
    - **Metryka**: Switch between yolov8n/s/m/l/x
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -X POST localhost:8003/models/load -d '{"model": "yolov8m"}'
      curl localhost:8003/info | jq .current_model
      # "yolov8m"
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - API tests passing
 - GPU utilization >40%
 - Model switching works
 
 ### Blok 2: GPU monitoring integration
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] nvidia-smi exporter setup**
    - **Metryka**: GPU metrics in Prometheus
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl localhost:9835/metrics | grep nvidia_gpu_
      # Shows utilization, memory, temperature
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Custom inference metrics**
    - **Metryka**: FPS, objects/frame, confidence scores
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      rate(yolo_inferences_total[1m])  # >10
      histogram_quantile(0.95, yolo_inference_duration_bucket)  # <100ms
      ```
+
    - **Czas**: 2h
 
 3. **[ ] GPU memory management**
    - **Metryka**: No memory leaks, <4GB usage
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Run for 1 hour
      memory_start = get_gpu_memory()
@@ -96,36 +116,44 @@ Wdrożyć wysokowydajny serwis detekcji obiektów oparty na YOLO v8 z pełnym mo
      memory_end = get_gpu_memory()
      assert memory_end - memory_start < 100  # MB
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Complete GPU visibility
 - Memory stable
 - Performance tracked
 
 ### Blok 3: Integration i optimization
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Queue consumer z batching**
    - **Metryka**: Process frames in batches of 8
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Monitor batch sizes
      redis-cli XINFO STREAM detection_queue
      # Batches of 8 being processed
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Result publisher z filtering**
    - **Metryka**: Only high-confidence detections published
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      results = consume_detection_results(n=100)
      assert all(r.confidence > 0.5 for r in results)
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - End-to-end pipeline working
 - Optimized for throughput
 - Results quality controlled
@@ -153,7 +181,7 @@ Wdrożyć wysokowydajny serwis detekcji obiektów oparty na YOLO v8 z pełnym mo
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - NVIDIA GPU access
   - Frame queue running
 - **Blokuje**: Automation decisions
@@ -167,7 +195,7 @@ Wdrożyć wysokowydajny serwis detekcji obiektów oparty na YOLO v8 z pełnym mo
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - GPU crashes/OOM
    - Detection accuracy <80%
    - FPS <5

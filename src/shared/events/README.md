@@ -4,8 +4,8 @@ Event-driven architecture adopted from eofek/detektor using Redis Streams.
 
 ## Pattern Overview
 
-Based on proven approach from [eofek/detektor analysis](../../../docs/analysis/eofek-detektor-analysis.md):  
-**Source**: https://github.com/eofek/detektor (repozytorium autorskie)
+Based on proven approach from [eofek/detektor analysis](../../../docs/analysis/eofek-detektor-analysis.md):
+**Source**: <https://github.com/eofek/detektor> (repozytorium autorskie)
 
 - Redis Streams instead of simple pub/sub
 - Event acknowledgement for reliability

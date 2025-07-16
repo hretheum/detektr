@@ -1,12 +1,15 @@
 # Faza 3 / Zadanie 4: Event Aggregation Service
 
 ## Cel zadania
+
 Stworzyć serwis agregujący zdarzenia z wszystkich detektorów, deduplikujący i korelujący wydarzenia w czasie i przestrzeni.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Design event schema**
    - **Metryka**: Unified event format
    - **Walidacja**: Schema validation tests
@@ -19,7 +22,8 @@ Stworzyć serwis agregujący zdarzenia z wszystkich detektorów, deduplikujący 
 
 ### Blok 1: Event ingestion pipeline
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Event aggregator interface**
    - **Metryka**: Pluggable aggregation strategies
    - **Walidacja**: `pytest tests/test_event_aggregator.py`
@@ -37,7 +41,8 @@ Stworzyć serwis agregujący zdarzenia z wszystkich detektorów, deduplikujący 
 
 ### Blok 2: Deduplication i correlation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Time-window deduplication**
    - **Metryka**: Remove duplicates in 5s window
    - **Walidacja**: Dedup accuracy test
@@ -55,7 +60,8 @@ Stworzyć serwis agregujący zdarzenia z wszystkich detektorów, deduplikujący 
 
 ### Blok 3: Complex event processing
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Event sequence detection**
    - **Metryka**: Pattern matching rules
    - **Walidacja**: Sequence detection test
@@ -73,7 +79,8 @@ Stworzyć serwis agregujący zdarzenia z wszystkich detektorów, deduplikujący 
 
 ### Blok 4: Output i persistence
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Aggregated event publisher**
    - **Metryka**: Publish high-level events
    - **Walidacja**: Event flow test

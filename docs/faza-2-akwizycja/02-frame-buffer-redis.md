@@ -1,12 +1,15 @@
 # Faza 2 / Zadanie 2: Frame Buffer z Redis/RabbitMQ
 
 ## Cel zadania
+
 Zaimplementować wydajny system buforowania klatek wideo wykorzystując Redis Streams lub RabbitMQ, z gwarancją dostarczenia i obsługą backpressure.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza Redis Streams vs RabbitMQ**
    - **Metryka**: Decyzja oparta na benchmarkach
    - **Walidacja**: Dokument porównawczy z testami
@@ -19,7 +22,8 @@ Zaimplementować wydajny system buforowania klatek wideo wykorzystując Redis St
 
 ### Blok 1: Implementacja Frame Queue abstraction
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Interface dla frame queue**
    - **Metryka**: 100% coverage dla queue operations
    - **Walidacja**: `pytest tests/test_frame_queue_interface.py`
@@ -37,7 +41,8 @@ Zaimplementować wydajny system buforowania klatek wideo wykorzystując Redis St
 
 ### Blok 2: Frame serialization i compression
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Frame serializer tests**
    - **Metryka**: Tests dla różnych formatów
    - **Walidacja**: Round-trip serialization test
@@ -55,7 +60,8 @@ Zaimplementować wydajny system buforowania klatek wideo wykorzystując Redis St
 
 ### Blok 3: Backpressure i flow control
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Backpressure handling tests**
    - **Metryka**: No frame loss under pressure
    - **Walidacja**: Stress test with slow consumer
@@ -73,7 +79,8 @@ Zaimplementować wydajny system buforowania klatek wideo wykorzystując Redis St
 
 ### Blok 4: Monitoring i reliability
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Queue metrics export**
    - **Metryka**: Queue depth, throughput, latency
    - **Walidacja**: Prometheus scrape endpoint

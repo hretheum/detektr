@@ -15,24 +15,30 @@ Detektor is a comprehensive system that:
 ## Key Features
 
 ### 🎥 **Multi-Camera Support**
+
 Process up to 8 IP camera streams simultaneously with real-time analysis.
 
 ### 🤖 **AI-Powered Detection**
+
 - Object detection (YOLO)
 - Face recognition (InsightFace)
 - Gesture recognition (MediaPipe)
 - Voice processing (Whisper)
 
 ### 🏠 **Home Assistant Integration**
+
 Seamless integration with Home Assistant for device control and automation.
 
 ### 🧠 **LLM Intelligence**
+
 Natural language processing with OpenAI/Anthropic for smart intent recognition.
 
 ### 📊 **Full Observability**
+
 Complete monitoring with Prometheus, Grafana, and Jaeger tracing from day one.
 
 ### 🔒 **Security First**
+
 Privacy-focused design with end-to-end encryption and local processing.
 
 ## Quick Start
@@ -50,23 +56,23 @@ graph TB
         CAM[IP Cameras]
         MIC[Microphones]
     end
-    
+
     subgraph "Processing Layer"
         RTSP[RTSP Capture]
         AI[AI Detection Services]
         VOICE[Voice Processing]
     end
-    
+
     subgraph "Intelligence Layer"
         LLM[LLM Services]
         RULES[Automation Engine]
     end
-    
+
     subgraph "Output Layer"
         HA[Home Assistant]
         API[REST API]
     end
-    
+
     CAM --> RTSP
     MIC --> VOICE
     RTSP --> AI
@@ -94,18 +100,21 @@ The Detektor project is organized into 6 development phases:
 ## Documentation Sections
 
 ### For Users
+
 - **[Quick Start](quickstart.md)** - Get up and running quickly
 - **[Installation Guide](operations/installation.md)** - Complete setup instructions
 - **[Configuration](operations/configuration.md)** - System configuration
 - **[API Reference](api/overview.md)** - Complete API documentation
 
 ### For Developers
+
 - **[Development Guide](development/getting-started.md)** - Set up development environment
 - **[Contributing](CONTRIBUTING.md)** - How to contribute to the project
 - **[Architecture](architecture/overview.md)** - System design and architecture
 - **[Style Guide](style-guide.md)** - Documentation standards
 
 ### For Operators
+
 - **[Monitoring](operations/monitoring.md)** - Observability and monitoring
 - **[Troubleshooting](operations/troubleshooting.md)** - Common issues and solutions
 - **[Runbooks](operations/)** - Operational procedures

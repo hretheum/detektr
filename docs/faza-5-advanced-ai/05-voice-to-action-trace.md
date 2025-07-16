@@ -1,14 +1,17 @@
 # Faza 5 / Zadanie 5: End-to-end trace - głos → intent → akcja
 
 ## Cel zadania
+
 Implementować kompletny distributed tracing dla przepływu komend głosowych od nagrania audio przez STT, LLM, aż do wykonania akcji w HA.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja trace propagation**
    - **Metryka**: Context flows through all services
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Trigger voice command
      trace = trigger_voice_command("włącz światło")
@@ -16,26 +19,31 @@ Implementować kompletny distributed tracing dla przepływu komend głosowych od
      required = ["audio-capture", "whisper", "llm", "ha-bridge"]
      assert all(svc in services for svc in required)
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Audio correlation test**
    - **Metryka**: Audio chunks linked to trace
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      trace = get_voice_trace()
      audio_spans = [s for s in trace.spans if "audio" in s.name]
      assert all("audio.chunk_id" in s.attributes for s in audio_spans)
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Audio processing tracing
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Audio capture spans**
    - **Metryka**: Each chunk traced
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      capture_spans = get_spans_by_name("audio_capture")
      for span in capture_spans:
@@ -43,40 +51,48 @@ Implementować kompletny distributed tracing dla przepływu komend głosowych od
          assert "audio.sample_rate" in span.attributes
          assert "audio.format" in span.attributes
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] VAD decision spans**
    - **Metryka**: Voice detection traced
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      vad_spans = get_spans_by_name("voice_activity_detection")
      assert any(s.attributes["vad.speech_detected"] for s in vad_spans)
      assert "vad.confidence" in vad_spans[0].attributes
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] STT processing trace**
    - **Metryka**: Whisper internals visible
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      stt_span = get_span("whisper_transcribe")
      assert "model.name" in stt_span.attributes
      assert "text.length" in stt_span.attributes
      assert "language.detected" in stt_span.attributes
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Audio flow traced
 - VAD decisions visible
 - STT details captured
 
 ### Blok 2: Intent processing tracing
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] LLM request spans**
    - **Metryka**: API calls fully traced
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      llm_span = get_span("llm_intent_recognition")
      assert "llm.model" in llm_span.attributes
@@ -84,30 +100,36 @@ Implementować kompletny distributed tracing dla przepływu komend głosowych od
      assert "llm.tokens.completion" in llm_span.attributes
      assert "llm.cost.dollars" in llm_span.attributes
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Intent parsing trace**
    - **Metryka**: Show intent extraction
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      parse_span = get_span("parse_intent")
      assert "intent.type" in parse_span.attributes
      assert "intent.confidence" in parse_span.attributes
      assert "intent.entities" in parse_span.attributes
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - LLM calls traced
 - Intent extraction visible
 - Costs tracked
 
 ### Blok 3: Voice command analytics
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] E2E latency breakdown**
    - **Metryka**: Show where time spent
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      breakdown = analyze_voice_trace(trace_id)
      assert "audio_capture" in breakdown
@@ -115,20 +137,24 @@ Implementować kompletny distributed tracing dla przepływu komend głosowych od
      assert "llm_inference" in breakdown
      assert sum(breakdown.values()) == trace.duration
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Voice command dashboard**
    - **Metryka**: Trace-based analytics
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      # Latency by stage
-     histogram_quantile(0.95, 
+     histogram_quantile(0.95,
        rate(span_duration_bucket{span.name=~"audio.*|stt.*|llm.*"}[5m])
      )
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Analytics automated
 - Bottlenecks visible
 - Optimization targets clear
@@ -156,7 +182,7 @@ Implementować kompletny distributed tracing dla przepływu komend głosowych od
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - All voice services traced
   - LLM instrumented
 - **Blokuje**: Voice optimization
@@ -170,7 +196,7 @@ Implementować kompletny distributed tracing dla przepływu komend głosowych od
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Traces too large
    - Performance impact
    - Missing spans

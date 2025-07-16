@@ -1,6 +1,6 @@
 # Faza 5 / Zadanie 3: LLM integration z metrykami API calls i kosztów
 
-<!-- 
+<!--
 LLM TASK CONTEXT:
 To zadanie z Fazy 5 (Advanced AI).
 Prerequisites: Voice processing (STT), message queue, HA Bridge
@@ -19,13 +19,15 @@ SECRETS MANAGEMENT:
 -->
 
 ## Cel zadania
+
 Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytkownika z naturalnego języka, z monitorowaniem kosztów i circuit breaker pattern dla resilience.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Wybór i konfiguracja LLM provider
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Analiza porównawcza LLM providers**
    - **Metryka**: Tabela: cost, latency, accuracy, Polish support
    - **Walidacja**: Benchmark na 100 przykładowych intencji
@@ -33,10 +35,12 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
 
 2. **[ ] Setup API keys i environment**
    - **Metryka**: Secure storage w secrets manager
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker run --rm -e LLM_API_KEY=${LLM_API_KEY} test-image python -c "import os; assert len(os.getenv('LLM_API_KEY')) > 20"
      ```
+
    - **Czas**: 1h
 
 3. **[ ] Implementacja multi-provider abstraction**
@@ -44,14 +48,16 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
    - **Walidacja**: Same interface, różne implementacje
    - **Czas**: 3h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Provider wybrany data-driven
 - Credentials secure
 - Provider agnostic code
 
 ### Blok 2: Intent recognition implementation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Projektowanie prompt engineering**
    - **Metryka**: Prompt <500 tokens, clear instructions
    - **Walidacja**: Test na 50 przykładach, >95% accuracy
@@ -59,7 +65,8 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
 
 2. **[ ] Mapowanie intencji do akcji HA**
    - **Metryka**: 20+ intencji zmapowanych
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # intents.yaml validation
      intents:
@@ -67,6 +74,7 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
          action: "light.turn_on"
          entities: ["room_from_context"]
      ```
+
    - **Czas**: 3h
 
 3. **[ ] Context management (room, time, user)**
@@ -79,22 +87,26 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
    - **Walidacja**: Edge cases test suite
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Natural language → correct action
 - Context aware responses
 - Graceful degradation
 
 ### Blok 3: Cost monitoring i optimization
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Token counting przed wysłaniem**
    - **Metryka**: Accurate pre-flight token count
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      estimated = count_tokens(prompt)
      actual = response['usage']['prompt_tokens']
      assert abs(estimated - actual) < 5
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Cost tracking per request**
@@ -112,17 +124,20 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
    - **Walidacja**: Hit limit → requests blocked
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Costs tracked realtime
 - Cache reduces API calls
 - Never exceed budget
 
 ### Blok 4: Resilience i error handling
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Circuit breaker implementation**
    - **Metryka**: Opens after 5 failures
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      # Force failures
      for i in range(6):
@@ -131,6 +146,7 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
          except CircuitOpenError:
              assert i >= 5
      ```
+
    - **Czas**: 3h
 
 2. **[ ] Retry logic z exponential backoff**
@@ -148,21 +164,25 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
    - **Walidacja**: Burst 200 requests, none lost
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Service degradation not failure
 - No lost requests
 - Automatic recovery
 
 ### Blok 5: Observability i dashboards
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Prometheus metrics dla LLM calls**
    - **Metryka**: Latency, tokens, cost, errors
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl localhost:8005/metrics | grep llm_
      # llm_requests_total, llm_tokens_used, llm_cost_dollars
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Distributed tracing dla intent flow**
@@ -180,7 +200,8 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
    - **Walidacja**: Actionable insights visible
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Full visibility into LLM usage
 - Cost tracking accurate
 - Performance bottlenecks visible
@@ -209,7 +230,7 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - Voice processing (Whisper STT)
   - Message queue for requests
   - HA Bridge for action execution

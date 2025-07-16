@@ -1,13 +1,15 @@
 # Faza 0 / Zadanie 1: Analiza i dokumentacja wymagań
 
 ## Cel zadania
+
 Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dokumentacji wymagań funkcjonalnych i niefunkcjonalnych dla systemu detekcji i automatyzacji wizyjnej.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Analiza wymagań funkcjonalnych (RF)
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Identyfikacja głównych aktorów systemu**
    - **Metryka**: Min. 3 aktorów (User, System, Home Assistant)
    - **Walidacja**: `cat docs/requirements/actors.md | grep "^##" | wc -l`
@@ -20,11 +22,13 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
 
 3. **[x] Utworzenie wymagań funkcjonalnych z priorytetami**
    - **Metryka**: 20+ wymagań w formacie RF001-RF020+
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      grep -E "^- \*\*RF[0-9]{3}\*\*:" functional-requirements.md | wc -l
      # Expected: ≥20
      ```
+
    - **Czas**: 6h
 
 4. **[x] Kategoryzacja wymagań (MoSCoW)**
@@ -32,14 +36,16 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
    - **Walidacja**: Każde RF ma tag: [MUST]/[SHOULD]/[COULD]/[WONT]
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Wszystkie główne funkcjonalności pokryte
 - Format zgodny z IEEE 830
 - Peer review przeszedł bez major issues
 
 ### Blok 2: Analiza wymagań niefunkcjonalnych (RNF)
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Wymagania wydajnościowe (Performance)**
    - **Metryka**: Min. 5 mierzalnych KPI
    - **Walidacja**: Każde ma target value (np. latency <2s)
@@ -60,14 +66,16 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
    - **Walidacja**: Capacity planning sheet wypełniony
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Wszystkie kategorie ISO 25010 pokryte
 - 100% wymagań ma metryki
 - Testowalne acceptance criteria
 
 ### Blok 3: Utworzenie macierzy śledzenia wymagań
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Przygotowanie szablonu macierzy**
    - **Metryka**: Kolumny: ID, Nazwa, Komponent, Test, Status
    - **Walidacja**: CSV/Excel z nagłówkami
@@ -75,12 +83,14 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
 
 2. **[x] Mapowanie wymagań do komponentów**
    - **Metryka**: 100% RF/RNF zmapowanych
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      import pandas as pd
      df = pd.read_csv('requirements_matrix.csv')
      assert df['Component'].notna().all()
      ```
+
    - **Czas**: 3h
 
 3. **[x] Linking wymagań do test cases (placeholder)**
@@ -88,14 +98,16 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
    - **Walidacja**: Kolumna 'Test_ID' wypełniona
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Pełna traceability od wymagania do implementacji
 - Export do JIRA/podobnego możliwy
 - Automated validation passing
 
 ### Blok 4: Walidacja i akceptacja wymagań
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Internal review dokumentacji**
    - **Metryka**: 0 krytycznych uwag
    - **Walidacja**: Review checklist completed
@@ -111,7 +123,8 @@ Przeprowadzenie kompletnej analizy wymagań systemowych i utworzenie pełnej dok
    - **Walidacja**: `git tag | grep "requirements-v1.0"`
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Sign-off na wymagania
 - Baseline utworzony
 - Change control process defined

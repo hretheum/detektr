@@ -1,14 +1,17 @@
 # Faza 6 / Zadanie 5: Consolidated monitoring dashboard
 
 ## Cel zadania
+
 Utworzyć pojedynczy, kompleksowy dashboard agregujący wszystkie kluczowe metryki systemu z możliwością drill-down do szczegółów.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] All metrics sources available**
    - **Metryka**: All services export metrics
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Check all metric endpoints
      for port in 8001 8002 8003 8004 8005 8006; do
@@ -16,29 +19,34 @@ Utworzyć pojedynczy, kompleksowy dashboard agregujący wszystkie kluczowe metry
      done
      # All should return metrics
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Dashboard requirements gathered**
    - **Metryka**: Key metrics identified
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # requirements.yaml exists with:
      - system_health_score
-     - service_statuses  
+     - service_statuses
      - resource_usage
      - automation_stats
      - cost_tracking
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Health score calculation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] System health score algorithm**
    - **Metryka**: 0-100 score calculated
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      # Health score formula
      (
@@ -48,11 +56,13 @@ Utworzyć pojedynczy, kompleksowy dashboard agregujący wszystkie kluczowe metry
        (avg(1 - memory_usage) * 0.2)
      ) * 100
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Service dependency mapping**
    - **Metryka**: Show service relationships
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```javascript
      // Dependency graph data
      const dependencies = {
@@ -62,11 +72,13 @@ Utworzyć pojedynczy, kompleksowy dashboard agregujący wszystkie kluczowe metry
      };
      // Visualized as flow diagram
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Alert impact scoring**
    - **Metryka**: Prioritize critical alerts
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      alerts = get_active_alerts()
      for alert in alerts:
@@ -74,34 +86,40 @@ Utworzyć pojedynczy, kompleksowy dashboard agregujący wszystkie kluczowe metry
          assert alert.impact_score >= 0
      # Critical alerts reduce health score more
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Health score accurate
 - Dependencies clear
 - Alerts prioritized
 
 ### Blok 2: Unified dashboard creation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Top-level KPI panel**
    - **Metryka**: Key metrics at a glance
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```javascript
      // KPI panels configured
      panels = [
        'System Health Score',
        'Active Detections/min',
-       'Automation Success Rate', 
+       'Automation Success Rate',
        'API Costs Today'
      ];
      assert(panels.every(p => dashboard.hasPanel(p)));
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Service status grid**
    - **Metryka**: All services with drill-down
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```javascript
      // Each service shows:
      servicePanel = {
@@ -111,11 +129,13 @@ Utworzyć pojedynczy, kompleksowy dashboard agregujący wszystkie kluczowe metry
        link: '/service-details/{name}'
      };
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Resource usage trends**
    - **Metryka**: Historical resource data
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      # 7-day trends for:
      avg_over_time(cpu_usage[7d])
@@ -123,19 +143,23 @@ Utworzyć pojedynczy, kompleksowy dashboard agregujący wszystkie kluczowe metry
      avg_over_time(gpu_usage[7d])
      avg_over_time(disk_usage[7d])
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Dashboard comprehensive
 - Navigation intuitive
 - Data aggregated
 
 ### Blok 3: Advanced features
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] One-click drill-down**
    - **Metryka**: Navigate to problem source
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```javascript
      // Click on alert → see trace
      // Click on service → see details
@@ -144,20 +168,24 @@ Utworzyć pojedynczy, kompleksowy dashboard agregujący wszystkie kluczowe metry
        assert(panel.links.length > 0);
      });
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Cost tracking integration**
    - **Metryka**: Show API and infra costs
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```promql
      # Cost panels show:
      sum(api_cost_dollars_total)
      sum(rate(api_cost_dollars_total[24h])) * 86400  # Daily rate
      # Budget vs actual
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Drill-down working
 - Costs visible
 - Insights actionable
@@ -185,7 +213,7 @@ Utworzyć pojedynczy, kompleksowy dashboard agregujący wszystkie kluczowe metry
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - All metrics available
   - Grafana 10+
 - **Blokuje**: Operations visibility
@@ -199,7 +227,7 @@ Utworzyć pojedynczy, kompleksowy dashboard agregujący wszystkie kluczowe metry
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Dashboard too slow
    - Data incorrect
    - Users confused

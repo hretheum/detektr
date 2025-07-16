@@ -1,6 +1,6 @@
 # Faza 1 / Zadanie 1: Konfiguracja środowiska Docker na serwerze Ubuntu
 
-<!-- 
+<!--
 LLM PROMPT dla całego zadania:
 Analizując to zadanie, upewnij się że:
 1. Cel jest jasny i biznesowo uzasadniony
@@ -10,38 +10,44 @@ Analizując to zadanie, upewnij się że:
 -->
 
 ## Cel zadania
+
 Zainstalować i skonfigurować Docker Engine oraz Docker Compose v2 na serwerze Ubuntu, przygotowując fundament dla całej infrastruktury kontenerowej projektu z security best practices i monitoring od początku.
 
 ## Blok 0: Prerequisites check
-<!-- 
+<!--
 LLM PROMPT: Ten blok jest OBOWIĄZKOWY dla każdego zadania.
 Sprawdź czy wszystkie zależności są spełnione ZANIM rozpoczniesz główne zadanie.
 -->
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Weryfikacja wymagań systemowych**
    - **Metryka**: Ubuntu 22.04+, kernel 5.15+, 50GB+ free space
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      ./scripts/check-docker-prerequisites.sh
      # Sprawdza: OS version, kernel, disk space, CPU arch
      # Exit 0 = ready to install
      ```
+
    - **Czas**: 0.5h
 
 2. **[x] Backup istniejącej konfiguracji**
    - **Metryka**: Existing Docker config (if any) backed up
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      ls -la /backups/docker/$(date +%Y%m%d)/{daemon.json,docker-compose.yml}
      # Files exist or "No existing Docker" logged
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Przygotowanie systemu i instalacja Docker
-<!-- 
+<!--
 LLM PROMPT dla bloku:
 Dekomponując ten blok:
 1. Każde zadanie atomowe musi być wykonalne w MAX 3h
@@ -50,9 +56,10 @@ Dekomponując ten blok:
 4. Blok powinien dostarczać konkretną wartość biznesową
 -->
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Aktualizacja systemu i instalacja prerequisites**
-   <!-- 
+   <!--
    LLM PROMPT dla zadania atomowego:
    To zadanie musi:
    - Mieć JEDEN konkretny deliverable
@@ -61,37 +68,43 @@ Dekomponując ten blok:
    - NIE wymagać czekania na zewnętrzne zależności
    -->
    - **Metryka**: System updated, required packages installed
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      apt list --installed | grep -E "(ca-certificates|curl|gnupg)" | wc -l
      # Should return 3
      dpkg -l | grep -E "^ii.*apt-transport-https" # Should show installed
      ```
+
    - **Czas**: 1h
 
 2. **[x] Dodanie oficjalnego Docker repository**
    - **Metryka**: Docker GPG key added, repository configured
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      apt-key list | grep Docker
      # Shows Docker Release key
      cat /etc/apt/sources.list.d/docker.list | grep "download.docker.com"
      # Shows correct repository
      ```
+
    - **Czas**: 0.5h
 
 3. **[x] Instalacja Docker Engine i CLI**
    - **Metryka**: Docker CE 24.0+ installed and running
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker --version | grep -E "Docker version 2[4-9]"
      systemctl is-active docker # returns "active"
      docker run hello-world 2>&1 | grep "Hello from Docker!"
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
-<!-- 
+#### Metryki sukcesu bloku
+<!--
 LLM PROMPT dla metryk bloku:
 Metryki muszą potwierdzać że blok osiągnął swój cel.
 Powinny być:
@@ -105,7 +118,8 @@ Powinny być:
 
 ### Blok 2: Instalacja i konfiguracja Docker Compose
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Instalacja Docker Compose v2 jako plugin**
    - **Metryka**: Version 2.20+
    - **Walidacja**: `docker compose version | grep -E "v2\.(2[0-9]|[3-9][0-9])"`
@@ -118,127 +132,150 @@ Powinny być:
 
 3. **[x] Test compose z przykładowym stackiem**
    - **Metryka**: Multi-container app działa
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      cd /tmp && git clone https://github.com/docker/awesome-compose
      cd awesome-compose/nginx-golang-mysql
      docker compose up -d && docker compose ps
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Compose commands działają globally
 - Multi-container orchestration works
 - Logs aggregation działa
 
 ### Blok 3: Security hardening i monitoring
-<!-- 
+<!--
 LLM PROMPT: Security nie może być afterthought.
 Każdy element musi być testowany i mierzalny.
 Rozbij duże zadania na mniejsze kroki.
 -->
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Konfiguracja user namespace remapping**
    - **Metryka**: Docker daemon runs as non-root inside containers
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker info | grep "userns"
      # Shows: User Namespace Enabled: true
      cat /etc/subuid | grep dockremap
      # Shows dockremap:100000:65536
      ```
+
    - **Czas**: 1h
 
 2. **[x] Setup seccomp i AppArmor profiles**
    - **Metryka**: Default security profiles active
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker info | grep -A 5 "Security Options"
      # Shows: seccomp, apparmor
      docker run --rm alpine cat /proc/1/status | grep Seccomp
      # Mode should be 2 (filtered)
      ```
+
    - **Czas**: 1.5h
 
 3. **[x] Konfiguracja Docker daemon metrics**
    - **Metryka**: Prometheus metrics endpoint active
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s localhost:9323/metrics | grep -E "engine_daemon_network_actions_seconds_count"
      # Returns metrics data
      netstat -tlnp | grep 9323
      # Shows docker listening
      ```
+
    - **Czas**: 1h
 
 4. **[x] Setup log rotation i disk limits**
    - **Metryka**: Logs rotated at 100MB, max 3 files
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      cat /etc/docker/daemon.json | jq '."log-driver"'  # "json-file"
      cat /etc/docker/daemon.json | jq '."log-opts"."max-size"'  # "100m"
      cat /etc/docker/daemon.json | jq '."log-opts"."max-file"'  # "3"
      ```
+
    - **Czas**: 0.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Security scan pokazuje 0 critical issues
 - Metrics endpoint dostępny dla Prometheus
 - Disk usage pod kontrolą (auto-cleanup działa)
 
 ### Blok 4: Integracja z projektem i dokumentacja
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[x] Utworzenie struktury katalogów projektu**
    - **Metryka**: /opt/detektor directories with correct permissions
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      find /opt/detektor -type d -name "data" -o -name "config" -o -name "logs" | wc -l
      # Should return 3
      stat -c "%U:%G %a" /opt/detektor  # user:docker 750
      ```
+
    - **Czas**: 0.5h
 
 2. **[x] Utworzenie Docker networks dla projektu**
    - **Metryka**: Isolated networks for frontend/backend
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker network ls | grep -E "detektor_(frontend|backend)" | wc -l
      # Should return 2
      docker network inspect detektor_backend | jq '.[0].EnableIPv6'  # false
      ```
+
    - **Czas**: 0.5h
 
 3. **[x] Base docker-compose.yml z common services**
    - **Metryka**: Valid compose file with x-templates
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker compose -f /opt/detektor/docker-compose.yml config --quiet
      # No output = valid
      docker compose -f /opt/detektor/docker-compose.yml config | grep -c "x-"
      # Should show templates defined
      ```
+
    - **Czas**: 1h
 
 4. **[x] Dokumentacja i runbook**
    - **Metryka**: Complete setup guide, troubleshooting section
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      vale /opt/detektor/docs/docker-setup.md
      # No errors
      grep -c "^##" /opt/detektor/docs/docker-setup.md
      # At least 5 sections
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Struktura projektu gotowa do deploymentu
 - Docker Compose scaffold validates i jest reusable
 - Dokumentacja kompletna i przetestowana
 
 ## Całościowe metryki sukcesu zadania
-<!-- 
+<!--
 LLM PROMPT dla metryk całościowych:
 Te metryki muszą:
 1. Potwierdzać osiągnięcie celu biznesowego zadania
@@ -253,7 +290,7 @@ Te metryki muszą:
 4. **Maintainability**: Setup odtwarzalny w <30min używając dokumentacji
 
 ## Deliverables
-<!-- 
+<!--
 LLM PROMPT: Lista WSZYSTKICH artefaktów które powstaną.
 Każdy deliverable musi:
 1. Mieć konkretną ścieżkę w filesystem
@@ -269,7 +306,7 @@ Każdy deliverable musi:
 6. `/etc/subuid` & `/etc/subgid` - User namespace mappings
 
 ## Narzędzia
-<!-- 
+<!--
 LLM PROMPT: Wymień TYLKO narzędzia faktycznie używane w zadaniach.
 Dla każdego podaj:
 1. Dokładną nazwę i wersję (jeśli istotna)
@@ -285,16 +322,16 @@ Dla każdego podaj:
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - SSH dostęp do Ubuntu 22.04+ server
   - Minimum 50GB free disk space
   - Internet dla package downloads
-- **Blokuje**: 
+- **Blokuje**:
   - Wszystkie następne zadania (fundament)
   - Szczególnie: NVIDIA toolkit, observability stack
 
 ## Ryzyka i mitigacje
-<!-- 
+<!--
 LLM PROMPT dla ryzyk:
 Identyfikuj REALNE ryzyka które mogą wystąpić podczas realizacji.
 Dla każdego ryzyka:
@@ -312,7 +349,7 @@ Dla każdego ryzyka:
 | User namespace breaks existing containers | Średnie | Wysoki | Test on single container first | Existing containers running |
 
 ## Rollback Plan
-<!-- 
+<!--
 LLM PROMPT: KAŻDE zadanie musi mieć plan cofnięcia zmian.
 Opisz:
 1. Jak wykryć że coś poszło źle
@@ -320,7 +357,7 @@ Opisz:
 3. Maksymalny czas rollbacku
 -->
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Docker daemon nie startuje
    - Containers fail to run
    - Security features break functionality

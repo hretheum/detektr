@@ -1,41 +1,49 @@
 # Faza 6 / Zadanie 6: Dokumentacja z przykładami trace'ów
 
 ## Cel zadania
+
 Stworzyć kompletną dokumentację techniczną wzbogaconą o rzeczywiste przykłady trace'ów, umożliwiającą szybkie rozwiązywanie problemów i onboarding.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Trace examples collection**
    - **Metryka**: Representative traces saved
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      ls -la /traces/examples/
      # success/, failure/, slow/, edge-cases/
      find /traces/examples -name "*.json" | wc -l
      # >20 example traces
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Documentation framework**
    - **Metryka**: Docs site generator ready
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      mkdocs --version
      # or
      hugo version
      # Build test site successfully
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Troubleshooting guide
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Common issues catalog**
    - **Metryka**: 20+ issues documented
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # troubleshooting.yaml structure:
      - issue: "High latency in face detection"
@@ -50,11 +58,13 @@ Stworzyć kompletną dokumentację techniczną wzbogaconą o rzeczywiste przykł
          - "Switch to smaller model"
          - "Increase batch size to 8"
      ```
+
    - **Czas**: 3h
 
 2. **[ ] Trace analysis walkthrough**
    - **Metryka**: Step-by-step guides
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```markdown
      # Each guide includes:
      1. Problem description
@@ -63,30 +73,36 @@ Stworzyć kompletną dokumentację techniczną wzbogaconą o rzeczywiste przykł
      4. What to look for
      5. Solution steps
      ```
+
    - **Czas**: 2.5h
 
 3. **[ ] Performance patterns library**
    - **Metryka**: Good vs bad patterns
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```python
      patterns = load_performance_patterns()
      assert "sequential_processing" in patterns.bad
      assert "parallel_ai_inference" in patterns.good
      # Each pattern has trace example
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Issues documented
 - Patterns clear
 - Solutions provided
 
 ### Blok 2: Developer documentation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] API reference with traces**
    - **Metryka**: All endpoints documented
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```markdown
      # API doc includes:
      - Endpoint: POST /detect
@@ -95,11 +111,13 @@ Stworzyć kompletną dokumentację techniczną wzbogaconą o rzeczywiste przykł
      - Expected latency range
      - Link to example trace
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Architecture guide**
    - **Metryka**: System design explained
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```
      docs/
      ├── architecture/
@@ -108,11 +126,13 @@ Stworzyć kompletną dokumentację techniczną wzbogaconą o rzeczywiste przykł
      │   ├── data-flow.md (with example traces)
      │   └── scaling.md
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Automation cookbook**
    - **Metryka**: 20+ automation examples
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # Each automation includes:
      - name: "Motion activated lights"
@@ -120,43 +140,51 @@ Stworzyć kompletną dokumentację techniczną wzbogaconą o rzeczywiste przykł
      - trace_example: "traces/automation-motion-lights.json"
      - common_issues: [...]
      ```
+
    - **Czas**: 2h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - APIs documented
 - Architecture clear
 - Examples practical
 
 ### Blok 3: Interactive documentation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Trace viewer integration**
    - **Metryka**: Embedded trace viewer
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```html
      <!-- Docs can embed traces -->
-     <div class="trace-viewer" 
+     <div class="trace-viewer"
           data-trace-id="example-123"
           data-jaeger-url="http://localhost:16686">
      </div>
      <!-- Shows interactive trace -->
      ```
+
    - **Czas**: 2h
 
 2. **[ ] Search and navigation**
    - **Metryka**: Fast search across docs
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      # Search index built
      ls -la docs/_build/search_index.json
      # Test search for "high latency"
      # Returns relevant pages with trace examples
      ```
+
    - **Czas**: 1h
 
 3. **[ ] CI/CD for docs**
    - **Metryka**: Auto-build and deploy
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```yaml
      # .github/workflows/docs.yml
      - name: Build docs
@@ -166,9 +194,11 @@ Stworzyć kompletną dokumentację techniczną wzbogaconą o rzeczywiste przykł
      - name: Deploy
        run: mkdocs gh-deploy
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Docs interactive
 - Search working
 - Auto-deployed
@@ -196,7 +226,7 @@ Stworzyć kompletną dokumentację techniczną wzbogaconą o rzeczywiste przykł
 
 ## Zależności
 
-- **Wymaga**: 
+- **Wymaga**:
   - System fully operational
   - Trace examples collected
 - **Blokuje**: Team scaling
@@ -210,7 +240,7 @@ Stworzyć kompletną dokumentację techniczną wzbogaconą o rzeczywiste przykł
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Docs build failing
    - Examples broken
    - Users confused
@@ -228,6 +258,7 @@ Stworzyć kompletną dokumentację techniczną wzbogaconą o rzeczywiste przykł
 Gratulacje! Ukończyłeś wszystkie fazy projektu Detektor. System jest w pełni funkcjonalny, zoptymalizowany i udokumentowany.
 
 Następne kroki:
+
 - Monitoring produkcyjny
 - Gathering użytkowników
 - Iteracyjne ulepszenia

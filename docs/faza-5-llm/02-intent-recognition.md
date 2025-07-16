@@ -1,12 +1,15 @@
 # Faza 5 / Zadanie 2: Intent Recognition Service
 
 ## Cel zadania
+
 Stworzyć serwis rozpoznawania intencji użytkownika na podstawie kombinacji: komend głosowych, gestów, kontekstu czasowego i historii interakcji.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza typowych intencji użytkownika**
    - **Metryka**: Intent taxonomy created
    - **Walidacja**: 20+ intents defined
@@ -19,7 +22,8 @@ Stworzyć serwis rozpoznawania intencji użytkownika na podstawie kombinacji: ko
 
 ### Blok 1: Multi-modal input processing
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Intent recognition interface**
    - **Metryka**: Flexible input types
    - **Walidacja**: `pytest tests/test_intent_interface.py`
@@ -37,7 +41,8 @@ Stworzyć serwis rozpoznawania intencji użytkownika na podstawie kombinacji: ko
 
 ### Blok 2: Context enrichment
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] User history integration**
    - **Metryka**: Last N interactions included
    - **Walidacja**: History retrieval test
@@ -55,7 +60,8 @@ Stworzyć serwis rozpoznawania intencji użytkownika na podstawie kombinacji: ko
 
 ### Blok 3: LLM-based intent analysis
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Intent classification prompts**
    - **Metryka**: High accuracy classification
    - **Walidacja**: Classification benchmark
@@ -73,7 +79,8 @@ Stworzyć serwis rozpoznawania intencji użytkownika na podstawie kombinacji: ko
 
 ### Blok 4: Action mapping i execution
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Intent to action mapping**
    - **Metryka**: Deterministic execution
    - **Walidacja**: Action trigger test

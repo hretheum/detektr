@@ -1,132 +1,162 @@
 # Faza 2 / Zadanie 3: Setup PostgreSQL/TimescaleDB z monitoringiem
 
 ## Cel zadania
+
 Wdrożyć TimescaleDB jako time-series database dla metadanych klatek z automatyczną kompresją, continuous aggregates i pełnym monitoringiem.
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Weryfikacja wymagań PostgreSQL**
    - **Metryka**: PostgreSQL 15+, TimescaleDB compatible
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker run --rm timescale/timescaledb:latest-pg15 postgres --version
      # PostgreSQL 15.x
      ```
+
    - **Czas**: 0.5h
 
 2. **[ ] Alokacja storage dla DB**
    - **Metryka**: 50GB+ dedicated volume
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      df -h /var/lib/docker/volumes | grep postgres
      docker volume inspect postgres_data | jq '.[0].Options'
      ```
+
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 1: Database deployment i schema
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Deploy TimescaleDB container**
    - **Metryka**: DB accepting connections, extensions loaded
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      docker exec postgres psql -U postgres -c "SELECT extname FROM pg_extension WHERE extname='timescaledb'"
      # timescaledb
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Utworzenie schema dla frame metadata**
    - **Metryka**: Hypertables created, indexes optimized
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```sql
      SELECT hypertable_name FROM timescaledb_information.hypertables;
      -- frame_metadata, detection_events
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Konfiguracja connection pooling (PgBouncer)**
    - **Metryka**: <100 direct connections, pool working
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      psql -h localhost -p 6432 -U postgres -c "SHOW POOLS"
      # active connections through pool
      ```
+
    - **Czas**: 1.5h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Database schema complete
 - Hypertables configured
 - Connection pooling active
 
 ### Blok 2: Automated data management
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Setup compression policies**
    - **Metryka**: >10:1 compression ratio after 7 days
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```sql
      SELECT * FROM timescaledb_information.compressed_chunk_stats;
      -- compression_ratio > 10
      ```
+
    - **Czas**: 1.5h
 
 2. **[ ] Continuous aggregates dla stats**
    - **Metryka**: Hourly/daily aggregates auto-refresh
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```sql
      SELECT view_name, refresh_lag FROM timescaledb_information.continuous_aggregates;
      -- All aggregates current
      ```
+
    - **Czas**: 2h
 
 3. **[ ] Data retention policies**
    - **Metryka**: Auto-drop data >30 days
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```sql
      SELECT * FROM timescaledb_information.drop_chunks_policies;
      -- Policy configured and active
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - Automated maintenance working
 - Storage growth controlled
 - Query performance stable
 
 ### Blok 3: Monitoring integration
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] postgres_exporter setup**
    - **Metryka**: DB metrics available in Prometheus
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s localhost:9187/metrics | grep pg_up
      # pg_up 1
      ```
+
    - **Czas**: 1h
 
 2. **[ ] Custom metrics queries**
    - **Metryka**: Frame count, detection stats exported
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s localhost:9187/metrics | grep frame_count_total
      # custom metrics present
      ```
+
    - **Czas**: 1.5h
 
 3. **[ ] Grafana dashboard import**
    - **Metryka**: PostgreSQL performance visible
-   - **Walidacja**: 
+   - **Walidacja**:
+
      ```bash
      curl -s http://localhost:3000/api/dashboards/uid/postgres-timescale | jq .dashboard.title
      # "TimescaleDB Performance"
      ```
+
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku:
+#### Metryki sukcesu bloku
+
 - All metrics exported
 - Dashboard functional
 - Alerts configured
@@ -166,7 +196,7 @@ Wdrożyć TimescaleDB jako time-series database dla metadanych klatek z automaty
 
 ## Rollback Plan
 
-1. **Detekcja problemu**: 
+1. **Detekcja problemu**:
    - Queries timing out
    - Disk usage critical
    - Connection pool exhausted

@@ -1,12 +1,15 @@
 # Faza 3 / Zadanie 6: Detection Zones Configuration
 
 ## Cel zadania
+
 Implementacja systemu definiowania stref detekcji dla każdej kamery, umożliwiając selektywne przetwarzanie tylko wybranych obszarów obrazu.
 
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites
-#### Zadania atomowe:
+
+#### Zadania atomowe
+
 1. **[ ] Analiza wymagań dla zone management**
    - **Metryka**: Use cases documented
    - **Walidacja**: Requirements complete
@@ -19,7 +22,8 @@ Implementacja systemu definiowania stref detekcji dla każdej kamery, umożliwia
 
 ### Blok 1: Zone definition system
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] TDD: Zone model i validation**
    - **Metryka**: Polygon, rectangle, circle zones
    - **Walidacja**: `pytest tests/test_zone_models.py`
@@ -37,7 +41,8 @@ Implementacja systemu definiowania stref detekcji dla każdej kamery, umożliwia
 
 ### Blok 2: Zone editor implementation
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Web-based zone editor UI**
    - **Metryka**: Draw zones on camera view
    - **Walidacja**: UI interaction test
@@ -55,7 +60,8 @@ Implementacja systemu definiowania stref detekcji dla każdej kamery, umożliwia
 
 ### Blok 3: Zone processing integration
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Zone mask generation**
    - **Metryka**: Binary masks for detection
    - **Walidacja**: Mask accuracy test
@@ -73,7 +79,8 @@ Implementacja systemu definiowania stref detekcji dla każdej kamery, umożliwia
 
 ### Blok 4: Advanced zone features
 
-#### Zadania atomowe:
+#### Zadania atomowe
+
 1. **[ ] Time-based zone activation**
    - **Metryka**: Schedule zone on/off
    - **Walidacja**: Schedule test
