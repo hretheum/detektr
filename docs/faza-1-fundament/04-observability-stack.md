@@ -169,7 +169,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
 #### Zadania atomowe
 
-1. **[ ] Metryki dla Prometheus, Grafana, Jaeger**
+1. **[x] Metryki dla Prometheus, Grafana, Jaeger**
    - **Metryka**: Self-monitoring wszystkich komponentów
    - **Walidacja**:
 
@@ -182,7 +182,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
    - **Czas**: 1h
 
-2. **[ ] Alerty dla observability stack**
+2. **[x] Alerty dla observability stack**
    - **Metryka**: 5 podstawowych alertów (down, high memory, disk space)
    - **Walidacja**:
 
@@ -193,7 +193,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
    - **Czas**: 1h
 
-3. **[ ] Backup configuration dla Grafana**
+3. **[x] Backup configuration dla Grafana**
    - **Metryka**: Automated backup dashboards i datasources
    - **Walidacja**:
 
