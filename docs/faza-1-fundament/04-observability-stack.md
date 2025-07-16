@@ -8,7 +8,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
 #### Zadania atomowe
 
-1. **[ ] Weryfikacja Docker Compose i dostępnych portów**
+1. **[x] Weryfikacja Docker Compose i dostępnych portów**
    - **Metryka**: Docker Compose v2.20+, porty 3000,9090,16686,3100 wolne
    - **Walidacja**:
 
@@ -21,7 +21,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
    - **Czas**: 0.5h
 
-2. **[ ] Weryfikacja zasobów systemowych**
+2. **[x] Weryfikacja zasobów systemowych**
    - **Metryka**: Min 8GB RAM wolne, 20GB dysku
    - **Walidacja**:
 
