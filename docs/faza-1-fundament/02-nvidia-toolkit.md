@@ -38,17 +38,17 @@ Zainstalować i skonfigurować NVIDIA Container Toolkit, umożliwiając kontener
 ### Blok 2: Weryfikacja i testy GPU
 
 #### Zadania atomowe:
-1. **[ ] Test podstawowy CUDA container**
+1. **[x] Test podstawowy CUDA container**
    - **Metryka**: GPU widoczne w kontenerze
    - **Walidacja**: `docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi`
    - **Czas**: 0.5h
 
-2. **[ ] Test ML framework (PyTorch)**
+2. **[x] Test ML framework (PyTorch)**
    - **Metryka**: PyTorch widzi GPU
    - **Walidacja**: `docker run --rm --gpus all pytorch/pytorch python -c "import torch; print(torch.cuda.is_available())"`
    - **Czas**: 1h
 
-3. **[ ] Benchmark GPU performance**
+3. **[x] Benchmark GPU performance**
    - **Metryka**: Performance zgodny ze specyfikacją
    - **Walidacja**: cuda-samples nbody benchmark
    - **Czas**: 1h

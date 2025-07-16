@@ -51,6 +51,28 @@ Docker daemon.json zaktualizowany z:
 }
 ```
 
+## Blok 2: Weryfikacja i testy GPU - COMPLETED ✅
+
+### Testy wykonane
+1. **CUDA container test**
+   ```bash
+   docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi
+   ```
+   - ✅ GPU widoczne w kontenerze
+   - ✅ CUDA 12.9 dostępne
+
+2. **PyTorch GPU test**
+   ```bash
+   docker run --rm --gpus all pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime python -c "..."
+   ```
+   - ✅ PyTorch 2.1.0 widzi GPU
+   - ✅ Matrix multiplication działa
+   - ✅ GPU memory allocation OK
+
+3. **Performance benchmark**
+   - GPU: RTX 4070 Ti SUPER
+   - Compute capability: 8.9
+   - Performance: 28.83 TFLOPS (FP32)
+
 ## Następne kroki
-- Blok 2: Weryfikacja i testy GPU w kontenerach
 - Blok 3: Monitoring GPU
