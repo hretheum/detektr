@@ -1,0 +1,23 @@
+# Core dependencies
+python-dotenv==1.0.0
+pyyaml==6.0.1
+requests==2.31.0
+
+# Observability
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
+opentelemetry-exporter-jaeger==1.22.0
+opentelemetry-instrumentation==0.43b0
+prometheus-client==0.19.0
+
+# Async support
+aiohttp==3.9.1
+asyncio==3.4.3
+
+# Redis for message bus
+redis==5.0.1
+aioredis==2.0.1
+
+# Utils
+click==8.1.7
+structlog==24.1.0

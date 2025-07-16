@@ -16,6 +16,40 @@ WORKFLOW STARTOWY:
 5. Użyj /nakurwiaj <blok> do automatycznego wykonania
 -->
 
+## 🐍 Python Environment Management
+
+**UŻYWAMY VENV** - Standardowe środowiska wirtualne Python
+```bash
+# Tworzenie środowiska
+python3 -m venv venv
+
+# Aktywacja
+source venv/bin/activate  # Mac/Linux
+# lub
+. venv/bin/activate
+
+# Instalacja zależności
+pip install -r requirements.txt
+pip install -r requirements-dev.txt  # dla developerów
+
+# Deaktywacja
+deactivate
+```
+
+**DLACZEGO VENV?**
+- Wbudowane w Python (nie wymaga dodatkowych narzędzi)
+- Proste i przewidywalne
+- Dobrze wspierane przez IDE
+- Łatwe do odtworzenia w Docker/CI
+- Kompatybilne ze wszystkimi systemami
+
+**KONWENCJE:**
+- Nazwa środowiska: `venv` (nie `.venv` - chcemy widzieć folder)
+- Dodaj `venv/` do `.gitignore`
+- Używaj `requirements.txt` dla głównych zależności
+- Używaj `requirements-dev.txt` dla narzędzi developerskich
+- Pin wersje dokładnie (np. `black==23.12.1`)
+
 ## Główne Zasady Projektu
 
 ### 🚨 ZASADA ZERO - NAJWYŻSZY PRIORYTET 🚨

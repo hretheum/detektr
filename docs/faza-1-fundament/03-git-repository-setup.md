@@ -6,7 +6,7 @@ Utworzenie kompletnej struktury repozytorium zgodnej z Clean Architecture, konfi
 ## Blok 0: Prerequisites check
 
 #### Zadania atomowe:
-1. **[ ] Weryfikacja dostępu do Git i GitHub**
+1. **[x] Weryfikacja dostępu do Git i GitHub**
    - **Metryka**: Git zainstalowany, SSH keys skonfigurowane
    - **Walidacja**: 
      ```bash
@@ -15,7 +15,7 @@ Utworzenie kompletnej struktury repozytorium zgodnej z Clean Architecture, konfi
      ```
    - **Czas**: 0.5h
 
-2. **[ ] Weryfikacja narzędzi developerskich**
+2. **[x] Weryfikacja narzędzi developerskich**
    - **Metryka**: Python 3.11+, pre-commit, poetry/pip-tools zainstalowane
    - **Walidacja**: 
      ```bash
