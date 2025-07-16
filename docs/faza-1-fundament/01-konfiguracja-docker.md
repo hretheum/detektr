@@ -19,7 +19,7 @@ Sprawdź czy wszystkie zależności są spełnione ZANIM rozpoczniesz główne z
 -->
 
 #### Zadania atomowe:
-1. **[ ] Weryfikacja wymagań systemowych**
+1. **[x] Weryfikacja wymagań systemowych**
    - **Metryka**: Ubuntu 22.04+, kernel 5.15+, 50GB+ free space
    - **Walidacja**: 
      ```bash
@@ -29,7 +29,7 @@ Sprawdź czy wszystkie zależności są spełnione ZANIM rozpoczniesz główne z
      ```
    - **Czas**: 0.5h
 
-2. **[ ] Backup istniejącej konfiguracji**
+2. **[x] Backup istniejącej konfiguracji**
    - **Metryka**: Existing Docker config (if any) backed up
    - **Walidacja**: 
      ```bash
@@ -51,7 +51,7 @@ Dekomponując ten blok:
 -->
 
 #### Zadania atomowe:
-1. **[ ] Aktualizacja systemu i instalacja prerequisites**
+1. **[x] Aktualizacja systemu i instalacja prerequisites**
    <!-- 
    LLM PROMPT dla zadania atomowego:
    To zadanie musi:
@@ -69,7 +69,7 @@ Dekomponując ten blok:
      ```
    - **Czas**: 1h
 
-2. **[ ] Dodanie oficjalnego Docker repository**
+2. **[x] Dodanie oficjalnego Docker repository**
    - **Metryka**: Docker GPG key added, repository configured
    - **Walidacja**: 
      ```bash
@@ -80,7 +80,7 @@ Dekomponując ten blok:
      ```
    - **Czas**: 0.5h
 
-3. **[ ] Instalacja Docker Engine i CLI**
+3. **[x] Instalacja Docker Engine i CLI**
    - **Metryka**: Docker CE 24.0+ installed and running
    - **Walidacja**: 
      ```bash
@@ -106,17 +106,17 @@ Powinny być:
 ### Blok 2: Instalacja i konfiguracja Docker Compose
 
 #### Zadania atomowe:
-1. **[ ] Instalacja Docker Compose v2 jako plugin**
+1. **[x] Instalacja Docker Compose v2 jako plugin**
    - **Metryka**: Version 2.20+
    - **Walidacja**: `docker compose version | grep -E "v2\.(2[0-9]|[3-9][0-9])"`
    - **Czas**: 0.5h
 
-2. **[ ] Konfiguracja auto-complete dla compose**
+2. **[x] Konfiguracja auto-complete dla compose**
    - **Metryka**: Tab completion działa w bash/zsh
    - **Walidacja**: Wpisz `docker compose u[TAB]` → `up`
    - **Czas**: 0.5h
 
-3. **[ ] Test compose z przykładowym stackiem**
+3. **[x] Test compose z przykładowym stackiem**
    - **Metryka**: Multi-container app działa
    - **Walidacja**: 
      ```bash
@@ -139,7 +139,7 @@ Rozbij duże zadania na mniejsze kroki.
 -->
 
 #### Zadania atomowe:
-1. **[ ] Konfiguracja user namespace remapping**
+1. **[x] Konfiguracja user namespace remapping**
    - **Metryka**: Docker daemon runs as non-root inside containers
    - **Walidacja**: 
      ```bash
@@ -150,7 +150,7 @@ Rozbij duże zadania na mniejsze kroki.
      ```
    - **Czas**: 1h
 
-2. **[ ] Setup seccomp i AppArmor profiles**
+2. **[x] Setup seccomp i AppArmor profiles**
    - **Metryka**: Default security profiles active
    - **Walidacja**: 
      ```bash
@@ -161,7 +161,7 @@ Rozbij duże zadania na mniejsze kroki.
      ```
    - **Czas**: 1.5h
 
-3. **[ ] Konfiguracja Docker daemon metrics**
+3. **[x] Konfiguracja Docker daemon metrics**
    - **Metryka**: Prometheus metrics endpoint active
    - **Walidacja**: 
      ```bash
@@ -172,7 +172,7 @@ Rozbij duże zadania na mniejsze kroki.
      ```
    - **Czas**: 1h
 
-4. **[ ] Setup log rotation i disk limits**
+4. **[x] Setup log rotation i disk limits**
    - **Metryka**: Logs rotated at 100MB, max 3 files
    - **Walidacja**: 
      ```bash
@@ -190,7 +190,7 @@ Rozbij duże zadania na mniejsze kroki.
 ### Blok 4: Integracja z projektem i dokumentacja
 
 #### Zadania atomowe:
-1. **[ ] Utworzenie struktury katalogów projektu**
+1. **[x] Utworzenie struktury katalogów projektu**
    - **Metryka**: /opt/detektor directories with correct permissions
    - **Walidacja**: 
      ```bash
@@ -200,7 +200,7 @@ Rozbij duże zadania na mniejsze kroki.
      ```
    - **Czas**: 0.5h
 
-2. **[ ] Utworzenie Docker networks dla projektu**
+2. **[x] Utworzenie Docker networks dla projektu**
    - **Metryka**: Isolated networks for frontend/backend
    - **Walidacja**: 
      ```bash
@@ -210,7 +210,7 @@ Rozbij duże zadania na mniejsze kroki.
      ```
    - **Czas**: 0.5h
 
-3. **[ ] Base docker-compose.yml z common services**
+3. **[x] Base docker-compose.yml z common services**
    - **Metryka**: Valid compose file with x-templates
    - **Walidacja**: 
      ```bash
@@ -221,7 +221,7 @@ Rozbij duże zadania na mniejsze kroki.
      ```
    - **Czas**: 1h
 
-4. **[ ] Dokumentacja i runbook**
+4. **[x] Dokumentacja i runbook**
    - **Metryka**: Complete setup guide, troubleshooting section
    - **Walidacja**: 
      ```bash
