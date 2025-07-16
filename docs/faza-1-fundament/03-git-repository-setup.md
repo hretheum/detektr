@@ -28,7 +28,7 @@ Utworzenie kompletnej struktury repozytorium zgodnej z Clean Architecture, konfi
 ### Blok 1: Struktura katalogów Clean Architecture
 
 #### Zadania atomowe:
-1. **[ ] Utworzenie głównej struktury katalogów**
+1. **[x] Utworzenie głównej struktury katalogów**
    - **Metryka**: Struktura zgodna z DDD i Clean Architecture utworzona
    - **Walidacja**: 
      ```bash
@@ -37,7 +37,7 @@ Utworzenie kompletnej struktury repozytorium zgodnej z Clean Architecture, konfi
      ```
    - **Czas**: 1h
 
-2. **[ ] Utworzenie struktury dla bounded contexts**
+2. **[x] Utworzenie struktury dla bounded contexts**
    - **Metryka**: 5 contexts (monitoring, detection, management, automation, integration)
    - **Walidacja**: 
      ```bash
@@ -46,7 +46,7 @@ Utworzenie kompletnej struktury repozytorium zgodnej z Clean Architecture, konfi
      ```
    - **Czas**: 1.5h
 
-3. **[ ] Konfiguracja Python packages z __init__.py**
+3. **[x] Konfiguracja Python packages z __init__.py**
    - **Metryka**: Wszystkie katalogi są prawidłowymi Python packages
    - **Walidacja**: 
      ```bash
