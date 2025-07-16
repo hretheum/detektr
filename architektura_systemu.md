@@ -260,7 +260,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 
 #### Zadania i Metryki
 
-1. **Konfiguracja środowiska Docker na serwerze Ubuntu**
+1. **[x] Konfiguracja środowiska Docker na serwerze Ubuntu**
    - **Metryka**: Docker daemon działa, docker-compose v2.20+
    - **Walidacja**: `docker run hello-world && docker compose version`
    - **Sukces**: Zwraca wersję ≥ 2.20, hello-world działa
