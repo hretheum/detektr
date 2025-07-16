@@ -49,9 +49,22 @@
   - MkDocs dokumentacja
 - **Link**: [03-git-repository-setup.md](./faza-1-fundament/03-git-repository-setup.md)
 
-### Zadanie 4: Deploy stack observability
+### Zadanie 4: Deploy stack observability ✅
 
-- **Status**: Do wykonania
+- **Status**: UKOŃCZONE
+- **Data**: 16.07.2025
+- **Komponenty**:
+  - Prometheus v2.45.0 z 6 targets
+  - Grafana 10.2.3 z 4 dashboardami
+  - Jaeger all-in-one z OTLP support
+  - Loki 2.9.4 + Promtail dla log aggregation
+  - 10 alertów (GPU + observability)
+  - Backup automation dla konfiguracji
+- **Endpointy**:
+  - Grafana: http://localhost:3000
+  - Prometheus: http://localhost:9090
+  - Jaeger: http://localhost:16686
+  - Loki: http://localhost:3100
 - **Link**: [04-observability-stack.md](./faza-1-fundament/04-observability-stack.md)
 
 ### Zadanie 5: Konfiguracja OpenTelemetry SDK

@@ -294,7 +294,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Istnieją: services/, docs/, tests/, .github/
    - **[Szczegóły →](docs/faza-1-fundament/03-git-repository-setup.md)**
 
-4. **[ ] Deploy stack observability: Jaeger, Prometheus, Grafana, Loki**
+4. **[x] Deploy stack observability: Jaeger, Prometheus, Grafana, Loki**
    - **Metryki**:
      - Jaeger UI: <http://localhost:16686>
      - Prometheus: <http://localhost:9090>
