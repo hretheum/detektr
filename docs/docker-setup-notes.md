@@ -28,7 +28,22 @@
 ✅ Hello-world container wykonuje się poprawnie
 ✅ Użytkownik może uruchamiać kontenery bez sudo
 
+## Wykonane kroki (Blok 2)
+
+### 1. Docker Compose v2 jako plugin
+- Już zainstalowany z Docker CE (v2.38.2)
+- Działa jako `docker compose` (nie docker-compose)
+
+### 2. Auto-completion
+- Skonfigurowane dla zsh
+- Dodane do ~/.zsh/completions/
+- Włączone w ~/.zshrc
+
+### 3. Test multi-container
+- Flask-Redis stack uruchomiony pomyślnie
+- Services komunikują się poprawnie
+- docker compose up/down/ps/logs działają
+
 ## Następne kroki
-- Blok 2: Instalacja i konfiguracja Docker Compose (już zainstalowane jako plugin)
 - Blok 3: Security hardening i monitoring
 - Blok 4: Integracja z projektem
