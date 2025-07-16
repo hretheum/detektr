@@ -288,13 +288,13 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Pokazuje GTX 4070 Super, CUDA 12.0+
    - **[Szczegóły →](docs/faza-1-fundament/02-nvidia-toolkit.md)**
 
-3. **Setup repozytorium Git z podstawową strukturą**
+3. **[x] Setup repozytorium Git z podstawową strukturą**
    - **Metryka**: Struktura katalogów zgodna z Clean Architecture
    - **Walidacja**: `tree -d -L 3` pokazuje wymaganą strukturę
    - **Sukces**: Istnieją: services/, docs/, tests/, .github/
    - **[Szczegóły →](docs/faza-1-fundament/03-git-repository-setup.md)**
 
-4. **Deploy stack observability: Jaeger, Prometheus, Grafana, Loki**
+4. **[ ] Deploy stack observability: Jaeger, Prometheus, Grafana, Loki**
    - **Metryki**:
      - Jaeger UI: <http://localhost:16686>
      - Prometheus: <http://localhost:9090>
@@ -304,23 +304,29 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Wszystkie 4 UI dostępne, health check OK
    - **[Szczegóły →](docs/faza-1-fundament/04-observability-stack.md)**
 
-5. **Konfiguracja OpenTelemetry SDK**
+5. **[ ] Konfiguracja OpenTelemetry SDK**
    - **Metryka**: Traces widoczne w Jaeger z example service
    - **Walidacja**: Run example service, sprawdź trace w Jaeger UI
    - **Sukces**: Trace zawiera: service name, span duration, attributes
    - **[Szczegóły →](docs/faza-1-fundament/05-opentelemetry-config.md)**
 
-6. **Podstawowe dashboardy i alerty**
-   - **Metryka**: 3 dashboardy (System, Docker, Custom)
-   - **Walidacja**: Import dashboards, test alert firing
-   - **Sukces**: Dashboardy pokazują dane, test alert dociera na Slack/email
-   - **[Szczegóły →](docs/faza-1-fundament/06-dashboards-alerts.md)**
+6. **[ ] Frame tracking design**
+   - **Metryka**: Kompletny design dokumentu tracking system
+   - **Walidacja**: Design review z stakeholders
+   - **Sukces**: Design zaakceptowany, ready to implement
+   - **[Szczegóły →](docs/faza-1-fundament/06-frame-tracking-design.md)**
 
-7. **Szablon bazowy dla nowych serwisów z wbudowanym tracingiem**
-   - **Metryka**: BaseService z auto-instrumentation
-   - **Walidacja**: `pytest tests/test_base_service.py -v`
-   - **Sukces**: 100% testów przechodzi, trace span automatycznie tworzony
-   - **[Szczegóły →](docs/faza-1-fundament/07-base-service-template.md)**
+7. **[ ] TDD setup i pierwsze testy**
+   - **Metryka**: Pytest skonfigurowany, coverage >80%
+   - **Walidacja**: `pytest --cov=src tests/`
+   - **Sukces**: Testy przechodzą, coverage report generowany
+   - **[Szczegóły →](docs/faza-1-fundament/07-tdd-setup.md)**
+
+8. **[ ] Monitoring dashboard**
+   - **Metryka**: Grafana dashboard z metrykami systemu
+   - **Walidacja**: Dashboard pokazuje CPU, RAM, GPU, Docker metrics
+   - **Sukces**: Wszystkie panele działają, dane real-time
+   - **[Szczegóły →](docs/faza-1-fundament/08-monitoring-dashboard.md)**
 
 ### Faza 2: Akwizycja i Storage z pełnym monitoringiem (2-3 tygodnie)
 

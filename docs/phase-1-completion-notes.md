@@ -38,9 +38,15 @@
 
 ## Pozostałe zadania Fazy 1
 
-### Zadanie 3: Setup repozytorium Git z podstawową strukturą
+### Zadanie 3: Setup repozytorium Git z podstawową strukturą ✅
 
-- **Status**: Do wykonania
+- **Status**: UKOŃCZONE
+- **Data**: 16.07.2025
+- **Komponenty**:
+  - Clean Architecture z 5 bounded contexts
+  - CI/CD pipeline (GitHub Actions)
+  - Pre-commit hooks (13 repozytoriów)
+  - MkDocs dokumentacja
 - **Link**: [03-git-repository-setup.md](./faza-1-fundament/03-git-repository-setup.md)
 
 ### Zadanie 4: Deploy stack observability
@@ -53,15 +59,20 @@
 - **Status**: Do wykonania
 - **Link**: [05-opentelemetry-config.md](./faza-1-fundament/05-opentelemetry-config.md)
 
-### Zadanie 6: Podstawowe dashboardy i alerty
+### Zadanie 6: Frame tracking design
 
 - **Status**: Do wykonania
-- **Link**: [06-dashboardy-alerty.md](./faza-1-fundament/06-dashboardy-alerty.md)
+- **Link**: [06-frame-tracking-design.md](./faza-1-fundament/06-frame-tracking-design.md)
 
-### Zadanie 7: CI/CD pipeline podstawowy
+### Zadanie 7: TDD setup i pierwsze testy
 
 - **Status**: Do wykonania
-- **Link**: [07-cicd-pipeline.md](./faza-1-fundament/07-cicd-pipeline.md)
+- **Link**: [07-tdd-setup.md](./faza-1-fundament/07-tdd-setup.md)
+
+### Zadanie 8: Monitoring dashboard
+
+- **Status**: Do wykonania
+- **Link**: [08-monitoring-dashboard.md](./faza-1-fundament/08-monitoring-dashboard.md)
 
 ## Konfiguracja serwera
 
