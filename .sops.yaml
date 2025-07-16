@@ -1,25 +1,6 @@
-# SOPS configuration for encrypting secrets
-# Docs: https://github.com/mozilla/sops
+keys:
+  - &main_key age1gp2tm83t80f5qt5hcsanswxmrl3urlf22ds6jla5d8u3ufznwsyqwqkcw3
 
-# This file configures which files should be encrypted and with which keys
 creation_rules:
-  # Encrypt all .env files (except .env.example)
   - path_regex: \.env$
-    # Add your age public key here (get it from: age-keygen -y key.txt)
-    # Example: age: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
-    age: age1pk3a3zwh3wjsdkfgqhz04l6vh7dm9ru2v909q4wlugrg5u33x5pqlhllhn
-    
-  # Encrypt any file ending with .secret
-  - path_regex: \.secret$
-    age: >-
-      age1pk3a3zwh3wjsdkfgqhz04l6vh7dm9ru2v909q4wlugrg5u33x5pqlhllhn
-      
-  # Encrypt secrets in specific directories
-  - path_regex: secrets/.*\.yaml$
-    age: >-
-      age1pk3a3zwh3wjsdkfgqhz04l6vh7dm9ru2v909q4wlugrg5u33x5pqlhllhn
-
-# Optional: Configure how values are encrypted
-# stores:
-#   yaml:
-#     indent: 2
+    age: *main_key
