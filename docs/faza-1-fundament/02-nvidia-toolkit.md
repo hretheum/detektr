@@ -20,17 +20,17 @@ Zainstalować i skonfigurować NVIDIA Container Toolkit, umożliwiając kontener
 ### Blok 1: Instalacja NVIDIA Container Toolkit
 
 #### Zadania atomowe:
-1. **[ ] Dodanie NVIDIA package repositories**
+1. **[x] Dodanie NVIDIA package repositories**
    - **Metryka**: nvidia-container-toolkit repo aktywne
    - **Walidacja**: `apt-cache policy nvidia-container-toolkit`
    - **Czas**: 0.5h
 
-2. **[ ] Instalacja nvidia-container-toolkit**
+2. **[x] Instalacja nvidia-container-toolkit**
    - **Metryka**: Pakiety zainstalowane bez błędów
    - **Walidacja**: `dpkg -l | grep nvidia-container-toolkit`
    - **Czas**: 1h
 
-3. **[ ] Konfiguracja Docker runtime**
+3. **[x] Konfiguracja Docker runtime**
    - **Metryka**: nvidia runtime zarejestrowany
    - **Walidacja**: `docker info | grep nvidia`
    - **Czas**: 1h

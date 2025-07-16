@@ -26,7 +26,31 @@ nvidia-smi | grep "CUDA Version" | grep -E "12\.[0-9]|1[3-9]\.[0-9]"
 # ✅ 12.9 > 12.0
 ```
 
+## Blok 1: Instalacja NVIDIA Container Toolkit - COMPLETED ✅
+
+### Zainstalowane pakiety
+- nvidia-container-toolkit: 1.17.8-1
+- nvidia-container-toolkit-base: 1.17.8-1
+- libnvidia-container-tools: 1.17.8-1
+- libnvidia-container1: 1.17.8-1
+
+### Wykonane kroki
+1. Dodanie NVIDIA GPG key i repository
+2. `sudo apt install nvidia-container-toolkit`
+3. `sudo nvidia-ctk runtime configure --runtime=docker`
+4. `sudo systemctl restart docker`
+
+### Konfiguracja
+Docker daemon.json zaktualizowany z:
+```json
+"runtimes": {
+  "nvidia": {
+    "args": [],
+    "path": "nvidia-container-runtime"
+  }
+}
+```
+
 ## Następne kroki
-- Blok 1: Instalacja NVIDIA Container Toolkit
 - Blok 2: Weryfikacja i testy GPU w kontenerach
 - Blok 3: Monitoring GPU
