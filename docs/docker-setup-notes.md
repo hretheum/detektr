@@ -44,6 +44,32 @@
 - Services komunikują się poprawnie
 - docker compose up/down/ps/logs działają
 
+## Wykonane kroki (Blok 3)
+
+### 1. Security hardening
+- Log rotation: 100MB per file, max 3 files
+- Seccomp: enabled (builtin profile)
+- AppArmor: enabled
+- User namespace remapping: przygotowane (dockremap user)
+
+### 2. Monitoring
+- Metrics endpoint: http://localhost:9323/metrics
+- Prometheus-ready metrics (668+ metrics)
+- Docker daemon metrics exposed
+
+### 3. Konfiguracja daemon.json
+```json
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m",
+    "max-file": "3"
+  },
+  "storage-driver": "overlay2",
+  "metrics-addr": "0.0.0.0:9323",
+  "experimental": true
+}
+```
+
 ## Następne kroki
-- Blok 3: Security hardening i monitoring
 - Blok 4: Integracja z projektem
