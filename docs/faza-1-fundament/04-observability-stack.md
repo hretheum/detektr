@@ -38,7 +38,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
 #### Zadania atomowe
 
-1. **[ ] Konfiguracja Prometheus z podstawowymi targets**
+1. **[x] Konfiguracja Prometheus z podstawowymi targets**
    - **Metryka**: Prometheus scraping node_exporter i cadvisor
    - **Walidacja**:
 
@@ -49,7 +49,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
    - **Czas**: 1.5h
 
-2. **[ ] Deploy Grafana z provisioning**
+2. **[x] Deploy Grafana z provisioning**
    - **Metryka**: Grafana UI dostępne, datasource skonfigurowany
    - **Walidacja**:
 
@@ -60,7 +60,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
    - **Czas**: 1h
 
-3. **[ ] Import podstawowych dashboards**
+3. **[x] Import podstawowych dashboards**
    - **Metryka**: 3 dashboardy (Node Exporter, Docker, System Overview)
    - **Walidacja**:
 
