@@ -81,7 +81,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
 #### Zadania atomowe
 
-1. **[ ] Deploy Jaeger all-in-one**
+1. **[x] Deploy Jaeger all-in-one**
    - **Metryka**: Jaeger UI dostępne na :16686
    - **Walidacja**:
 
@@ -92,7 +92,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
    - **Czas**: 1h
 
-2. **[ ] Konfiguracja Jaeger storage (Elasticsearch)**
+2. **[x] Konfiguracja Jaeger storage (Elasticsearch)**
    - **Metryka**: Elasticsearch jako backend dla Jaeger
    - **Walidacja**:
 
@@ -103,7 +103,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
    - **Czas**: 1.5h
 
-3. **[ ] Test trace z przykładowym serwisem**
+3. **[x] Test trace z przykładowym serwisem**
    - **Metryka**: Hot R.O.D demo pokazuje traces
    - **Walidacja**:
 
