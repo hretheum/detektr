@@ -125,7 +125,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
 #### Zadania atomowe
 
-1. **[ ] Deploy Loki z podstawową konfiguracją**
+1. **[x] Deploy Loki z podstawową konfiguracją**
    - **Metryka**: Loki API dostępne na :3100
    - **Walidacja**:
 
@@ -135,7 +135,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
    - **Czas**: 1h
 
-2. **[ ] Konfiguracja Promtail dla Docker logs**
+2. **[x] Konfiguracja Promtail dla Docker logs**
    - **Metryka**: Promtail zbiera logi ze wszystkich kontenerów
    - **Walidacja**:
 
@@ -146,7 +146,7 @@ Uruchomienie kompletnego stosu observability (Jaeger, Prometheus, Grafana, Loki)
 
    - **Czas**: 1h
 
-3. **[ ] Integracja Loki z Grafana**
+3. **[x] Integracja Loki z Grafana**
    - **Metryka**: Loki jako datasource w Grafana
    - **Walidacja**:
 
