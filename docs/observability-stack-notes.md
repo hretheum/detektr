@@ -59,7 +59,8 @@
 
 ## Deliverables
 
-✅ `/opt/detektor/docker-compose.observability-final.yml` - Stack configuration
+✅ `/opt/detektor/docker-compose.observability-complete.yml` - Stack configuration (HOST NETWORKING)  
+✅ `/opt/detektor/docker-compose.observability-final.yml` - Stack configuration (BRIDGE - problemy z portami)
 ✅ `/opt/detektor/prometheus/prometheus.yml` - Prometheus config
 ✅ `/opt/detektor/grafana/provisioning/` - Dashboards i datasources
 ✅ `/opt/detektor/loki/loki-config.yaml` - Loki configuration
@@ -70,18 +71,20 @@
 ## Uruchomione kontenery na serwerze
 
 ```bash
-# Observability stack
-prometheus (detektor_backend network)
-grafana (detektor_backend network)
-jaeger (host network)
-loki (host network)
+# Observability stack (HOST NETWORK)
+prometheus (host network) - localhost:9090
+grafana (host network) - localhost:3000  
+jaeger (host network) - localhost:16686
+loki (host network) - localhost:3100
 promtail (host network)
 
-# Monitoring exporters
-node_exporter (detektor_backend network)
-cadvisor (detektor_backend network)
-dcgm_exporter (detektor_backend network)
+# Monitoring exporters (HOST NETWORK)
+node_exporter (host network) - localhost:9100
+cadvisor (host network) - localhost:8080
+dcgm_exporter (host network) - localhost:9400
 ```
+
+**UWAGA**: Wszystkie kontenery używają `network_mode: host` z powodu problemów z port mappingiem w bridge network.
 
 ## Alerty skonfigurowane
 

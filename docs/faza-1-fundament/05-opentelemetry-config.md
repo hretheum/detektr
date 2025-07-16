@@ -8,7 +8,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
 #### Zadania atomowe
 
-1. **[ ] Weryfikacja observability stack działa**
+1. **[x] Weryfikacja observability stack działa**
    - **Metryka**: Jaeger, Prometheus, Grafana responding
    - **Walidacja**:
 
