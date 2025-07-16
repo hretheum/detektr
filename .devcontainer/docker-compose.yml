@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  dev-environment:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.ssh:/home/vscode/.ssh:ro
+    environment:
+      - DISPLAY=host.docker.internal:0
+    network_mode: host
+    command: sleep infinity
+    user: vscode

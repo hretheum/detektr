@@ -230,7 +230,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Każde zadanie ma dokument z dekompozycją
    - **[Szczegóły →](docs/faza-0-dokumentacja/03-dekompozycja-zadan.md)**
 
-4. **[ ] Przygotowanie środowiska developerskiego**
+4. **[x] Przygotowanie środowiska developerskiego**
    - **Metryki**:
      - Dev containers działają na Mac OS
      - Remote development przez SSH działa
