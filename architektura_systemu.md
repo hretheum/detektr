@@ -266,7 +266,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Zwraca wersję ≥ 2.20, hello-world działa
    - **[Szczegóły →](docs/faza-1-fundament/01-konfiguracja-docker.md)**
 
-2. **Instalacja NVIDIA Container Toolkit**
+2. **[x] Instalacja NVIDIA Container Toolkit**
    - **Metryka**: GPU dostępne w kontenerach
    - **Walidacja**: `docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi`
    - **Sukces**: Pokazuje GTX 4070 Super, CUDA 12.0+

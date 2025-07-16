@@ -74,5 +74,41 @@ Docker daemon.json zaktualizowany z:
    - Compute capability: 8.9
    - Performance: 28.83 TFLOPS (FP32)
 
-## Następne kroki
-- Blok 3: Monitoring GPU
+## Blok 3: Monitoring GPU - COMPLETED ✅
+
+### Zainstalowane komponenty
+- **DCGM Exporter**: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.5-3.4.0-ubuntu22.04
+- **Prometheus**: prom/prometheus:v2.45.0
+- **Network mode**: host (dla lepszej kompatybilności)
+
+### Wykonane kroki
+1. Utworzono `/opt/detektor/docker-compose.gpu.yml` z DCGM exporter
+2. Skonfigurowano DCGM na porcie 9400
+3. Utworzono `/opt/detektor/prometheus/prometheus.yml`
+4. Skonfigurowano 5 alertów GPU w `/opt/detektor/prometheus/rules/gpu-alerts.yml`
+5. Uruchomiono Prometheus na porcie 9090
+
+### Dostępne metryki
+- `DCGM_FI_DEV_GPU_TEMP` - temperatura GPU
+- `DCGM_FI_DEV_GPU_UTIL` - wykorzystanie GPU
+- `DCGM_FI_DEV_POWER_USAGE` - zużycie energii
+- `DCGM_FI_DEV_FB_USED/FREE` - pamięć GPU
+- `DCGM_FI_DEV_XID_ERRORS` - błędy GPU
+
+### Skonfigurowane alerty
+1. GPUHighTemperature - temp > 80°C (warning)
+2. GPUCriticalTemperature - temp > 85°C (critical)  
+3. GPUHighUtilization - util > 90% przez 5 min
+4. GPUHighMemoryUsage - mem > 90% przez 5 min
+5. GPUXIDErrors - jakiekolwiek błędy XID
+
+### Walidacja
+```bash
+/opt/detektor/tests/test-gpu-alerts.sh
+# ✅ Wszystkie testy przeszły pomyślnie
+```
+
+### Endpointy
+- Metryki GPU: http://localhost:9400/metrics
+- Prometheus: http://localhost:9090
+- Alerty: http://localhost:9090/api/v1/rules

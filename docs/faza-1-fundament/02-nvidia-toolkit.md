@@ -56,12 +56,12 @@ Zainstalować i skonfigurować NVIDIA Container Toolkit, umożliwiając kontener
 ### Blok 3: Monitoring GPU
 
 #### Zadania atomowe:
-1. **[ ] Setup nvidia_gpu_exporter dla Prometheus**
-   - **Metryka**: Metryki GPU dostępne na :9835
-   - **Walidacja**: `curl localhost:9835/metrics | grep nvidia_gpu`
+1. **[x] Setup nvidia_gpu_exporter dla Prometheus**
+   - **Metryka**: Metryki GPU dostępne na :9400
+   - **Walidacja**: `curl localhost:9400/metrics | grep DCGM_FI_DEV_GPU_TEMP`
    - **Czas**: 1h
 
-2. **[ ] Konfiguracja alertów GPU**
+2. **[x] Konfiguracja alertów GPU**
    - **Metryka**: Alerty na temp >80°C, util >90%
    - **Walidacja**: Test alert w Prometheus
    - **Czas**: 1h
