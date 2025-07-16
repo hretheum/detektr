@@ -7,12 +7,12 @@ Zainstalować i skonfigurować NVIDIA Container Toolkit, umożliwiając kontener
 
 ### Blok 0: Prerequisites
 #### Zadania atomowe:
-1. **[ ] Weryfikacja sterowników NVIDIA**
+1. **[x] Weryfikacja sterowników NVIDIA**
    - **Metryka**: NVIDIA Driver 525+ zainstalowany
    - **Walidacja**: `nvidia-smi | grep "Driver Version" | grep -E "5[2-9][0-9]|[6-9][0-9][0-9]"`
    - **Czas**: 0.5h
 
-2. **[ ] Sprawdzenie CUDA compatibility**
+2. **[x] Sprawdzenie CUDA compatibility**
    - **Metryka**: CUDA 12.0+ support
    - **Walidacja**: `nvidia-smi | grep "CUDA Version" | grep -E "12\.[0-9]|1[3-9]\.[0-9]"`
    - **Czas**: 0.5h
