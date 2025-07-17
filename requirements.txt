@@ -21,3 +21,8 @@ aioredis==2.0.1
 # Utils
 click==8.1.7
 structlog==24.1.0
+
+# Web framework for example service
+fastapi==0.104.1
+uvicorn==0.24.0
+httpx==0.25.2

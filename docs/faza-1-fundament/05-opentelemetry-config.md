@@ -128,7 +128,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
 ### Zadania atomowe
 
-1. **[ ] Decorator @traced dla custom functions**
+1. **[x] Decorator @traced dla custom functions**
    - **Metryka**: Simple decorator automatycznie tworzy spans
    - **Walidacja**:
 
@@ -142,7 +142,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1h
 
-2. **[ ] Context propagation dla frame tracking**
+2. **[x] Context propagation dla frame tracking**
    - **Metryka**: Frame ID propagowany przez cały pipeline
    - **Walidacja**:
 
@@ -153,7 +153,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1h
 
-3. **[ ] Metrics helpers (counters, histograms)**
+3. **[x] Metrics helpers (counters, histograms)**
    - **Metryka**: Łatwe tworzenie custom metrics
    - **Walidacja**:
 
@@ -175,7 +175,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
 ### Zadania atomowe
 
-1. **[ ] Implementacja example frame processor service**
+1. **[x] Implementacja example frame processor service**
    - **Metryka**: Serwis pokazujący best practices
    - **Walidacja**:
 
@@ -187,7 +187,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1.5h
 
-2. **[ ] End-to-end trace przykład**
+2. **[x] End-to-end trace przykład**
    - **Metryka**: Trace pokazuje: API -> processing -> storage -> notification
    - **Walidacja**:
 
@@ -199,7 +199,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1h
 
-3. **[ ] Dashboard dla example service**
+3. **[x] Dashboard dla example service**
    - **Metryka**: Grafana dashboard z metrics, logs, trace links
    - **Walidacja**:
 
