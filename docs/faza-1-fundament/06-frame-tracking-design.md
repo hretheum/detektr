@@ -19,7 +19,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
 #### Zadania atomowe
 
-1. **[ ] Weryfikacja OpenTelemetry działa poprawnie**
+1. **[x] Weryfikacja OpenTelemetry działa poprawnie**
    - **Metryka**: Traces widoczne w Jaeger z example service
    - **Walidacja**:
 
@@ -32,7 +32,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
    - **Czas**: 0.5h
 
-2. **[ ] Weryfikacja struktury projektu dla domain models**
+2. **[x] Weryfikacja struktury projektu dla domain models**
    - **Metryka**: Domain layer istnieje w strukturze
    - **Walidacja**:
 
