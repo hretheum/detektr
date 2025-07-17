@@ -6,7 +6,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
 ## Blok 0: Prerequisites check
 
-#### Zadania atomowe
+### Zadania atomowe
 
 1. **[x] Weryfikacja observability stack działa**
    - **Metryka**: Jaeger, Prometheus, Grafana responding
@@ -20,7 +20,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 0.5h
 
-2. **[ ] Python environment z Poetry/pip-tools**
+2. **[x] Python environment z Poetry/pip-tools**
    - **Metryka**: Python 3.11+, dependency management ready
    - **Walidacja**:
 
@@ -35,9 +35,9 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
 ### Blok 1: OpenTelemetry SDK setup
 
-#### Zadania atomowe
+### Zadania atomowe
 
-1. **[ ] Instalacja OpenTelemetry packages**
+1. **[x] Instalacja OpenTelemetry packages**
    - **Metryka**: Core packages + instrumentations zainstalowane
    - **Walidacja**:
 
@@ -48,7 +48,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1h
 
-2. **[ ] Utworzenie telemetry configuration module**
+2. **[x] Utworzenie telemetry configuration module**
    - **Metryka**: Centralna konfiguracja dla traces, metrics, logs
    - **Walidacja**:
 
@@ -61,7 +61,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1.5h
 
-3. **[ ] Konfiguracja exporters (Jaeger, Prometheus)**
+3. **[x] Konfiguracja exporters (Jaeger, Prometheus)**
    - **Metryka**: Traces idą do Jaeger, metrics do Prometheus
    - **Walidacja**:
 
@@ -74,7 +74,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku
+### Metryki sukcesu bloku
 
 - OpenTelemetry SDK skonfigurowany dla traces i metrics
 - Auto-instrumentation dla common libraries (requests, FastAPI, SQLAlchemy)
@@ -82,7 +82,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
 ### Blok 2: Auto-instrumentation setup
 
-#### Zadania atomowe
+### Zadania atomowe
 
 1. **[ ] Instrumentacja dla FastAPI**
    - **Metryka**: Automatic spans dla wszystkich endpoints
@@ -118,7 +118,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku
+### Metryki sukcesu bloku
 
 - Zero-code instrumentation dla major libraries
 - Spans zawierają istotne attributes (status code, query, etc.)
@@ -126,7 +126,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
 ### Blok 3: Custom instrumentation helpers
 
-#### Zadania atomowe
+### Zadania atomowe
 
 1. **[ ] Decorator @traced dla custom functions**
    - **Metryka**: Simple decorator automatycznie tworzy spans
@@ -165,7 +165,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 0.5h
 
-#### Metryki sukcesu bloku
+### Metryki sukcesu bloku
 
 - Developers mogą łatwo dodać tracing do kodu
 - Frame tracking działa end-to-end
@@ -173,7 +173,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
 ### Blok 4: Example service z full observability
 
-#### Zadania atomowe
+### Zadania atomowe
 
 1. **[ ] Implementacja example frame processor service**
    - **Metryka**: Serwis pokazujący best practices
@@ -212,7 +212,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1h
 
-#### Metryki sukcesu bloku
+### Metryki sukcesu bloku
 
 - Example service jako template dla nowych serwisów
 - Full observability od początku
