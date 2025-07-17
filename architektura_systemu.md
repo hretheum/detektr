@@ -318,7 +318,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - Dokumentacja: [06-frame-tracking-design.md](./docs/faza-1-fundament/06-frame-tracking-design.md)
    - Szczegóły → [dekompozycja](./docs/faza-1-fundament/06-frame-tracking-design.md#dekompozycja-na-bloki-zadań)
 
-7. **[ ] TDD setup i pierwsze testy**
+7. **[x] TDD setup i pierwsze testy**
    - **Metryka**: Pytest skonfigurowany, coverage >80%
    - **Walidacja**: `pytest --cov=src tests/`
    - **Sukces**: Testy przechodzą, coverage report generowany

@@ -182,7 +182,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
 #### Zadania atomowe
 
-1. **[ ] TDD guide dla projektu**
+1. **[x] TDD guide dla projektu**
    - **Metryka**: Step-by-step guide z przykładami
    - **Walidacja**:
 
@@ -193,7 +193,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
    - **Czas**: 1h
 
-2. **[ ] Test templates i snippets**
+2. **[x] Test templates i snippets**
    - **Metryka**: VS Code snippets dla common test patterns
    - **Walidacja**:
 
@@ -204,7 +204,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
    - **Czas**: 0.5h
 
-3. **[ ] CI integration z test reports**
+3. **[x] CI integration z test reports**
    - **Metryka**: Test results visible w GitHub PR
    - **Walidacja**:
 
