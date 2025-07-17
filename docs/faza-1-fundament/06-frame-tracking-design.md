@@ -197,7 +197,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
 #### Zadania atomowe
 
-1. **[ ] Grafana dashboard dla frame pipeline**
+1. **[x] Grafana dashboard dla frame pipeline**
    - **Metryka**: Real-time view of frames in each stage
    - **Walidacja**:
 
@@ -210,7 +210,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
    - **Czas**: 1.5h
 
-2. **[ ] Trace exemplars w Prometheus metrics**
+2. **[x] Trace exemplars w Prometheus metrics**
    - **Metryka**: Metrics linked do traces
    - **Walidacja**:
 
@@ -223,7 +223,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
    - **Czas**: 1h
 
-3. **[ ] Frame search interface w Grafana**
+3. **[x] Frame search interface w Grafana**
    - **Metryka**: Search by frame ID pokazuje full journey
    - **Walidacja**:
 

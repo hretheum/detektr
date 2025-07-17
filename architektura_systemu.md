@@ -310,11 +310,13 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Trace zawiera: service name, span duration, attributes
    - **[Szczegóły →](docs/faza-1-fundament/05-opentelemetry-config.md)**
 
-6. **[ ] Frame tracking design**
-   - **Metryka**: Kompletny design dokumentu tracking system
-   - **Walidacja**: Design review z stakeholders
-   - **Sukces**: Design zaakceptowany, ready to implement
-   - **[Szczegóły →](docs/faza-1-fundament/06-frame-tracking-design.md)**
+6. **[x] Frame tracking design i implementacja**
+   - [x] Domain model dla frame lifecycle
+   - [x] Distributed trace propagation
+   - [x] Frame metadata storage (TimescaleDB)
+   - [x] Dashboard dla frame journey
+   - Dokumentacja: [06-frame-tracking-design.md](./docs/faza-1-fundament/06-frame-tracking-design.md)
+   - Szczegóły → [dekompozycja](./docs/faza-1-fundament/06-frame-tracking-design.md#dekompozycja-na-bloki-zadań)
 
 7. **[ ] TDD setup i pierwsze testy**
    - **Metryka**: Pytest skonfigurowany, coverage >80%

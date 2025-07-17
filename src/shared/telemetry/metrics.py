@@ -5,8 +5,9 @@ Provides simple interfaces for common metric types used in detektor.
 
 from typing import Any, Dict, Optional
 
-from opentelemetry import metrics
+from opentelemetry import metrics, trace
 from opentelemetry.metrics import Counter, Histogram, UpDownCounter
+from opentelemetry.trace import format_span_id, format_trace_id
 
 
 class DetektorMetrics:
@@ -25,6 +26,38 @@ class DetektorMetrics:
         self._counters: Dict[str, Counter] = {}
         self._histograms: Dict[str, Histogram] = {}
         self._updown_counters: Dict[str, UpDownCounter] = {}
+
+    def _get_trace_attributes(self) -> Dict[str, Any]:
+        """Get current trace context attributes for exemplar support.
+
+        Returns:
+            Dict with trace_id and span_id if available
+        """
+        span = trace.get_current_span()
+        if span and span.is_recording():
+            ctx = span.get_span_context()
+            if ctx.is_valid:
+                return {
+                    "trace_id": format_trace_id(ctx.trace_id),
+                    "span_id": format_span_id(ctx.span_id),
+                }
+        return {}
+
+    def _add_trace_attributes(
+        self, attributes: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Add trace attributes to provided attributes for exemplar support.
+
+        Args:
+            attributes: Existing attributes
+
+        Returns:
+            Combined attributes with trace context
+        """
+        trace_attrs = self._get_trace_attributes()
+        if attributes:
+            return {**attributes, **trace_attrs}
+        return trace_attrs
 
     def get_counter(self, name: str, description: str = "", unit: str = "1") -> Counter:
         """Get or create a counter metric.
@@ -104,7 +137,8 @@ class DetektorMetrics:
     ):
         """Increment frames processed counter."""
         counter = self.get_counter("frames_processed", "Total frames processed")
-        counter.add(count, attributes or {})
+        attrs = self._add_trace_attributes(attributes)
+        counter.add(count, attrs)
 
     def increment_detections(
         self,
@@ -117,6 +151,7 @@ class DetektorMetrics:
         attrs = {"detection_type": detection_type}
         if attributes:
             attrs.update(attributes)
+        attrs = self._add_trace_attributes(attrs)
         counter.add(count, attrs)
 
     def record_processing_time(
@@ -129,6 +164,7 @@ class DetektorMetrics:
         attrs = {"stage": stage}
         if attributes:
             attrs.update(attributes)
+        attrs = self._add_trace_attributes(attrs)
         histogram.record(duration, attrs)
 
     def record_frame_size(
@@ -141,6 +177,7 @@ class DetektorMetrics:
         attrs = {"dimension": "area"}
         if attributes:
             attrs.update(attributes)
+        attrs = self._add_trace_attributes(attrs)
         histogram.record(width * height, attrs)
 
     def set_active_cameras(
@@ -150,7 +187,8 @@ class DetektorMetrics:
         counter = self.get_updown_counter("active_cameras", "Number of active cameras")
         # For UpDownCounter, we need to track the delta
         # In a real implementation, you'd track the previous value
-        counter.add(count, attributes or {})
+        attrs = self._add_trace_attributes(attributes)
+        counter.add(count, attrs)
 
     def increment_errors(
         self, error_type: str, attributes: Optional[Dict[str, Any]] = None
@@ -160,6 +198,7 @@ class DetektorMetrics:
         attrs = {"error_type": error_type}
         if attributes:
             attrs.update(attributes)
+        attrs = self._add_trace_attributes(attrs)
         counter.add(1, attrs)
 
     def record_queue_size(
@@ -170,6 +209,7 @@ class DetektorMetrics:
         attrs = {"queue_name": queue_name}
         if attributes:
             attrs.update(attributes)
+        attrs = self._add_trace_attributes(attrs)
         histogram.record(size, attrs)
 
     def record_memory_usage(
@@ -177,7 +217,8 @@ class DetektorMetrics:
     ):
         """Record memory usage."""
         histogram = self.get_histogram("memory_usage_mb", "Memory usage in MB", "MB")
-        histogram.record(memory_mb, attributes or {})
+        attrs = self._add_trace_attributes(attributes)
+        histogram.record(memory_mb, attrs)
 
     def record_gpu_utilization(
         self,
@@ -192,6 +233,7 @@ class DetektorMetrics:
         attrs = {"gpu_id": gpu_id}
         if attributes:
             attrs.update(attributes)
+        attrs = self._add_trace_attributes(attrs)
         histogram.record(utilization_percent, attrs)
 
 

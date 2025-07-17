@@ -86,9 +86,24 @@
   - Przykłady użycia dla każdego aspektu SDK
 - **Link**: [05-opentelemetry-config.md](./faza-1-fundament/05-opentelemetry-config.md)
 
-### Zadanie 6: Frame tracking design
+### Zadanie 6: Frame tracking design ✅
 
-- **Status**: Do wykonania
+- **Status**: UKOŃCZONE
+- **Data**: 17.07.2025
+- **Komponenty**:
+  - Frame domain model z Event Sourcing
+  - OpenTelemetry baggage dla context propagation
+  - TimescaleDB schema z hypertables
+  - Frame metadata repository z async PostgreSQL
+  - Grafana dashboards: frame-pipeline i frame-search
+  - Trace exemplars w metrykach Prometheus
+- **Deliverables**:
+  - `/src/shared/kernel/domain/frame.py` - Frame entity i state machine
+  - `/src/shared/kernel/events/frame_events.py` - Domain events
+  - `/src/contexts/monitoring/` - Frame tracking implementation
+  - `/migrations/001_frame_metadata_schema.sql` - TimescaleDB schema
+  - `/config/grafana/dashboards/` - 2 dashboardy
+  - `/docs/frame-tracking-guide.md` - Implementation guide
 - **Link**: [06-frame-tracking-design.md](./faza-1-fundament/06-frame-tracking-design.md)
 
 ### Zadanie 7: TDD setup i pierwsze testy

@@ -1,6 +1,15 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  # Enable exemplar storage
+  external_labels:
+    monitor: "detektor-monitor"
+    environment: "development"
+
+# Storage configuration for exemplars
+storage:
+  exemplars:
+    max_exemplars: 100000
 
 scrape_configs:
   - job_name: "prometheus"
@@ -8,6 +17,8 @@ scrape_configs:
       - targets: ["localhost:9090"]
 
   - job_name: "detektor-services"
+    # Enable exemplar collection
+    enable_exemplars: true
     static_configs:
       - targets:
           - "rtsp-capture:8000"
@@ -17,6 +28,12 @@ scrape_configs:
           - "automation-engine:8004"
         labels:
           environment: "production"
+    # Relabel to extract service name
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: "([^:]+):.*"
+        target_label: service_name
+        replacement: "$1"
 
   - job_name: "redis"
     static_configs:
