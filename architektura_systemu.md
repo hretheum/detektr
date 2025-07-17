@@ -304,7 +304,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Wszystkie 4 UI dostępne, health check OK
    - **[Szczegóły →](docs/faza-1-fundament/04-observability-stack.md)**
 
-5. **[ ] Konfiguracja OpenTelemetry SDK**
+5. **[x] Konfiguracja OpenTelemetry SDK**
    - **Metryka**: Traces widoczne w Jaeger z example service
    - **Walidacja**: Run example service, sprawdź trace w Jaeger UI
    - **Sukces**: Trace zawiera: service name, span duration, attributes

@@ -69,9 +69,21 @@
   - Loki: http://localhost:3100
 - **Link**: [04-observability-stack.md](./faza-1-fundament/04-observability-stack.md)
 
-### Zadanie 5: Konfiguracja OpenTelemetry SDK
+### Zadanie 5: Konfiguracja OpenTelemetry SDK ✅
 
-- **Status**: Do wykonania
+- **Status**: UKOŃCZONE
+- **Data**: 17.07.2025
+- **Komponenty**:
+  - OpenTelemetry SDK z pełną konfiguracją
+  - Auto-instrumentation dla FastAPI, SQLAlchemy, Redis, HTTP clients
+  - Custom decorators: @traced, @traced_frame, @traced_method
+  - DetektorMetrics - system metryk biznesowych
+  - Przykładowy serwis frame processora z full observability
+  - Grafana dashboard dla przykładowego serwisu
+- **Deliverables**:
+  - `/src/shared/telemetry/` - kompletny moduł SDK
+  - `/src/examples/telemetry_service/` - przykładowy serwis
+  - Przykłady użycia dla każdego aspektu SDK
 - **Link**: [05-opentelemetry-config.md](./faza-1-fundament/05-opentelemetry-config.md)
 
 ### Zadanie 6: Frame tracking design
