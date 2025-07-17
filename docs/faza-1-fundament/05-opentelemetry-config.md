@@ -84,7 +84,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
 ### Zadania atomowe
 
-1. **[ ] Instrumentacja dla FastAPI**
+1. **[x] Instrumentacja dla FastAPI**
    - **Metryka**: Automatic spans dla wszystkich endpoints
    - **Walidacja**:
 
@@ -95,7 +95,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1h
 
-2. **[ ] Instrumentacja dla database (SQLAlchemy/asyncpg)**
+2. **[x] Instrumentacja dla database (SQLAlchemy/asyncpg)**
    - **Metryka**: Query spans z SQL statements
    - **Walidacja**:
 
@@ -107,7 +107,7 @@ Implementacja OpenTelemetry SDK dla Python z auto-instrumentation, eksporterami 
 
    - **Czas**: 1h
 
-3. **[ ] Instrumentacja dla HTTP clients i queues**
+3. **[x] Instrumentacja dla HTTP clients i queues**
    - **Metryka**: Outgoing HTTP i queue operations traced
    - **Walidacja**:
 

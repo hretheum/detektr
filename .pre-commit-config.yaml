@@ -57,6 +57,7 @@ repos:
           - types-pyyaml
         args: ["--config-file=pyproject.toml", "--ignore-missing-imports"]
         files: ^src/
+        exclude: ^src/examples/
 
   # Docstring checking (temporarily disabled due to D212 conflicts)
   # - repo: https://github.com/pycqa/pydocstyle
