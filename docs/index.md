@@ -90,7 +90,7 @@ The Detektor project is organized into 6 development phases:
 | Phase | Focus | Duration | Status |
 |-------|-------|----------|--------|
 | [**Phase 0**](faza-0-dokumentacja/) | Documentation & Planning | 2 weeks | ✅ Complete |
-| [**Phase 1**](faza-1-fundament/) | Foundation & Observability | 3 weeks | 🔄 In Progress |
+| [**Phase 1**](faza-1-fundament/) | Foundation & Observability | 3 weeks | 🚧 86% Complete |
 | [**Phase 2**](faza-2-akwizycja/) | Video Acquisition | 2 weeks | ⏳ Planned |
 | [**Phase 3**](faza-3-detekcja/) | AI Detection Services | 4 weeks | ⏳ Planned |
 | [**Phase 4**](faza-4-integracja/) | Integration & Automation | 3 weeks | ⏳ Planned |
