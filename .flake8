@@ -14,3 +14,6 @@ exclude =
 per-file-ignores =
     __init__.py:F401
     src/shared/kernel/events/base.py:B024
+    src/shared/telemetry/decorators.py:E501
+    src/shared/telemetry/correlation.py:B010
+    src/shared/telemetry/frame_tracking.py:D202

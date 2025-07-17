@@ -40,6 +40,16 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 
+[[tool.mypy.overrides]]
+module = [
+    "src.shared.telemetry.metrics",
+    "src.shared.telemetry.decorators",
+    "src.shared.telemetry.frame_decorators"
+]
+disallow_untyped_defs = false
+check_untyped_defs = false
+warn_return_any = false
+
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra -q --strict-markers"

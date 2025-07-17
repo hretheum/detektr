@@ -99,7 +99,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
 #### Zadania atomowe
 
-1. **[ ] Frame ID jako baggage w OpenTelemetry context**
+1. **[x] Frame ID jako baggage w OpenTelemetry context**
    - **Metryka**: Frame ID propagowany automatycznie między serwisami
    - **Walidacja**:
 
@@ -111,7 +111,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
    - **Czas**: 1h
 
-2. **[ ] Automatic span creation dla frame operations**
+2. **[x] Automatic span creation dla frame operations**
    - **Metryka**: Każda operacja na frame tworzy span
    - **Walidacja**:
 
@@ -124,7 +124,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
    - **Czas**: 1h
 
-3. **[ ] Correlation między logs, metrics i traces**
+3. **[x] Correlation między logs, metrics i traces**
    - **Metryka**: Frame ID w logs i jako label w metrics
    - **Walidacja**:
 
