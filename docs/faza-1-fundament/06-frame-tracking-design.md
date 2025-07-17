@@ -147,7 +147,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
 #### Zadania atomowe
 
-1. **[ ] TimescaleDB schema dla frame metadata**
+1. **[x] TimescaleDB schema dla frame metadata**
    - **Metryka**: Hypertable z automatic partitioning
    - **Walidacja**:
 
@@ -159,7 +159,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
    - **Czas**: 1h
 
-2. **[ ] Frame metadata repository implementation**
+2. **[x] Frame metadata repository implementation**
    - **Metryka**: CRUD operations z tracing
    - **Walidacja**:
 
@@ -173,7 +173,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
    - **Czas**: 1.5h
 
-3. **[ ] Processing history queries**
+3. **[x] Processing history queries**
    - **Metryka**: Query frames by time range, status, camera
    - **Walidacja**:
 
