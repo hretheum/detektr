@@ -49,7 +49,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
 #### Zadania atomowe
 
-1. **[ ] Implementacja Frame entity i value objects**
+1. **[x] Implementacja Frame entity i value objects**
    - **Metryka**: Frame model z ID, timestamp, metadata, processing stages
    - **Walidacja**:
 
@@ -63,7 +63,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
    - **Czas**: 1.5h
 
-2. **[ ] Implementacja Frame events (Event Sourcing)**
+2. **[x] Implementacja Frame events (Event Sourcing)**
    - **Metryka**: Events: FrameCaptured, ProcessingStarted, ProcessingCompleted, etc.
    - **Walidacja**:
 
@@ -76,7 +76,7 @@ Zaprojektowanie i implementacja systemu śledzenia klatek przez cały pipeline p
 
    - **Czas**: 1h
 
-3. **[ ] Frame lifecycle state machine**
+3. **[x] Frame lifecycle state machine**
    - **Metryka**: States: captured, queued, processing, completed, failed
    - **Walidacja**:
 
