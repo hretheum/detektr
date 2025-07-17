@@ -1,0 +1,170 @@
+groups:
+  - name: infrastructure
+    interval: 30s
+    rules:
+      # CPU Alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for more than 2 minutes. Current usage: {{ $value }}%"
+
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 1m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Critical CPU usage detected"
+          description: "CPU usage is above 95% for more than 1 minute. Current usage: {{ $value }}%"
+
+      # Memory Alerts
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 80% for more than 5 minutes. Current usage: {{ $value }}%"
+
+      - alert: CriticalMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
+        for: 1m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is above 95% for more than 1 minute. Current usage: {{ $value }}%"
+
+      # Disk Alerts
+      - alert: HighDiskUsage
+        expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/",fstype!="rootfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="rootfs"}) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage on {{ $labels.mountpoint }} is above 80% for more than 5 minutes. Current usage: {{ $value }}%"
+
+      - alert: CriticalDiskUsage
+        expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/",fstype!="rootfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="rootfs"}) * 100) > 95
+        for: 1m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Critical disk usage detected"
+          description: "Disk usage on {{ $labels.mountpoint }} is above 95% for more than 1 minute. Current usage: {{ $value }}%"
+
+      # Load Average Alerts
+      - alert: HighLoadAverage
+        expr: node_load1 > 4
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High load average detected"
+          description: "1-minute load average is above 4.0 for more than 5 minutes. Current load: {{ $value }}"
+
+      - alert: CriticalLoadAverage
+        expr: node_load1 > 8
+        for: 2m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Critical load average detected"
+          description: "1-minute load average is above 8.0 for more than 2 minutes. Current load: {{ $value }}"
+
+      # Temperature Alerts
+      - alert: HighCPUTemperature
+        expr: node_hwmon_temp_celsius > 75
+        for: 5m
+        labels:
+          severity: warning
+          component: hardware
+        annotations:
+          summary: "High CPU temperature detected"
+          description: "CPU temperature on {{ $labels.chip }} sensor {{ $labels.sensor }} is above 75°C. Current temperature: {{ $value }}°C"
+
+      - alert: CriticalCPUTemperature
+        expr: node_hwmon_temp_celsius > 85
+        for: 1m
+        labels:
+          severity: critical
+          component: hardware
+        annotations:
+          summary: "Critical CPU temperature detected"
+          description: "CPU temperature on {{ $labels.chip }} sensor {{ $labels.sensor }} is above 85°C. Current temperature: {{ $value }}°C"
+
+      # GPU Alerts
+      - alert: HighGPUUtilization
+        expr: DCGM_FI_DEV_GPU_UTIL > 90
+        for: 10m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "High GPU utilization detected"
+          description: "GPU {{ $labels.gpu }} utilization is above 90% for more than 10 minutes. Current utilization: {{ $value }}%"
+
+      - alert: HighGPUTemperature
+        expr: DCGM_FI_DEV_GPU_TEMP > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "High GPU temperature detected"
+          description: "GPU {{ $labels.gpu }} temperature is above 80°C. Current temperature: {{ $value }}°C"
+
+      - alert: CriticalGPUTemperature
+        expr: DCGM_FI_DEV_GPU_TEMP > 90
+        for: 1m
+        labels:
+          severity: critical
+          component: gpu
+        annotations:
+          summary: "Critical GPU temperature detected"
+          description: "GPU {{ $labels.gpu }} temperature is above 90°C. Current temperature: {{ $value }}°C"
+
+      - alert: HighGPUMemoryUsage
+        expr: (DCGM_FI_DEV_FB_USED / DCGM_FI_DEV_FB_TOTAL) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: gpu
+        annotations:
+          summary: "High GPU memory usage detected"
+          description: "GPU {{ $labels.gpu }} memory usage is above 90%. Current usage: {{ $value }}%"
+
+      # Network Alerts
+      - alert: HighNetworkErrors
+        expr: rate(node_network_receive_errs_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: network
+        annotations:
+          summary: "High network receive errors detected"
+          description: "Network interface {{ $labels.device }} is receiving errors at rate {{ $value }} errors/sec"
+
+      - alert: HighNetworkDrops
+        expr: rate(node_network_receive_drop_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: network
+        annotations:
+          summary: "High network packet drops detected"
+          description: "Network interface {{ $labels.device }} is dropping packets at rate {{ $value }} drops/sec"

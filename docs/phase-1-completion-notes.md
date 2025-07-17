@@ -130,9 +130,20 @@
 - **Validation**: 91.7% success rate (22/24 checks pass)
 - **Link**: [07-tdd-setup.md](./faza-1-fundament/07-tdd-setup.md)
 
-### Zadanie 8: Monitoring dashboard
+### Zadanie 8: Monitoring dashboard ✅
 
-- **Status**: Do wykonania
+- **Status**: UKOŃCZONE
+- **Data**: 17.07.2025
+- **Komponenty**:
+  - 7 dashboardów Grafana (System, Docker, GPU, Service Health, Tracing, Frame Pipeline, Alerts)
+  - 57 alert rules w 5 grupach (Infrastructure, Services, Frame Pipeline, GPU, Observability)
+  - Alertmanager z 5 notification channels (webhook endpoints)
+  - Unified alerts overview z real-time status tracking
+- **Deliverables**:
+  - `/config/grafana/dashboards/` - 7 dashboard JSON files
+  - `/config/prometheus/alerts/` - 3 alert rule files
+  - `/config/alertmanager/alertmanager.yml` - Notification routing
+- **Validation**: 4/4 success metrics, 6 targets monitored, <60s alert response
 - **Link**: [08-monitoring-dashboard.md](./faza-1-fundament/08-monitoring-dashboard.md)
 
 ## Konfiguracja serwera

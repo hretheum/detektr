@@ -324,7 +324,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Testy przechodzą, coverage report generowany
    - **[Szczegóły →](docs/faza-1-fundament/07-tdd-setup.md)**
 
-8. **[ ] Monitoring dashboard**
+8. **[x] Monitoring dashboard**
    - **Metryka**: Grafana dashboard z metrykami systemu
    - **Walidacja**: Dashboard pokazuje CPU, RAM, GPU, Docker metrics
    - **Sukces**: Wszystkie panele działają, dane real-time

@@ -8,7 +8,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
 #### Zadania atomowe
 
-1. **[ ] Weryfikacja Grafana i Prometheus działają**
+1. **[x] Weryfikacja Grafana i Prometheus działają**
    - **Metryka**: Grafana dostępna, Prometheus zbiera metryki
    - **Walidacja**:
 
@@ -21,7 +21,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
    - **Czas**: 0.5h
 
-2. **[ ] Weryfikacja metryk systemowych dostępne**
+2. **[x] Weryfikacja metryk systemowych dostępne**
    - **Metryka**: node_exporter, cadvisor eksportują metryki
    - **Walidacja**:
 
@@ -39,7 +39,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
 #### Zadania atomowe
 
-1. **[ ] Dashboard: System Overview**
+1. **[x] Dashboard: System Overview**
    - **Metryka**: CPU, RAM, Disk, Network dla serwera
    - **Walidacja**:
 
@@ -53,7 +53,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
    - **Czas**: 1.5h
 
-2. **[ ] Dashboard: Docker Containers**
+2. **[x] Dashboard: Docker Containers**
    - **Metryka**: Container stats, restart counts, resource limits
    - **Walidacja**:
 
@@ -66,7 +66,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
    - **Czas**: 1h
 
-3. **[ ] Dashboard: GPU Monitoring**
+3. **[x] Dashboard: GPU Monitoring**
    - **Metryka**: GPU utilization, memory, temperature, power
    - **Walidacja**:
 
@@ -89,7 +89,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
 #### Zadania atomowe
 
-1. **[ ] Dashboard: Service Health Overview**
+1. **[x] Dashboard: Service Health Overview**
    - **Metryka**: Health status wszystkich serwisów, uptime
    - **Walidacja**:
 
@@ -100,7 +100,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
    - **Czas**: 1h
 
-2. **[ ] Dashboard: Tracing Overview**
+2. **[x] Dashboard: Tracing Overview**
    - **Metryka**: Request rate, error rate, duration (RED metrics)
    - **Walidacja**:
 
@@ -113,7 +113,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
    - **Czas**: 1h
 
-3. **[ ] Dashboard: Frame Pipeline**
+3. **[x] Dashboard: Frame Pipeline**
    - **Metryka**: Frames/second, processing stages, queue depths
    - **Walidacja**:
 
@@ -135,7 +135,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
 #### Zadania atomowe
 
-1. **[ ] Infrastructure alerts (CPU, memory, disk)**
+1. **[x] Infrastructure alerts (CPU, memory, disk)**
    - **Metryka**: 10+ infrastructure alert rules
    - **Walidacja**:
 
@@ -147,7 +147,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
    - **Czas**: 1h
 
-2. **[ ] Service alerts (down, high error rate)**
+2. **[x] Service alerts (down, high error rate)**
    - **Metryka**: Alert gdy service down >1min, error rate >5%
    - **Walidacja**:
 
@@ -161,7 +161,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
    - **Czas**: 1h
 
-3. **[ ] Custom alerts dla frame pipeline**
+3. **[x] Custom alerts dla frame pipeline**
    - **Metryka**: Frame drop rate, processing latency alerts
    - **Walidacja**:
 
@@ -184,7 +184,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
 #### Zadania atomowe
 
-1. **[ ] Konfiguracja Alertmanager**
+1. **[x] Konfiguracja Alertmanager**
    - **Metryka**: Alertmanager running, routers configured
    - **Walidacja**:
 
@@ -195,7 +195,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
    - **Czas**: 1h
 
-2. **[ ] Notification channels (email/Slack/webhook)**
+2. **[x] Notification channels (email/Slack/webhook)**
    - **Metryka**: Test notification delivered do każdego kanału
    - **Walidacja**:
 
@@ -209,7 +209,7 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
    - **Czas**: 1h
 
-3. **[ ] Alert dashboard w Grafana**
+3. **[x] Alert dashboard w Grafana**
    - **Metryka**: Unified view wszystkich alertów
    - **Walidacja**:
 
@@ -272,9 +272,9 @@ Utworzenie kompletnego zestawu dashboardów Grafana oraz konfiguracja alertów d
 
 1. **Detekcja problemu**: Grafana slow, alerts noisy, notifications failing
 2. **Kroki rollback**:
-   - [ ] Disable noisy alerts temporarily
-   - [ ] Reduce dashboard refresh rate
-   - [ ] Fallback to basic email notifications
+   - [x] Disable noisy alerts temporarily
+   - [x] Reduce dashboard refresh rate
+   - [x] Fallback to basic email notifications
 3. **Czas rollback**: <15 min
 
 ## Następne kroki

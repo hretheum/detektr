@@ -6,6 +6,10 @@ global:
     monitor: "detektor-monitor"
     environment: "development"
 
+# Load alert rules
+rule_files:
+  - "alerts/*.yml"
+
 # Storage configuration for exemplars
 storage:
   exemplars:

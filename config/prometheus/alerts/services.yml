@@ -1,0 +1,159 @@
+groups:
+  - name: services
+    interval: 30s
+    rules:
+      # Service Down Alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: service
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minute"
+
+      - alert: ServiceUnstable
+        expr: avg_over_time(up[10m]) < 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: service
+        annotations:
+          summary: "Service {{ $labels.job }} is unstable"
+          description: "Service {{ $labels.job }} on {{ $labels.instance }} has been unstable (uptime < 80%) over the last 10 minutes"
+
+      # HTTP Error Rate Alerts
+      - alert: HighErrorRate
+        expr: (rate(prometheus_http_requests_total{code=~"4..|5.."}[5m]) / rate(prometheus_http_requests_total[5m])) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: service
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate for {{ $labels.job }} {{ $labels.handler }} is {{ $value }}% (above 5%)"
+
+      - alert: CriticalErrorRate
+        expr: (rate(prometheus_http_requests_total{code=~"4..|5.."}[5m]) / rate(prometheus_http_requests_total[5m])) * 100 > 20
+        for: 2m
+        labels:
+          severity: critical
+          component: service
+        annotations:
+          summary: "Critical error rate on {{ $labels.job }}"
+          description: "Error rate for {{ $labels.job }} {{ $labels.handler }} is {{ $value }}% (above 20%)"
+
+      # Response Time Alerts
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: service
+        annotations:
+          summary: "High response time on {{ $labels.job }}"
+          description: "95th percentile response time for {{ $labels.job }} is {{ $value }}s (above 2s)"
+
+      - alert: CriticalResponseTime
+        expr: histogram_quantile(0.95, rate(prometheus_http_request_duration_seconds_bucket[5m])) > 10
+        for: 2m
+        labels:
+          severity: critical
+          component: service
+        annotations:
+          summary: "Critical response time on {{ $labels.job }}"
+          description: "95th percentile response time for {{ $labels.job }} is {{ $value }}s (above 10s)"
+
+      # Request Rate Alerts
+      - alert: NoTrafficToService
+        expr: rate(prometheus_http_requests_total[5m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+          component: service
+        annotations:
+          summary: "No traffic to service {{ $labels.job }}"
+          description: "Service {{ $labels.job }} {{ $labels.handler }} has received no requests for 10 minutes"
+
+      - alert: HighTrafficToService
+        expr: rate(prometheus_http_requests_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: service
+        annotations:
+          summary: "High traffic to service {{ $labels.job }}"
+          description: "Service {{ $labels.job }} {{ $labels.handler }} is receiving {{ $value }} requests/sec (above 100 req/sec)"
+
+      # Prometheus-specific Alerts
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: prometheus
+        annotations:
+          summary: "Prometheus configuration reload failed"
+          description: "Prometheus configuration reload has failed"
+
+      - alert: PrometheusTSDBCorruption
+        expr: prometheus_tsdb_corruptions_total > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: prometheus
+        annotations:
+          summary: "Prometheus TSDB corruption detected"
+          description: "Prometheus TSDB has detected {{ $value }} corruption(s)"
+
+      - alert: PrometheusNotConnectedToAlertmanager
+        expr: prometheus_notifications_alertmanagers_discovered < 1
+        for: 5m
+        labels:
+          severity: warning
+          component: prometheus
+        annotations:
+          summary: "Prometheus not connected to Alertmanager"
+          description: "Prometheus is not connected to any Alertmanager instance"
+
+      # Container Health Alerts (for Docker containers)
+      - alert: ContainerDown
+        expr: up{job="cadvisor"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: container
+        annotations:
+          summary: "cAdvisor is down"
+          description: "cAdvisor container monitoring is down on {{ $labels.instance }}"
+
+      - alert: HighContainerCPU
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: container
+        annotations:
+          summary: "High CPU usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} CPU usage is {{ $value }}% (above 80%)"
+
+      - alert: HighContainerMemory
+        expr: (container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: container
+        annotations:
+          summary: "High memory usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} memory usage is {{ $value }}% of limit (above 80%)"
+
+      - alert: ContainerRestarting
+        expr: rate(container_last_seen{name!=""}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: container
+        annotations:
+          summary: "Container {{ $labels.name }} is restarting"
+          description: "Container {{ $labels.name }} has been restarting frequently"

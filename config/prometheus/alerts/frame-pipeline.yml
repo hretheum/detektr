@@ -1,0 +1,171 @@
+groups:
+  - name: frame_pipeline
+    interval: 30s
+    rules:
+      # Frame Processing Rate Alerts
+      - alert: HighFrameDropRate
+        expr: rate(frames_dropped_total[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          component: frame-processing
+        annotations:
+          summary: "High frame drop rate detected"
+          description: "Frame drop rate is {{ $value }} frames/sec (above 0.01/sec) for camera {{ $labels.camera_id }}"
+
+      - alert: CriticalFrameDropRate
+        expr: rate(frames_dropped_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+          component: frame-processing
+        annotations:
+          summary: "Critical frame drop rate detected"
+          description: "Frame drop rate is {{ $value }} frames/sec (above 0.1/sec) for camera {{ $labels.camera_id }}"
+
+      # Frame Processing Latency Alerts
+      - alert: HighFrameProcessingLatency
+        expr: histogram_quantile(0.95, rate(frame_processing_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: frame-processing
+        annotations:
+          summary: "High frame processing latency"
+          description: "95th percentile frame processing latency is {{ $value }}s (above 1s) for stage {{ $labels.stage }}"
+
+      - alert: CriticalFrameProcessingLatency
+        expr: histogram_quantile(0.95, rate(frame_processing_duration_seconds_bucket[5m])) > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: frame-processing
+        annotations:
+          summary: "Critical frame processing latency"
+          description: "95th percentile frame processing latency is {{ $value }}s (above 5s) for stage {{ $labels.stage }}"
+
+      # Frame Processing Error Rate Alerts
+      - alert: HighFrameProcessingErrorRate
+        expr: (rate(frame_processing_total{status="failure"}[5m]) / rate(frame_processing_total[5m])) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: frame-processing
+        annotations:
+          summary: "High frame processing error rate"
+          description: "Frame processing error rate is {{ $value }}% (above 5%) for camera {{ $labels.camera_id }}"
+
+      - alert: CriticalFrameProcessingErrorRate
+        expr: (rate(frame_processing_total{status="failure"}[5m]) / rate(frame_processing_total[5m])) * 100 > 20
+        for: 2m
+        labels:
+          severity: critical
+          component: frame-processing
+        annotations:
+          summary: "Critical frame processing error rate"
+          description: "Frame processing error rate is {{ $value }}% (above 20%) for camera {{ $labels.camera_id }}"
+
+      # Frame Queue Depth Alerts
+      - alert: HighFrameQueueDepth
+        expr: frame_queue_depth > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: frame-processing
+        annotations:
+          summary: "High frame queue depth"
+          description: "Frame queue depth is {{ $value }} frames (above 100) for camera {{ $labels.camera_id }}"
+
+      - alert: CriticalFrameQueueDepth
+        expr: frame_queue_depth > 500
+        for: 2m
+        labels:
+          severity: critical
+          component: frame-processing
+        annotations:
+          summary: "Critical frame queue depth"
+          description: "Frame queue depth is {{ $value }} frames (above 500) for camera {{ $labels.camera_id }}"
+
+      # Frame Rate Alerts
+      - alert: LowFrameRate
+        expr: rate(frame_processing_total{status="success"}[5m]) < 1
+        for: 5m
+        labels:
+          severity: warning
+          component: frame-processing
+        annotations:
+          summary: "Low frame processing rate"
+          description: "Frame processing rate is {{ $value }} frames/sec (below 1/sec) for camera {{ $labels.camera_id }}"
+
+      - alert: NoFrameProcessing
+        expr: rate(frame_processing_total[5m]) == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: frame-processing
+        annotations:
+          summary: "No frame processing activity"
+          description: "No frames processed for camera {{ $labels.camera_id }} in the last 2 minutes"
+
+      # Camera-specific Alerts
+      - alert: CameraConnectionLost
+        expr: up{job="rtsp-capture"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: camera
+        annotations:
+          summary: "Camera connection lost"
+          description: "RTSP capture service is down - camera connections may be lost"
+
+      - alert: FrameStateStuck
+        expr: increase(frame_state_gauge{state="processing"}[10m]) == 0 and frame_state_gauge{state="processing"} > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: frame-processing
+        annotations:
+          summary: "Frames stuck in processing state"
+          description: "{{ $value }} frames have been stuck in processing state for 10+ minutes for camera {{ $labels.camera_id }}"
+
+      # AI Detection Pipeline Alerts
+      - alert: HighDetectionLatency
+        expr: histogram_quantile(0.95, rate(detection_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: ai-detection
+        annotations:
+          summary: "High AI detection latency"
+          description: "95th percentile AI detection latency is {{ $value }}s (above 2s) for {{ $labels.detection_type }}"
+
+      - alert: DetectionServiceDown
+        expr: up{job=~"face-recognition|object-detection|gesture-detection"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: ai-detection
+        annotations:
+          summary: "AI detection service down"
+          description: "AI detection service {{ $labels.job }} is down"
+
+      # Frame Buffer Alerts
+      - alert: HighFrameBufferUsage
+        expr: (frame_buffer_used_bytes / frame_buffer_total_bytes) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: frame-buffer
+        annotations:
+          summary: "High frame buffer usage"
+          description: "Frame buffer usage is {{ $value }}% (above 80%) for camera {{ $labels.camera_id }}"
+
+      - alert: FrameBufferFull
+        expr: (frame_buffer_used_bytes / frame_buffer_total_bytes) * 100 > 95
+        for: 1m
+        labels:
+          severity: critical
+          component: frame-buffer
+        annotations:
+          summary: "Frame buffer nearly full"
+          description: "Frame buffer usage is {{ $value }}% (above 95%) for camera {{ $labels.camera_id }}"
