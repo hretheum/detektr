@@ -117,14 +117,118 @@ jobs:
             --cov-report=xml \
             --cov-report=html \
             --cov-report=term-missing \
+            --junitxml=test-results-unit.xml \
+            --tb=short \
             -v
 
       - name: Run integration tests
         run: |
-          pytest tests/integration -v
+          pytest tests/integration \
+            --junitxml=test-results-integration.xml \
+            --tb=short \
+            -v
         env:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
+
+      - name: Run performance tests
+        run: |
+          pytest tests/performance \
+            --benchmark-only \
+            --benchmark-json=benchmark-results.json \
+            --tb=short \
+            -v
+        continue-on-error: true
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 📊 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Unit tests summary
+          if [ -f test-results-unit.xml ]; then
+            python -c "
+            import xml.etree.ElementTree as ET
+            tree = ET.parse('test-results-unit.xml')
+            root = tree.getroot()
+            tests = root.get('tests', '0')
+            failures = root.get('failures', '0')
+            errors = root.get('errors', '0')
+            time = root.get('time', '0')
+            passed = int(tests) - int(failures) - int(errors)
+            print('### 🔬 Unit Tests')
+            print(f'- **Total**: {tests} tests')
+            print(f'- **Passed**: {passed} ✅')
+            print(f'- **Failed**: {failures} ❌')
+            print(f'- **Errors**: {errors} ⚠️')
+            print(f'- **Duration**: {float(time):.2f}s')
+            print('')
+            " >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Integration tests summary
+          if [ -f test-results-integration.xml ]; then
+            python -c "
+            import xml.etree.ElementTree as ET
+            tree = ET.parse('test-results-integration.xml')
+            root = tree.getroot()
+            tests = root.get('tests', '0')
+            failures = root.get('failures', '0')
+            errors = root.get('errors', '0')
+            time = root.get('time', '0')
+            passed = int(tests) - int(failures) - int(errors)
+            print('### 🔗 Integration Tests')
+            print(f'- **Total**: {tests} tests')
+            print(f'- **Passed**: {passed} ✅')
+            print(f'- **Failed**: {failures} ❌')
+            print(f'- **Errors**: {errors} ⚠️')
+            print(f'- **Duration**: {float(time):.2f}s')
+            print('')
+            " >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Coverage summary
+          if [ -f coverage.xml ]; then
+            python -c "
+            import xml.etree.ElementTree as ET
+            tree = ET.parse('coverage.xml')
+            root = tree.getroot()
+            coverage = root.get('line-rate', '0')
+            coverage_pct = float(coverage) * 100
+            print('### 📈 Code Coverage')
+            print(f'- **Line Coverage**: {coverage_pct:.1f}%')
+            if coverage_pct >= 80:
+                print('- **Status**: ✅ Above threshold (80%)')
+            else:
+                print('- **Status**: ❌ Below threshold (80%)')
+            print('')
+            " >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Performance summary
+          if [ -f benchmark-results.json ]; then
+            python -c "
+            import json
+            with open('benchmark-results.json') as f:
+                data = json.load(f)
+            print('### ⚡ Performance Benchmarks')
+            for benchmark in data.get('benchmarks', []):
+                name = benchmark['name']
+                mean = benchmark['stats']['mean']
+                print(f'- **{name}**: {mean:.4f}s avg')
+            print('')
+            " >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: 'Test Results'
+          path: 'test-results-*.xml'
+          reporter: java-junit
+          fail-on-error: false
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -133,6 +237,18 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
+
+      - name: Archive test artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-artifacts
+          path: |
+            test-results-*.xml
+            coverage.xml
+            htmlcov/
+            benchmark-results.json
+          retention-days: 30
 
   security:
     name: Security Scan

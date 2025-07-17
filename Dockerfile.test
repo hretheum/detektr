@@ -1,0 +1,23 @@
+# Test Dockerfile for frame processor example
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+
+# Copy source code
+COPY src/ ./src/
+COPY tests/ ./tests/
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Run frame processor
+CMD ["python", "-m", "src.examples.frame_processor"]

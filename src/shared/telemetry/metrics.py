@@ -236,6 +236,16 @@ class DetektorMetrics:
         attrs = self._add_trace_attributes(attrs)
         histogram.record(utilization_percent, attrs)
 
+    def set_service_info(self, info: Dict[str, Any]) -> None:
+        """Set service information for metrics.
+
+        Args:
+            info: Service information dictionary
+        """
+        # For now, just store as attributes on future metrics
+        # In production, this could update a gauge or info metric
+        pass
+
 
 # Global metrics instances for common services
 _metrics_instances: Dict[str, DetektorMetrics] = {}

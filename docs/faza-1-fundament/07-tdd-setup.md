@@ -8,7 +8,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
 #### Zadania atomowe
 
-1. **[ ] Weryfikacja Python testing tools**
+1. **[x] Weryfikacja Python testing tools**
    - **Metryka**: pytest, pytest-asyncio, pytest-cov zainstalowane
    - **Walidacja**:
 
@@ -19,7 +19,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
    - **Czas**: 0.5h
 
-2. **[ ] Weryfikacja CI pipeline działa**
+2. **[x] Weryfikacja CI pipeline działa**
    - **Metryka**: GitHub Actions wykonuje testy
    - **Walidacja**:
 
@@ -35,7 +35,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
 #### Zadania atomowe
 
-1. **[ ] Konfiguracja pytest z plugins**
+1. **[x] Konfiguracja pytest z plugins**
    - **Metryka**: pytest.ini, conftest.py, coverage settings
    - **Walidacja**:
 
@@ -46,7 +46,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
    - **Czas**: 1h
 
-2. **[ ] Test fixtures dla common components**
+2. **[x] Test fixtures dla common components**
    - **Metryka**: Fixtures dla: database, telemetry, message queue
    - **Walidacja**:
 
@@ -60,7 +60,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
    - **Czas**: 1.5h
 
-3. **[ ] Test containers setup (testcontainers-python)**
+3. **[x] Test containers setup (testcontainers-python)**
    - **Metryka**: Automatic container lifecycle dla integration tests
    - **Walidacja**:
 
@@ -82,7 +82,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
 #### Zadania atomowe
 
-1. **[ ] Implementacja BaseService class**
+1. **[x] Implementacja BaseService class**
    - **Metryka**: Base class z telemetry, health check, graceful shutdown
    - **Walidacja**:
 
@@ -100,7 +100,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
    - **Czas**: 2h
 
-2. **[ ] Automatic health checks i readiness**
+2. **[x] Automatic health checks i readiness**
    - **Metryka**: /health i /ready endpoints w każdym serwisie
    - **Walidacja**:
 
@@ -114,7 +114,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
    - **Czas**: 1h
 
-3. **[ ] Graceful shutdown handling**
+3. **[x] Graceful shutdown handling**
    - **Metryka**: SIGTERM properly stops service, drains requests
    - **Walidacja**:
 
@@ -137,7 +137,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
 #### Zadania atomowe
 
-1. **[ ] Implement example FrameProcessor z TDD**
+1. **[x] Implement example FrameProcessor z TDD**
    - **Metryka**: 100% test coverage, tests written first
    - **Walidacja**:
 
@@ -149,7 +149,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
    - **Czas**: 2h
 
-2. **[ ] Unit, integration i E2E tests przykłady**
+2. **[x] Unit, integration i E2E tests przykłady**
    - **Metryka**: 3 levels of tests dla example service
    - **Walidacja**:
 
@@ -161,7 +161,7 @@ Konfiguracja kompletnego środowiska Test-Driven Development oraz implementacja 
 
    - **Czas**: 1.5h
 
-3. **[ ] Performance tests z benchmarks**
+3. **[x] Performance tests z benchmarks**
    - **Metryka**: Baseline performance established
    - **Walidacja**:
 
