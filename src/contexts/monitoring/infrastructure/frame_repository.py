@@ -314,9 +314,11 @@ class FrameMetadataRepository:
             ]
 
     @traced_method()
-    async def save_frame_with_events(self, frame: Frame, events: List[DomainEvent]) -> None:
+    async def save_frame_with_events(
+        self, frame: Frame, events: List[DomainEvent]
+    ) -> None:
         """Save frame and associated events in a transaction.
-        
+
         Args:
             frame: Frame to save
             events: Domain events to save
@@ -326,12 +328,14 @@ class FrameMetadataRepository:
                 # Save frame
                 await self._save_frame_metadata(conn, frame)
                 await self._save_processing_stages(conn, frame)
-                
+
                 # Save events
                 for event in events:
                     await self._save_event(conn, event, str(frame.id))
-    
-    async def _save_frame_metadata(self, conn: asyncpg.Connection, frame: Frame) -> None:
+
+    async def _save_frame_metadata(
+        self, conn: asyncpg.Connection, frame: Frame
+    ) -> None:
         """Save frame metadata to database."""
         await conn.execute(
             """
@@ -357,8 +361,10 @@ class FrameMetadataRepository:
             frame.metadata.get("error"),
             frame.total_processing_time_ms,
         )
-    
-    async def _save_processing_stages(self, conn: asyncpg.Connection, frame: Frame) -> None:
+
+    async def _save_processing_stages(
+        self, conn: asyncpg.Connection, frame: Frame
+    ) -> None:
         """Save processing stages for a frame."""
         for idx, stage in enumerate(frame.processing_stages):
             await conn.execute(
@@ -385,8 +391,10 @@ class FrameMetadataRepository:
                 stage.error,
                 stage.duration_ms,
             )
-    
-    async def _save_event(self, conn: asyncpg.Connection, event: DomainEvent, frame_id: str) -> None:
+
+    async def _save_event(
+        self, conn: asyncpg.Connection, event: DomainEvent, frame_id: str
+    ) -> None:
         """Save a single domain event."""
         await conn.execute(
             """

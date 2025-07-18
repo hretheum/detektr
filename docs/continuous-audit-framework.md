@@ -33,12 +33,12 @@ repos:
         entry: python scripts/audit/check_architecture.py
         language: python
         pass_filenames: true
-        
+
       - id: complexity-check
         name: Check code complexity
         entry: radon cc -nc -s src/
         language: system
-        
+
       - id: api-docs-check
         name: Check API documentation
         entry: python scripts/audit/check_api_docs.py
@@ -66,26 +66,26 @@ jobs:
           # - Dependency direction (outer -> inner)
           # - No domain layer imports from infrastructure
           # - Proper bounded context separation
-          
+
       - name: Performance Regression
         run: |
           python scripts/audit/performance_regression.py
           # Porównuje z baseline metrics
           # Alert gdy degradacja >10%
-          
+
       - name: Documentation Freshness
         run: |
           python scripts/audit/docs_freshness.py
           # Sprawdza czy kod i docs są zsynchronizowane
           # Alert gdy >3 dni różnicy
-          
+
       - name: Technical Debt Report
         run: |
           python scripts/audit/tech_debt_report.py
           # TODO/FIXME/HACK count
           # Complexity trends
           # Test coverage trends
-          
+
       - name: Security Scan
         uses: aquasecurity/trivy-action@master
         with:
@@ -101,7 +101,7 @@ from typing import Dict, List, Any
 
 class WeeklyAuditor:
     """Comprehensive weekly audit with actionable insights"""
-    
+
     async def run_audit(self) -> Dict[str, Any]:
         results = await asyncio.gather(
             self.audit_architecture_patterns(),
@@ -111,9 +111,9 @@ class WeeklyAuditor:
             self.audit_documentation_completeness(),
             self.audit_operational_readiness()
         )
-        
+
         return self.generate_report(results)
-    
+
     async def audit_architecture_patterns(self):
         """Deep dive into architecture compliance"""
         checks = [
@@ -123,9 +123,9 @@ class WeeklyAuditor:
             self.check_dependency_injection(),
             self.check_event_sourcing_usage()
         ]
-        
+
         return await asyncio.gather(*checks)
-    
+
     def generate_report(self, results):
         """Generate actionable weekly report"""
         return {
@@ -162,19 +162,19 @@ from pathlib import Path
 class ArchitectureChecker:
     def __init__(self):
         self.violations = []
-        
+
     def check_file(self, filepath: Path):
         """Check single file for architecture violations"""
         if "domain" in filepath.parts:
             self.check_domain_purity(filepath)
         elif "application" in filepath.parts:
             self.check_application_layer(filepath)
-            
+
     def check_domain_purity(self, filepath: Path):
         """Domain should not import from infrastructure"""
         with open(filepath) as f:
             tree = ast.parse(f.read())
-            
+
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
@@ -194,17 +194,17 @@ from typing import Dict
 class PerformanceTracker:
     def __init__(self, baseline_file: str = "baselines.json"):
         self.baseline = self.load_baseline(baseline_file)
-        
+
     def check_operation(self, operation: str, current_metrics: Dict[str, float]):
         """Compare current metrics against baseline"""
         if operation not in self.baseline:
             # New operation, establish baseline
             self.baseline[operation] = current_metrics
             return {"status": "new", "message": "Baseline established"}
-            
+
         baseline = self.baseline[operation]
         degradation = {}
-        
+
         for metric, current_value in current_metrics.items():
             baseline_value = baseline.get(metric, 0)
             if baseline_value > 0:
@@ -215,7 +215,7 @@ class PerformanceTracker:
                         "current": current_value,
                         "degradation": f"{change_percent:.1f}%"
                     }
-                    
+
         if degradation:
             return {"status": "degraded", "metrics": degradation}
         return {"status": "ok"}
@@ -232,10 +232,10 @@ class DocsFreshnessChecker:
     def check_staleness(self):
         """Find docs that might be outdated"""
         stale_docs = []
-        
+
         for doc_path in Path("docs").rglob("*.md"):
             related_code = self.find_related_code(doc_path)
-            
+
             doc_mtime = os.path.getmtime(doc_path)
             for code_path in related_code:
                 if os.path.exists(code_path):
@@ -248,7 +248,7 @@ class DocsFreshnessChecker:
                                 "code": str(code_path),
                                 "days_stale": int(days_stale)
                             })
-                            
+
         return stale_docs
 ```
 

@@ -182,7 +182,7 @@ docker exec -it service-name nvidia-smi
 
 ## 📋 Continuous Quality Standards (NOWE REGUŁY - od Fazy 2)
 
-<!-- 
+<!--
 LLM QUALITY GATES:
 Te standardy są OBOWIĄZKOWE od Fazy 2 i mają zapobiec długowi technicznemu.
 Każdy nowy kod MUSI spełniać te kryteria PRZED commitem.
@@ -203,7 +203,7 @@ Każdy nowy kod MUSI spełniać te kryteria PRZED commitem.
    ) -> ProcessingResult:
        """
        Process a single frame through the detection pipeline.
-       
+
        - **frame**: Frame data with image and metadata
        - **returns**: Processing results including detections
        """

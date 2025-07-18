@@ -24,7 +24,7 @@ route:
   group_wait: 10s      # ✅ reduced from 30s
   group_interval: 5m   # kept for stability
   repeat_interval: 4h  # kept to avoid alert fatigue
-  
+
   routes:
     - match:
         severity: critical
@@ -86,24 +86,24 @@ class PerformanceBaseline:
     p99_ms: float
     throughput_rps: float
     timestamp: datetime
-    
+
 class BaselineManager:
     def __init__(self):
         self.baselines: Dict[str, PerformanceBaseline] = {}
-    
+
     async def measure_operation(self, name: str, operation: callable, iterations: int = 1000):
         """Measure performance baseline for an operation"""
         latencies = []
         start_time = time.time()
-        
+
         for _ in range(iterations):
             op_start = time.perf_counter()
             await operation()
             latencies.append((time.perf_counter() - op_start) * 1000)
-        
+
         total_time = time.time() - start_time
         latencies.sort()
-        
+
         baseline = PerformanceBaseline(
             operation=name,
             p50_ms=latencies[int(len(latencies) * 0.5)],
@@ -112,7 +112,7 @@ class BaselineManager:
             throughput_rps=iterations / total_time,
             timestamp=datetime.now()
         )
-        
+
         self.baselines[name] = baseline
         return baseline
 ```
@@ -142,10 +142,10 @@ async def test_frame_processing_baseline(baseline_manager, frame_processor):
         lambda: frame_processor.process_frame(test_frame),
         iterations=100
     )
-    
+
     assert baseline.p95_ms < 100  # 95th percentile under 100ms
     assert baseline.throughput_rps > 10  # At least 10 frames/second
-    
+
     # Save baseline to file
     with open("baselines.json", "w") as f:
         json.dump(baseline.__dict__, f, default=str)
@@ -189,11 +189,11 @@ async def process_frame(self, frame: Frame) -> ProcessingResult:
         validation_result = await self._validate_frame(frame)
         if not validation_result.is_valid:
             return ProcessingResult.failed(validation_result.error)
-        
+
         preprocessed = await self._preprocess_frame(frame)
         detection_results = await self._run_detections(preprocessed)
         enriched_frame = await self._enrich_with_metadata(frame, detection_results)
-        
+
         return await self._finalize_processing(enriched_frame)
 
 async def _validate_frame(self, frame: Frame) -> ValidationResult:
@@ -203,12 +203,12 @@ async def _validate_frame(self, frame: Frame) -> ValidationResult:
         self._validate_format,
         self._validate_timestamp
     ]
-    
+
     for validator in validators:
         result = await validator(frame)
         if not result.is_valid:
             return result
-    
+
     return ValidationResult.success()
 
 async def _preprocess_frame(self, frame: Frame) -> PreprocessedFrame:

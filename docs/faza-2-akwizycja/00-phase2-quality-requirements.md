@@ -67,10 +67,10 @@ async def test_frame_capture_baseline(benchmark_manager):
         lambda: rtsp_service.capture_frame(),
         iterations=100
     )
-    
+
     assert baseline.p95_ms < 33  # 30 FPS = 33ms per frame
     assert baseline.throughput_rps > 25  # At least 25 FPS
-    
+
     # Save to baselines.json for regression detection
     benchmark_manager.save_baseline(baseline)
 ```
@@ -81,14 +81,14 @@ async def test_frame_capture_baseline(benchmark_manager):
 # BAD: 50+ line method
 async def process_rtsp_stream(self, url: str):
     # 50+ lines of mixed concerns...
-    
+
 # GOOD: Decomposed methods
 async def process_rtsp_stream(self, url: str):
     """Orchestrate RTSP stream processing"""
     async with self._stream_context(url) as stream:
         config = await self._validate_stream_config(stream)
         capture = await self._initialize_capture(stream, config)
-        
+
         async for frame in self._capture_frames(capture):
             await self._process_frame(frame)
 ```
@@ -99,10 +99,10 @@ async def process_rtsp_stream(self, url: str):
 # KROK 1: Napisz test
 async def test_rtsp_connection_with_invalid_url():
     service = RTSPService()
-    
+
     with pytest.raises(InvalidStreamURLError):
         await service.connect("not-a-valid-url")
-        
+
 # KROK 2: Implementuj minimalny kod żeby test przeszedł
 # KROK 3: Refactor
 ```
@@ -115,7 +115,7 @@ from opentelemetry import baggage
 async def capture_frame(self, stream_id: str):
     correlation_id = baggage.get_baggage("correlation_id") or str(uuid4())
     baggage.set_baggage("correlation_id", correlation_id)
-    
+
     logger.info(
         "Capturing frame",
         extra={

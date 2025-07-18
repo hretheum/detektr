@@ -23,15 +23,17 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 
 #### Zadania atomowe
 
-1. **[ ] Analiza protokołu RTSP i wybór biblioteki**
-   - **Metryka**: Wybrana biblioteka obsługuje H.264/H.265, reconnect
-   - **Walidacja**: Proof of concept z test stream
-   - **Czas**: 2h
+1. **[x] Analiza protokołu RTSP i wybór biblioteki**
+   - **Metryka**: ✅ PyAV wybrane - obsługuje H.264/H.265, reconnect
+   - **Walidacja**: ✅ Proof of concept z test stream: `proof_of_concept.py`
+   - **Czas**: 2h ✅ Completed
+   - **ADR**: `docs/adr/ADR-2025-01-18-rtsp-library-selection.md`
 
-2. **[ ] Setup środowiska testowego z kamerą**
-   - **Metryka**: Symulator kamery RTSP lub fizyczna kamera dostępna
-   - **Walidacja**: `ffprobe rtsp://camera_ip/stream` zwraca metadata
-   - **Czas**: 1h
+2. **[x] Setup środowiska testowego z kamerą**
+   - **Metryka**: ✅ Symulator RTSP + instrukcje fizycznej kamery
+   - **Walidacja**: ✅ `rtsp_simulator.py` + `test_environment.py`
+   - **Czas**: 1h ✅ Completed
+   - **Kamera na nebula**: **Potrzebna w Bloku 1 - Zadanie 2**
 
 ### Blok 1: Implementacja core RTSP client
 

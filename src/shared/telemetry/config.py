@@ -64,15 +64,15 @@ def setup_telemetry(
     meter_provider = MeterProvider(resource=resource, metric_readers=readers)
     metrics.set_meter_provider(meter_provider)
     meter = metrics.get_meter(service_name)
-    
+
     def shutdown():
         """Shutdown telemetry providers."""
         # Shutdown span processors
-        if hasattr(tracer_provider, 'shutdown'):
+        if hasattr(tracer_provider, "shutdown"):
             tracer_provider.shutdown()
-        
-        # Shutdown metric readers  
-        if hasattr(meter_provider, 'shutdown'):
+
+        # Shutdown metric readers
+        if hasattr(meter_provider, "shutdown"):
             meter_provider.shutdown()
-    
+
     return shutdown
