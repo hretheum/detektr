@@ -334,7 +334,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 
 #### Zadania i Metryki
 
-1. **Implementacja RTSP capture service z OpenTelemetry**
+1. **Implementacja RTSP capture service z OpenTelemetry** *(IN PROGRESS - Block 0 completed)*
    - **Metryki**:
      - FPS capture rate: 10-30 fps
      - Frame loss: <0.1%
@@ -348,6 +348,11 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 
    - **Sukces**: Stable 10+ FPS, traces pokazują każdą klatkę
    - **[Szczegóły →](docs/faza-2-akwizycja/01-rtsp-capture-service.md)**
+   - **Completed blocks**:
+     - [x] Block 0: Prerequisites (ADR, API spec, tests, environment setup)
+     - [ ] Block 1: Core implementation
+     - [ ] Block 2: Integration & monitoring
+     - [ ] Block 3: Testing & validation
 
 2. **Konfiguracja Redis/RabbitMQ z metrykami Prometheus**
    - **Metryki**:

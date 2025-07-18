@@ -19,7 +19,7 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 
 ## Dekompozycja na bloki zadań
 
-### Blok 0: Prerequisites
+### Blok 0: Prerequisites ✅ COMPLETED (2025-01-18)
 
 #### Zadania atomowe
 
@@ -34,6 +34,15 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
    - **Walidacja**: ✅ `rtsp_simulator.py` + `test_environment.py`
    - **Czas**: 1h ✅ Completed
    - **Kamera na nebula**: **Potrzebna w Bloku 1 - Zadanie 2**
+
+3. **[x] API Specification i Performance Baselines**
+   - **Metryka**: ✅ Complete OpenAPI spec w `api_spec.py`
+   - **Walidacja**: ✅ Performance tests w `test_rtsp_baseline.py`
+   - **Czas**: 3h ✅ Completed
+   - **Deliverables**:
+     - Complete API spec (OpenAPI 3.0)
+     - Performance baseline framework
+     - Prerequisites tests (PyAV, FFmpeg, etc.)
 
 ### Blok 1: Implementacja core RTSP client
 
