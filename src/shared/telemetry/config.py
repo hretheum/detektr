@@ -6,7 +6,7 @@ Jaeger and Prometheus exporters.
 """
 
 import os
-from typing import Tuple
+from typing import Callable
 
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 def setup_telemetry(
     service_name: str, service_version: str = "1.0.0"
-) -> Tuple[trace.Tracer, metrics.Meter, None]:
+) -> Callable[[], None]:
     """Set up OpenTelemetry for traces and metrics.
 
     Args:
@@ -27,7 +27,7 @@ def setup_telemetry(
         service_version: Version of the service
 
     Returns:
-        Tuple of (tracer, meter, logger) - logger is None for now
+        Shutdown function to clean up telemetry
     """
     # Create resource identifying this service
     resource = Resource.create(
@@ -64,5 +64,15 @@ def setup_telemetry(
     meter_provider = MeterProvider(resource=resource, metric_readers=readers)
     metrics.set_meter_provider(meter_provider)
     meter = metrics.get_meter(service_name)
-
-    return tracer, meter, None
+    
+    def shutdown():
+        """Shutdown telemetry providers."""
+        # Shutdown span processors
+        if hasattr(tracer_provider, 'shutdown'):
+            tracer_provider.shutdown()
+        
+        # Shutdown metric readers  
+        if hasattr(meter_provider, 'shutdown'):
+            meter_provider.shutdown()
+    
+    return shutdown

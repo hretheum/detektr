@@ -180,6 +180,84 @@ docker exec -it service-name nvidia-smi
 - Message bus: Redis Streams (pattern z eofek/detektor)
 - Observability: Jaeger + Prometheus + Grafana
 
+## 📋 Continuous Quality Standards (NOWE REGUŁY - od Fazy 2)
+
+<!-- 
+LLM QUALITY GATES:
+Te standardy są OBOWIĄZKOWE od Fazy 2 i mają zapobiec długowi technicznemu.
+Każdy nowy kod MUSI spełniać te kryteria PRZED commitem.
+-->
+
+### 🔴 MANDATORY dla każdego nowego kodu:
+
+1. **API Documentation (OpenAPI/Swagger)**
+   - KAŻDY endpoint HTTP MUSI mieć pełną dokumentację OpenAPI
+   - Generowana automatycznie z kodu (FastAPI automatic docs)
+   - Przykład:
+   ```python
+   @app.post("/frames/process", response_model=ProcessingResult, tags=["frames"])
+   async def process_frame(
+       frame: Frame,
+       background_tasks: BackgroundTasks,
+       service: FrameService = Depends(get_frame_service)
+   ) -> ProcessingResult:
+       """
+       Process a single frame through the detection pipeline.
+       
+       - **frame**: Frame data with image and metadata
+       - **returns**: Processing results including detections
+       """
+       return await service.process_frame(frame)
+   ```
+
+2. **Architectural Decision Records (ADRs)**
+   - KAŻDA znacząca decyzja architektoniczna MUSI mieć ADR
+   - Template: `docs/templates/adr/adr-template.md`
+   - Lokalizacja: `docs/adr/YYYY-MM-DD-title.md`
+   - Przykład: "Dlaczego Redis Streams zamiast Kafka"
+
+3. **Performance Baselines**
+   - KAŻDA nowa operacja MUSI mieć baseline metrics
+   - Automated regression tests w CI
+   - Alert gdy performance degraduje >20%
+
+4. **Method Complexity Limits**
+   - MAX 30 linii na metodę (target: 20)
+   - MAX cyclomatic complexity: 10
+   - Extract method gdy przekroczone
+
+5. **Test-First Development**
+   - Test MUSI istnieć PRZED implementacją
+   - Minimum 3 test cases: happy path, edge case, error case
+   - Integration test dla każdego nowego service
+
+6. **Correlation IDs**
+   - KAŻDY request/operation MUSI mieć correlation ID
+   - Propagowany przez wszystkie service calls
+   - Logowany w structured logs
+
+7. **Feature Flags**
+   - Nowe features za feature flags (gdy >1 dzień pracy)
+   - Gradual rollout capability
+   - Quick rollback mechanism
+
+### 🟡 BEST PRACTICES (silnie rekomendowane):
+
+8. **Domain Events**
+   - Każda zmiana stanu = domain event
+   - Event sourcing dla audit trail
+   - Async event handlers
+
+9. **Dependency Injection**
+   - No hardcoded dependencies
+   - Constructor injection preferred
+   - Testable by design
+
+10. **Monitoring First**
+    - Metrics PRZED implementacją
+    - Custom dashboard dla każdego nowego service
+    - Alerts dla SLA violations
+
 ## Patterns z eofek/detektor do Adoptowania
 
 **Reference**: `docs/analysis/eofek-detektor-analysis.md`

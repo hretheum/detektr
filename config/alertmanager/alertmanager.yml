@@ -4,38 +4,38 @@ global:
 
 # Grouping options
 route:
-  group_by: ['alertname', 'severity', 'component']
-  group_wait: 30s
+  group_by: ["alertname", "severity", "component"]
+  group_wait: 10s
   group_interval: 5m
   repeat_interval: 4h
-  receiver: 'default-receiver'
+  receiver: "default-receiver"
   routes:
     # Critical alerts go immediately via multiple channels
     - match:
         severity: critical
-      receiver: 'critical-alerts'
-      group_wait: 10s
+      receiver: "critical-alerts"
+      group_wait: 5s
       repeat_interval: 30m
-      
+
     # Warning alerts are grouped and sent less frequently
     - match:
         severity: warning
-      receiver: 'warning-alerts'
+      receiver: "warning-alerts"
       group_wait: 2m
       group_interval: 10m
       repeat_interval: 2h
-      
+
     # GPU-specific alerts
     - match:
         component: gpu
-      receiver: 'gpu-alerts'
+      receiver: "gpu-alerts"
       group_wait: 1m
       repeat_interval: 1h
-      
+
     # Frame processing alerts
     - match:
         component: frame-processing
-      receiver: 'frame-processing-alerts'
+      receiver: "frame-processing-alerts"
       group_wait: 1m
       repeat_interval: 1h
 
@@ -43,49 +43,49 @@ route:
 inhibit_rules:
   # If a service is down, don't alert on high error rates
   - source_match:
-      alertname: 'ServiceDown'
+      alertname: "ServiceDown"
     target_match:
-      alertname: 'HighErrorRate'
-    equal: ['job', 'instance']
-    
+      alertname: "HighErrorRate"
+    equal: ["job", "instance"]
+
   # If critical temperature, don't alert on high utilization
   - source_match:
-      severity: 'critical'
-      component: 'gpu'
+      severity: "critical"
+      component: "gpu"
     target_match:
-      severity: 'warning'
-      component: 'gpu'
-    equal: ['gpu']
-    
+      severity: "warning"
+      component: "gpu"
+    equal: ["gpu"]
+
   # If frame processing is down, don't alert on frame rates
   - source_match:
-      alertname: 'NoFrameProcessing'
+      alertname: "NoFrameProcessing"
     target_match:
-      alertname: 'LowFrameRate'
-    equal: ['camera_id']
+      alertname: "LowFrameRate"
+    equal: ["camera_id"]
 
 receivers:
-  - name: 'default-receiver'
+  - name: "default-receiver"
     webhook_configs:
-      - url: 'http://localhost:8080/webhook/default'
+      - url: "http://localhost:8080/webhook/default"
         send_resolved: true
 
-  - name: 'critical-alerts'
+  - name: "critical-alerts"
     webhook_configs:
-      - url: 'http://localhost:8080/webhook/critical'
+      - url: "http://localhost:8080/webhook/critical"
         send_resolved: true
 
-  - name: 'warning-alerts'
+  - name: "warning-alerts"
     webhook_configs:
-      - url: 'http://localhost:8080/webhook/warning'
+      - url: "http://localhost:8080/webhook/warning"
         send_resolved: true
 
-  - name: 'gpu-alerts'
+  - name: "gpu-alerts"
     webhook_configs:
-      - url: 'http://localhost:8080/webhook/gpu'
+      - url: "http://localhost:8080/webhook/gpu"
         send_resolved: true
 
-  - name: 'frame-processing-alerts'
+  - name: "frame-processing-alerts"
     webhook_configs:
-      - url: 'http://localhost:8080/webhook/frame-processing'
+      - url: "http://localhost:8080/webhook/frame-processing"
         send_resolved: true

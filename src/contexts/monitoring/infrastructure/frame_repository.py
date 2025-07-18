@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 import asyncpg
-from asyncpg import Pool
+from asyncpg import Connection, Pool
 
 from src.shared.kernel.domain import Frame, FrameId, ProcessingState
 from src.shared.kernel.events import DomainEvent
@@ -57,58 +57,8 @@ class FrameMetadataRepository:
             frame: Frame to save
         """
         async with self.pool.acquire() as conn:
-            # Save frame metadata
-            await conn.execute(
-                """
-                INSERT INTO frame_metadata (
-                    frame_id, camera_id, timestamp, state,
-                    created_at, updated_at, metadata, error_message,
-                    total_processing_time_ms
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                ON CONFLICT (frame_id) DO UPDATE SET
-                    state = EXCLUDED.state,
-                    updated_at = EXCLUDED.updated_at,
-                    metadata = EXCLUDED.metadata,
-                    error_message = EXCLUDED.error_message,
-                    total_processing_time_ms = EXCLUDED.total_processing_time_ms
-                """,
-                str(frame.id),
-                frame.camera_id,
-                frame.timestamp,
-                frame.state.value,
-                frame.created_at,
-                frame.updated_at,
-                json.dumps(frame.metadata),
-                frame.metadata.get("error"),
-                frame.total_processing_time_ms,
-            )
-
-            # Save processing stages
-            for idx, stage in enumerate(frame.processing_stages):
-                await conn.execute(
-                    """
-                    INSERT INTO processing_stages (
-                        frame_id, stage_index, stage_name,
-                        started_at, completed_at, status,
-                        metadata, error_message, duration_ms
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                    ON CONFLICT (frame_id, stage_index) DO UPDATE SET
-                        completed_at = EXCLUDED.completed_at,
-                        status = EXCLUDED.status,
-                        metadata = EXCLUDED.metadata,
-                        error_message = EXCLUDED.error_message,
-                        duration_ms = EXCLUDED.duration_ms
-                    """,
-                    str(frame.id),
-                    idx,
-                    stage.name,
-                    stage.started_at,
-                    stage.completed_at,
-                    stage.status,
-                    json.dumps(stage.metadata),
-                    stage.error,
-                    stage.duration_ms,
-                )
+            await self._save_frame_metadata(conn, frame)
+            await self._save_processing_stages(conn, frame)
 
     @traced_method()
     async def get_by_id(self, frame_id: FrameId) -> Optional[Frame]:
@@ -318,18 +268,7 @@ class FrameMetadataRepository:
             frame_id: Associated frame ID
         """
         async with self.pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO frame_events (
-                    event_type, frame_id, occurred_at, data, metadata
-                ) VALUES ($1, $2, $3, $4, $5)
-                """,
-                event.event_type,
-                frame_id,
-                event.occurred_at,
-                json.dumps(event.to_dict()["data"]),
-                json.dumps(event.metadata),
-            )
+            await self._save_event(conn, event, frame_id)
 
     @traced_method()
     async def get_events(
@@ -373,6 +312,94 @@ class FrameMetadataRepository:
                 }
                 for row in rows
             ]
+
+    @traced_method()
+    async def save_frame_with_events(self, frame: Frame, events: List[DomainEvent]) -> None:
+        """Save frame and associated events in a transaction.
+        
+        Args:
+            frame: Frame to save
+            events: Domain events to save
+        """
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                # Save frame
+                await self._save_frame_metadata(conn, frame)
+                await self._save_processing_stages(conn, frame)
+                
+                # Save events
+                for event in events:
+                    await self._save_event(conn, event, str(frame.id))
+    
+    async def _save_frame_metadata(self, conn: asyncpg.Connection, frame: Frame) -> None:
+        """Save frame metadata to database."""
+        await conn.execute(
+            """
+            INSERT INTO frame_metadata (
+                frame_id, camera_id, timestamp, state,
+                created_at, updated_at, metadata, error_message,
+                total_processing_time_ms
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT (frame_id) DO UPDATE SET
+                state = EXCLUDED.state,
+                updated_at = EXCLUDED.updated_at,
+                metadata = EXCLUDED.metadata,
+                error_message = EXCLUDED.error_message,
+                total_processing_time_ms = EXCLUDED.total_processing_time_ms
+            """,
+            str(frame.id),
+            frame.camera_id,
+            frame.timestamp,
+            frame.state.value,
+            frame.created_at,
+            frame.updated_at,
+            json.dumps(frame.metadata),
+            frame.metadata.get("error"),
+            frame.total_processing_time_ms,
+        )
+    
+    async def _save_processing_stages(self, conn: asyncpg.Connection, frame: Frame) -> None:
+        """Save processing stages for a frame."""
+        for idx, stage in enumerate(frame.processing_stages):
+            await conn.execute(
+                """
+                INSERT INTO processing_stages (
+                    frame_id, stage_index, stage_name,
+                    started_at, completed_at, status,
+                    metadata, error_message, duration_ms
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                ON CONFLICT (frame_id, stage_index) DO UPDATE SET
+                    completed_at = EXCLUDED.completed_at,
+                    status = EXCLUDED.status,
+                    metadata = EXCLUDED.metadata,
+                    error_message = EXCLUDED.error_message,
+                    duration_ms = EXCLUDED.duration_ms
+                """,
+                str(frame.id),
+                idx,
+                stage.name,
+                stage.started_at,
+                stage.completed_at,
+                stage.status,
+                json.dumps(stage.metadata),
+                stage.error,
+                stage.duration_ms,
+            )
+    
+    async def _save_event(self, conn: asyncpg.Connection, event: DomainEvent, frame_id: str) -> None:
+        """Save a single domain event."""
+        await conn.execute(
+            """
+            INSERT INTO frame_events (
+                event_type, frame_id, occurred_at, data, metadata
+            ) VALUES ($1, $2, $3, $4, $5)
+            """,
+            event.event_type,
+            frame_id,
+            event.occurred_at,
+            json.dumps(event.to_dict()["data"]),
+            json.dumps(event.metadata),
+        )
 
     @traced_method()
     async def cleanup_old_data(self, days: int = 30) -> int:

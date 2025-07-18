@@ -3,7 +3,7 @@
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from src.shared.base_service import BaseService
 from src.shared.kernel.domain import Frame, ProcessingState
@@ -111,45 +111,67 @@ class FrameProcessor(BaseService):
 
     async def _process_frame_internal(self, frame: Frame) -> ProcessingResult:
         """Internal frame processing logic."""
+        # Run detections in parallel
+        detections, errors = await self._run_detections(frame)
+        
+        # Determine success and update frame state
+        success = self._update_frame_state(frame, errors)
+        
+        # Enrich frame with metadata
+        frame = await self.enrich_frame(frame, detections)
+        
+        # Persist frame and handle errors
+        await self._persist_frame(frame, errors)
+        
+        # Publish processing event
+        await self._publish_event_safe(frame, detections, errors)
+        
+        # Update metrics and calculate result
+        return self._finalize_processing(frame, success, detections, errors)
+
+    async def _run_detections(self, frame: Frame) -> Tuple[Dict[str, List[Any]], Dict[str, str]]:
+        """Run face and object detection in parallel."""
         detections = {"faces": [], "objects": []}
         errors = {}
-
+        
         # Run detections in parallel
         face_task = self._detect_faces(frame)
         object_task = self._detect_objects(frame)
-
+        
         # Gather results
         face_result, object_result = await asyncio.gather(
             face_task, object_task, return_exceptions=True
         )
-
+        
         # Handle face detection results
         if isinstance(face_result, Exception):
             errors["face_detection"] = str(face_result)
             self.metrics.increment_errors("face_detection")
         else:
             detections["faces"] = face_result
-
+        
         # Handle object detection results
         if isinstance(object_result, Exception):
             errors["object_detection"] = str(object_result)
             self.metrics.increment_errors("object_detection")
         else:
             detections["objects"] = object_result
-
-        # Determine success
+        
+        return detections, errors
+    
+    def _update_frame_state(self, frame: Frame, errors: Dict[str, str]) -> bool:
+        """Update frame state based on processing results."""
         success = len(errors) == 0 or len(errors) < 2
-
-        # Update frame state
+        
         if success:
             frame.mark_as_completed()
         else:
             frame.mark_as_failed(str(errors))
-
-        # Enrich frame with metadata
-        frame = await self.enrich_frame(frame, detections)
-
-        # Save frame
+        
+        return success
+    
+    async def _persist_frame(self, frame: Frame, errors: Dict[str, str]) -> None:
+        """Save frame to repository with error handling."""
         try:
             await self.frame_repository.save(frame)
         except Exception as e:
@@ -158,24 +180,27 @@ class FrameProcessor(BaseService):
                     f"Failed to process frame {frame.id}: {e}", str(frame.id)
                 )
             errors["save"] = str(e)
-
-        # Publish event
+    
+    async def _publish_event_safe(self, frame: Frame, detections: Dict[str, List[Any]], errors: Dict[str, str]) -> None:
+        """Publish processing event with error handling."""
         try:
             await self._publish_processing_event(frame, detections, errors)
         except Exception as e:
             self.metrics.increment_errors("event_publish")
-
+    
+    def _finalize_processing(self, frame: Frame, success: bool, detections: Dict[str, List[Any]], errors: Dict[str, str]) -> ProcessingResult:
+        """Calculate metrics and create processing result."""
         # Calculate processing time
         processing_time = (datetime.now() - frame.created_at).total_seconds() * 1000
-
+        
         # Update metrics
         self.processed_count += 1
         if not success:
             self.error_count += 1
-
+        
         self.metrics.increment_frames_processed()
         self.metrics.record_processing_time("total", processing_time / 1000)
-
+        
         return ProcessingResult(
             frame_id=str(frame.id),
             success=success,

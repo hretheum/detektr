@@ -120,7 +120,7 @@
   - Enhanced CI z test reports w PRs
 - **Deliverables**:
   - `/src/shared/base_service.py` - BaseService implementation
-  - `/tests/conftest.py` - Common test fixtures  
+  - `/tests/conftest.py` - Common test fixtures
   - `/pytest.ini` + `/.coveragerc` - Test configuration
   - `/src/examples/frame_processor.py` - TDD example service
   - `/tests/unit|integration|e2e/` - Test examples
