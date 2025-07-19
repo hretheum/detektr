@@ -29,9 +29,10 @@ jobs:
       matrix:
         service:
           - example-otel
-          - frame-tracking
-          - echo-service
-          - gpu-demo
+          # TODO: Dodać po implementacji:
+          # - frame-tracking
+          # - echo-service
+          # - gpu-demo
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
