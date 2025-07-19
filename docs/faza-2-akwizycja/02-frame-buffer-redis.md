@@ -62,17 +62,17 @@ Zaimplementować wydajny system buforowania klatek wideo wykorzystując Redis St
 
 #### Zadania atomowe
 
-1. **[ ] TDD: Backpressure handling tests**
+1. **[x] TDD: Backpressure handling tests**
    - **Metryka**: No frame loss under pressure
    - **Walidacja**: Stress test with slow consumer
    - **Czas**: 2h
 
-2. **[ ] Implementacja adaptive buffering**
+2. **[x] Implementacja adaptive buffering**
    - **Metryka**: Dynamic buffer size 100-10000 frames
    - **Walidacja**: Memory usage monitoring
    - **Czas**: 3h
 
-3. **[ ] Circuit breaker dla overload**
+3. **[x] Circuit breaker dla overload**
    - **Metryka**: Graceful degradation
    - **Walidacja**: Circuit breaker state transitions
    - **Czas**: 2h
