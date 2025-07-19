@@ -31,6 +31,7 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 
 2. **[x] Setup środowiska testowego z kamerą**
    - **Metryka**: ✅ Symulator RTSP + instrukcje fizycznej kamery
+
    - **Walidacja**: ✅ `rtsp_simulator.py` + `test_environment.py`
    - **Czas**: 1h ✅ Completed
    - **Kamera na nebula**: **Potrzebna w Bloku 1 - Zadanie 2**
