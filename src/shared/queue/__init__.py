@@ -8,6 +8,8 @@ from .backpressure import (
     CircuitBreaker,
     CircuitBreakerState,
 )
+from .dlq import DeadLetterQueue, DLQEntry, DLQReason
+from .metrics import MetricsEnabledBackpressureHandler, QueueMetricsCollector
 
 __all__ = [
     "BackpressureHandler",
@@ -17,4 +19,9 @@ __all__ = [
     "AdaptiveBuffer",
     "CircuitBreaker",
     "CircuitBreakerState",
+    "DeadLetterQueue",
+    "DLQEntry",
+    "DLQReason",
+    "MetricsEnabledBackpressureHandler",
+    "QueueMetricsCollector",
 ]
