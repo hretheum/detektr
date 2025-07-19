@@ -4,12 +4,75 @@
 LLM CONTEXT PROMPT:
 To zadanie naprawcze ma na celu wdrożenie WSZYSTKICH brakujących serwisów aplikacyjnych z Fazy 1 na serwerze Nebula.
 Obecnie tylko infrastruktura observability działa - brak jakichkolwiek działających aplikacji Detektor.
-CRITICAL: Wszystkie komendy MUSZĄ być wykonane przez SSH na serwerze Nebula, NIE lokalnie!
+
+STRATEGIA CI/CD:
+- Obrazy Docker są budowane w GitHub Actions przy każdym push na main
+- Obrazy publikowane do GitHub Container Registry (ghcr.io)
+- Serwer Nebula TYLKO pobiera gotowe obrazy - NIGDY nie buduje lokalnie
+- Deploy odbywa się przez ./scripts/deploy-to-nebula.sh lub automatycznie z GitHub Actions
 -->
 
 ## Cel zadania
 
 Wdrożyć wszystkie brakujące serwisy aplikacyjne z Fazy 1 na serwerze Nebula, zapewniając działające przykłady wykorzystania infrastruktury observability, GPU oraz frame tracking, tworząc solidny fundament dla Fazy 2.
+
+## 🚀 Strategia CI/CD - Obowiązujący Standard
+
+<!--
+LLM CONTEXT PROMPT:
+TEN SECTION DEFINIUJE OBOWIĄZUJĄCY STANDARD dla WSZYSTKICH zadań w CAŁYM PROJEKCIE.
+Każdy future task musi używać tej strategii CI/CD.
+-->
+
+### Workflow Deployment
+
+1. **Build w GitHub Actions** (automatyczny):
+   - Trigger: push na branch `main`
+   - Buduje wszystkie obrazy Docker dla serwisów
+   - Publikuje do `ghcr.io/hretheum/bezrobocie-detektor/[service]:latest`
+   - Uruchamia się w `.github/workflows/deploy.yml`
+
+2. **Deploy na Nebula** (automatyczny lub ręczny):
+   - **Automatyczny**: GitHub Actions deployuje po udanym build
+   - **Ręczny**: `./scripts/deploy-to-nebula.sh`
+   - Pobiera obrazy z registry (NIGDY nie buduje lokalnie)
+   - Aktualizuje docker-compose na serwerze
+   - Restartuje serwisy
+
+3. **Walidacja** (automatyczna):
+   - Health checks wszystkich serwisów
+   - Verification connectivity z observability stack
+   - GPU tests (jeśli applicable)
+
+### 🔧 Komendy dla LLM
+
+```bash
+# Build i deploy (pełny flow):
+git add . && git commit -m "feat: deploy new service" && git push origin main
+
+# Deploy z istniejących obrazów:
+./scripts/deploy-to-nebula.sh
+
+# Health check stack:
+ssh nebula "/opt/detektor/scripts/health-check-all.sh"
+
+# Logs:
+ssh nebula "cd /opt/detektor && docker-compose logs [service-name]"
+```
+
+### ⚠️ WAŻNE: Co NIGDY nie robić
+
+- ❌ `docker build` na serwerze produkcyjnym
+- ❌ Kopiowanie kodu źródłowego na serwer
+- ❌ Manual management docker-compose na serwerze
+- ❌ Hardkodowanie image tags w compose files
+
+### ✅ Co robić
+
+- ✅ Commit kod → GitHub Actions buduje → deploy z registry
+- ✅ Używaj `./scripts/deploy-to-nebula.sh` do deployment
+- ✅ Pull images z `ghcr.io/hretheum/bezrobocie-detektor/`
+- ✅ Wszystkie deployment commands przez automation
 
 ## Blok 0: Prerequisites check - KRYTYCZNE NA SERWERZE ⚠️
 
@@ -21,7 +84,7 @@ Jeśli cokolwiek nie przejdzie, ZATRZYMAJ wykonanie i napraw problem.
 
 #### Zadania atomowe
 
-1. **[ ] Weryfikacja dostępu SSH i uprawnień**
+1. **[x] Weryfikacja dostępu SSH i uprawnień**
    - **Metryka**: SSH działa, sudo access, git configured
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -33,7 +96,7 @@ Jeśli cokolwiek nie przejdzie, ZATRZYMAJ wykonanie i napraw problem.
    - **Guardrails**: Abort if any check fails
    - **Czas**: 0.5h
 
-2. **[ ] Weryfikacja infrastruktury observability**
+2. **[x] Weryfikacja infrastruktury observability**
    - **Metryka**: Prometheus, Grafana, Jaeger healthy
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -45,7 +108,7 @@ Jeśli cokolwiek nie przejdzie, ZATRZYMAJ wykonanie i napraw problem.
    - **Guardrails**: Fix unhealthy services first
    - **Czas**: 0.5h
 
-3. **[ ] Weryfikacja GPU i przestrzeni dyskowej**
+3. **[x] Weryfikacja GPU i przestrzeni dyskowej**
    - **Metryka**: GPU accessible, >20GB free space
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -81,14 +144,17 @@ PAMIĘTAJ: ssh nebula przed każdą komendą!
    - **Guardrails**: Remove if unfixable
    - **Czas**: 1h
 
-2. **[ ] Build i deploy OpenTelemetry example service**
+2. **[ ] Deploy OpenTelemetry example service z registry**
    - **Metryka**: Example service running, exporting traces
+   - **Prerequisites**: Obrazy muszą być zbudowane w GitHub Actions i dostępne w ghcr.io
    - **Walidacja NA SERWERZE**:
      ```bash
-     # Build
-     ssh nebula "cd /opt/detektor && docker build -f services/example-otel/Dockerfile -t detektor/example-otel:latest ."
-     # Deploy
-     ssh nebula "cd /opt/detektor && docker compose -f docker-compose.yml up -d example-otel"
+     # Pull latest image from registry
+     ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest"
+     # Deploy using deployment script
+     ./scripts/deploy-to-nebula.sh
+     # OR manual deploy:
+     ssh nebula "cd /opt/detektor && docker-compose up -d example-otel"
      # Verify
      ssh nebula "curl -s http://localhost:8005/health | jq '.status'"
      ssh nebula "curl -s http://localhost:16686/api/services | jq '.data[]' | grep -q 'example-otel'"
@@ -138,20 +204,28 @@ Deploy z TimescaleDB dla time-series data.
    - **Guardrails**: Data persistence configured
    - **Czas**: 1.5h
 
-2. **[ ] Build i deploy Frame Tracking Service**
+2. **[ ] Deploy Frame Tracking Service z registry**
    - **Metryka**: Frame tracking API running with event sourcing
+   - **Prerequisites**:
+     - PostgreSQL z TimescaleDB running (poprzednie zadanie)
+     - Image zbudowany w GitHub Actions: ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest
    - **Walidacja NA SERWERZE**:
      ```bash
-     # Build
-     ssh nebula "cd /opt/detektor && docker build -f services/frame-tracking/Dockerfile -t detektor/frame-tracking:latest ."
-     # Deploy
-     ssh nebula "cd /opt/detektor && docker compose up -d frame-tracking"
+     # Pull latest image from registry
+     ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest"
+     # Deploy using deployment script
+     ./scripts/deploy-to-nebula.sh
+     # OR manual deploy:
+     ssh nebula "cd /opt/detektor && docker-compose up -d frame-tracking"
      # Verify API
      ssh nebula "curl -s http://localhost:8006/health | jq '.database'"
      ssh nebula "curl -s http://localhost:8006/api/v1/frames -X POST -H 'Content-Type: application/json' -d '{\"frame_id\":\"test-001\",\"timestamp\":\"2025-01-19T12:00:00Z\",\"camera_id\":\"cam-01\"}'"
      ```
+
    - **Quality Gate**: API responding, data persisted
+
    - **Guardrails**: Response time <100ms
+
    - **Czas**: 2h
 
 3. **[ ] Integration test z observability**
@@ -197,15 +271,17 @@ To będzie wzorzec dla wszystkich przyszłych serwisów.
    - **Guardrails**: 100% test coverage
    - **Czas**: 2h
 
-2. **[ ] Deploy template service jako echo-service**
+2. **[ ] Deploy echo-service z registry**
    - **Metryka**: Working service demonstrating all features
+   - **Prerequisites**: Echo service zbudowany z base-template w GitHub Actions
    - **Walidacja NA SERWERZE**:
      ```bash
-     # Build z template
-     ssh nebula "cd /opt/detektor && cp -r services/base-template services/echo-service"
-     ssh nebula "cd /opt/detektor && docker build -f services/echo-service/Dockerfile -t detektor/echo-service:latest ."
-     # Deploy
-     ssh nebula "cd /opt/detektor && docker compose up -d echo-service"
+     # Pull latest image from registry
+     ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/echo-service:latest"
+     # Deploy using deployment script
+     ./scripts/deploy-to-nebula.sh
+     # OR manual deploy:
+     ssh nebula "cd /opt/detektor && docker-compose up -d echo-service"
      # Test features
      ssh nebula "curl -s http://localhost:8007/health | jq '.features'"
      ssh nebula "curl -s http://localhost:8007/echo -X POST -d '{\"message\":\"test\"}' | jq '.correlation_id'"
@@ -245,14 +321,17 @@ Simple ML inference service jako dowód koncepcji.
 
 #### Zadania atomowe
 
-1. **[ ] Deploy simple ML inference service**
+1. **[ ] Deploy GPU demo service z registry**
    - **Metryka**: Service using GPU for inference
+   - **Prerequisites**: GPU-enabled image zbudowany w GitHub Actions
    - **Walidacja NA SERWERZE**:
      ```bash
-     # Build GPU service
-     ssh nebula "cd /opt/detektor && docker build -f services/gpu-demo/Dockerfile -t detektor/gpu-demo:latest ."
-     # Run with GPU
-     ssh nebula "cd /opt/detektor && docker compose -f docker-compose.gpu.yml up -d gpu-demo"
+     # Pull latest GPU image from registry
+     ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/gpu-demo:latest"
+     # Deploy using deployment script (with GPU support)
+     ./scripts/deploy-to-nebula.sh
+     # OR manual deploy:
+     ssh nebula "cd /opt/detektor && docker-compose up -d gpu-demo"
      # Test GPU usage
      ssh nebula "nvidia-smi | grep gpu-demo"
      ssh nebula "curl -s http://localhost:8008/inference -X POST -F 'image=@test-image.jpg' | jq '.gpu_used'"

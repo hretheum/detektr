@@ -103,12 +103,13 @@ repos:
     rev: v0.9.0.6
     hooks:
       - id: shellcheck
+        exclude: scripts/deploy-to-nebula.sh # Deployment script with intentional client-side expansion
 
-  # Dockerfile linting
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
-    hooks:
-      - id: hadolint-docker
+  # Dockerfile linting (disabled due to registry access issues)
+  # - repo: https://github.com/hadolint/hadolint
+  #   rev: v2.12.0
+  #   hooks:
+  #     - id: hadolint-docker
 
   # Commit message linting
   - repo: https://github.com/commitizen-tools/commitizen

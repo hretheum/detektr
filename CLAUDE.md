@@ -81,6 +81,7 @@ deactivate
 4. **Domain-Driven Design** - Bounded contexts, aggregates, domain events
 5. **SOLID Principles** - Każda klasa/moduł zgodny z SOLID
 6. **Container First** - Wszystko w kontenerach Docker
+7. **CI/CD First** - Obrazy budowane w GitHub Actions, deploy z registry
 
 ## Wzorce do Stosowania
 
@@ -373,3 +374,165 @@ make secrets-decrypt  # Tworzy .env.decrypted
 - ❌ NIGDY nie commituj `.env.decrypted` ani `keys.txt`
 - ✅ Każdy developer ma własny klucz age
 - ✅ Dokumentacja: `/docs/SECRETS_MANAGEMENT.md`
+
+## 🚀 CI/CD i Deployment Strategy - OBOWIĄZKOWY STANDARD
+
+<!--
+LLM MANDATORY GUIDELINES:
+Ta sekcja definiuje JEDYNĄ dozwoloną strategię deployment dla CAŁEGO PROJEKTU.
+Każdy task, każda faza, każdy serwis MUSI używać tego podejścia.
+NIE MA WYJĄTKÓW!
+-->
+
+### 🔄 Workflow CI/CD
+
+**ZASADA**: Build w CI/CD, Deploy z Registry - NIGDY build na produkcji
+
+```
+┌─────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   git push  │───▶│ GitHub Actions   │───▶│ ghcr.io registry│
+│   (main)    │    │ (.github/       │    │ (ready images)  │
+└─────────────┘    │  workflows/     │    └─────────────────┘
+                   │  deploy.yml)    │             │
+                   └──────────────────┘             │
+                                                    ▼
+┌─────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│Nebula Server│◀───│ Deployment Script│◀───│ docker pull     │
+│(production) │    │ (deploy-to-      │    │ (from registry) │
+└─────────────┘    │  nebula.sh)     │    └─────────────────┘
+```
+
+### 📋 Deployment Commands - dla LLM
+
+```bash
+# 1. PEŁNY DEPLOYMENT FLOW (recommended)
+git add . && git commit -m "feat: nowy serwis xyz" && git push origin main
+# → Automatycznie: build → publish → deploy na Nebula
+
+# 2. MANUAL DEPLOYMENT (z istniejących obrazów)
+./scripts/deploy-to-nebula.sh
+
+# 3. HEALTH CHECK
+ssh nebula "/opt/detektor/scripts/health-check-all.sh"
+
+# 4. LOGS i DEBUG
+ssh nebula "cd /opt/detektor && docker-compose logs [service-name]"
+ssh nebula "docker ps | grep detektor"
+
+# 5. ROLLBACK (jeśli potrzebny)
+ssh nebula "cd /opt/detektor && docker-compose down [service-name]"
+ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/[service]:previous-tag"
+ssh nebula "cd /opt/detektor && docker-compose up -d [service-name]"
+```
+
+### 🎯 Image Naming Convention
+
+```
+ghcr.io/hretheum/bezrobocie-detektor/[SERVICE_NAME]:[TAG]
+
+Przykłady:
+- ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest
+- ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:main-abc123def
+- ghcr.io/hretheum/bezrobocie-detektor/gpu-demo:v1.2.3
+```
+
+### ⚠️ CO NIGDY NIE ROBIĆ
+
+```bash
+# ❌ ABSOLUTNIE ZAKAZANE:
+ssh nebula "docker build ..."                    # Build na produkcji
+ssh nebula "git clone ..."                       # Kod źródłowy na prod
+docker build -f services/xyz/Dockerfile ...      # Local build
+scp services/ nebula:/opt/detektor/              # Manual copy
+
+# ❌ ZŁOWE PRACTICES:
+docker-compose up --build                        # Build w compose
+COPY . /app                                       # Całe repo w image
+FROM ubuntu && apt install ...                   # Heavy base images
+```
+
+### ✅ CO ROBIĆ
+
+```bash
+# ✅ DOBRE PRACTICES:
+git push origin main                              # Trigger CI/CD
+./scripts/deploy-to-nebula.sh                    # Automated deploy
+docker pull ghcr.io/...                         # Images z registry
+FROM python:3.11-slim                           # Oficjalne base images
+COPY requirements.txt /app/                      # Selective copy
+```
+
+### 🔧 Automated Deployment Process
+
+1. **GitHub Actions** (`.github/workflows/deploy.yml`):
+   - Build wszystkich service images
+   - Run tests w containerach
+   - Push do registry z proper tags
+   - Optional: auto-deploy na Nebula
+
+2. **Deployment Script** (`scripts/deploy-to-nebula.sh`):
+   - Pull latest images z registry
+   - Decrypt secrets z SOPS
+   - Update docker-compose files
+   - Rolling restart services
+   - Health checks
+   - Cleanup
+
+3. **Service Discovery**:
+   - Każdy serwis ma unikalny port 800X
+   - Docker networks dla internal communication
+   - Traefik/nginx dla external access (future)
+
+### 📊 Monitoring & Observability
+
+```bash
+# Service-specific metrics:
+curl http://nebula:800X/metrics        # Prometheus metrics
+curl http://nebula:800X/health         # Health endpoint
+
+# Stack monitoring:
+http://nebula:9090                     # Prometheus UI
+http://nebula:16686                    # Jaeger traces
+http://nebula:3000                     # Grafana dashboards
+```
+
+### 🏗️ Service Development Workflow
+
+1. **Nowy serwis**:
+   ```bash
+   cp -r services/base-template services/new-service
+   # Edit Dockerfile, kod, testy
+   git add . && git commit && git push
+   # → Automatyczny build i deploy
+   ```
+
+2. **Update istniejącego**:
+   ```bash
+   # Edit kod w services/existing-service/
+   git add . && git commit && git push
+   # → Automatyczny rebuild i redeploy
+   ```
+
+3. **Testing**:
+   ```bash
+   # Local development:
+   python -m pytest services/my-service/tests/
+
+   # Integration test on Nebula:
+   ssh nebula "/opt/detektor/scripts/health-check-all.sh"
+   ```
+
+### 💡 Pro Tips dla LLM
+
+- **Zawsze** sprawdź czy image istnieje w registry przed deployem
+- **Nigdy** nie edytuj plików bezpośrednio na Nebuli
+- **Zawsze** używaj deployment script dla consistency
+- **Monitor** logi po każdym deploy
+- **Test** health endpoints po każdej zmianie
+
+Ten workflow zapewnia:
+- ✅ Reproducible deployments
+- ✅ Version control wszystkiego
+- ✅ Fast rollbacks
+- ✅ Proper secrets management
+- ✅ Full observability
