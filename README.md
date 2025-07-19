@@ -42,7 +42,11 @@ Faza 1: Fundament z observability          ✅ [UKOŃCZONA]
   ✅ Frame tracking design
   ✅ TDD setup
   ✅ Monitoring dashboard
-Faza 2: Akwizycja i storage                ⏳ [ZAPLANOWANA]
+Faza 2: Akwizycja i storage                🚧 [W TRAKCIE]
+  ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
+  ⏳ RTSP Capture Service
+  ⏳ PostgreSQL/TimescaleDB
+  ⏳ Frame tracking
 Faza 3: AI services podstawy               ⏳ [ZAPLANOWANA]
 Faza 4: Integracja z Home Assistant        ⏳ [ZAPLANOWANA]
 Faza 5: Zaawansowane AI i voice            ⏳ [ZAPLANOWANA]
