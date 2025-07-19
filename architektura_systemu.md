@@ -272,29 +272,29 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Dokumentacja generuje się automatycznie
    - **[Szczegóły →](docs/faza-0-dokumentacja/05-szablon-dokumentacji.md)**
 
-### Faza 1: Fundament z Observability (2-3 tygodnie)
+### Faza 1: Fundament z Observability (2-3 tygodnie) ✅ **COMPLETED**
 
 #### Zadania i Metryki
 
-1. **[x] Konfiguracja środowiska Docker na serwerze Ubuntu**
+1. **[x] Konfiguracja środowiska Docker na serwerze Ubuntu** ✅
    - **Metryka**: Docker daemon działa, docker-compose v2.20+
    - **Walidacja**: `docker run hello-world && docker compose version`
    - **Sukces**: Zwraca wersję ≥ 2.20, hello-world działa
    - **[Szczegóły →](docs/faza-1-fundament/01-konfiguracja-docker.md)**
 
-2. **[x] Instalacja NVIDIA Container Toolkit**
+2. **[x] Instalacja NVIDIA Container Toolkit** ✅
    - **Metryka**: GPU dostępne w kontenerach
    - **Walidacja**: `docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi`
    - **Sukces**: Pokazuje GTX 4070 Super, CUDA 12.0+
    - **[Szczegóły →](docs/faza-1-fundament/02-nvidia-toolkit.md)**
 
-3. **[x] Setup repozytorium Git z podstawową strukturą**
+3. **[x] Setup repozytorium Git z podstawową strukturą** ✅
    - **Metryka**: Struktura katalogów zgodna z Clean Architecture
    - **Walidacja**: `tree -d -L 3` pokazuje wymaganą strukturę
    - **Sukces**: Istnieją: services/, docs/, tests/, .github/
    - **[Szczegóły →](docs/faza-1-fundament/03-git-repository-setup.md)**
 
-4. **[x] Deploy stack observability: Jaeger, Prometheus, Grafana, Loki**
+4. **[x] Deploy stack observability: Jaeger, Prometheus, Grafana, Loki** ✅
    - **Metryki**:
      - Jaeger UI: <http://localhost:16686>
      - Prometheus: <http://localhost:9090>
@@ -304,13 +304,13 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Wszystkie 4 UI dostępne, health check OK
    - **[Szczegóły →](docs/faza-1-fundament/04-observability-stack.md)**
 
-5. **[x] Konfiguracja OpenTelemetry SDK**
+5. **[x] Konfiguracja OpenTelemetry SDK** ✅
    - **Metryka**: Traces widoczne w Jaeger z example service
    - **Walidacja**: Run example service, sprawdź trace w Jaeger UI
    - **Sukces**: Trace zawiera: service name, span duration, attributes
    - **[Szczegóły →](docs/faza-1-fundament/05-opentelemetry-config.md)**
 
-6. **[x] Frame tracking design i implementacja**
+6. **[x] Frame tracking design i implementacja** ✅
    - [x] Domain model dla frame lifecycle
    - [x] Distributed trace propagation
    - [x] Frame metadata storage (TimescaleDB)
@@ -318,17 +318,53 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - Dokumentacja: [06-frame-tracking-design.md](./docs/faza-1-fundament/06-frame-tracking-design.md)
    - Szczegóły → [dekompozycja](./docs/faza-1-fundament/06-frame-tracking-design.md#dekompozycja-na-bloki-zadań)
 
-7. **[x] TDD setup i pierwsze testy**
+7. **[x] TDD setup i pierwsze testy** ✅
    - **Metryka**: Pytest skonfigurowany, coverage >80%
    - **Walidacja**: `pytest --cov=src tests/`
    - **Sukces**: Testy przechodzą, coverage report generowany
    - **[Szczegóły →](docs/faza-1-fundament/07-tdd-setup.md)**
 
-8. **[x] Monitoring dashboard**
+8. **[x] Monitoring dashboard** ✅
    - **Metryka**: Grafana dashboard z metrykami systemu
    - **Walidacja**: Dashboard pokazuje CPU, RAM, GPU, Docker metrics
    - **Sukces**: Wszystkie panele działają, dane real-time
    - **[Szczegóły →](docs/faza-1-fundament/08-monitoring-dashboard.md)**
+
+9. **[x] CI/CD Pipeline i Registry-based Deployment** ✅ **NOWE**
+   - **Metryki**:
+     - GitHub Actions buduje wszystkie obrazy automatycznie
+     - Obrazy publikowane do ghcr.io/hretheum/bezrobocie-detektor/
+     - Deployment na Nebula bez budowania na produkcji
+   - **Walidacja**:
+     ```bash
+     # Push triggers build
+     git push origin main
+     # Verify deployment
+     ssh nebula "/opt/detektor/scripts/health-check-all.sh"
+     ```
+   - **Sukces**: Pełny CI/CD flow od commit do deployment
+   - **Dokumentacja**:
+     - [CI/CD Setup Guide](docs/CI_CD_SETUP.md)
+     - [Deployment Script](scripts/deploy-to-nebula.sh)
+     - [Example Service](services/example-otel/)
+
+#### Podsumowanie Fazy 1
+
+**Status**: ✅ **COMPLETED** (wszystkie zadania ukończone)
+
+**Kluczowe osiągnięcia**:
+- Pełna infrastruktura observability (Prometheus, Jaeger, Grafana)
+- CI/CD pipeline z GitHub Actions i GitHub Container Registry
+- Automatyczny deployment na serwer Nebula
+- Przykładowy serwis (example-otel) z pełnym observability
+- Secrets management przez SOPS
+- Health monitoring wszystkich serwisów
+
+**Strategia deployment** (obowiązkowa dla wszystkich kolejnych faz):
+1. **Build**: Obrazy budowane TYLKO w GitHub Actions
+2. **Registry**: Publikacja do ghcr.io
+3. **Deploy**: Pull z registry na Nebula (NIGDY build na produkcji)
+4. **Monitor**: Health checks i observability od początku
 
 ### Faza 2: Akwizycja i Storage z pełnym monitoringiem (2-3 tygodnie)
 

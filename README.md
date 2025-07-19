@@ -1,7 +1,7 @@
 # System Detekcji i Automatyzacji Wizyjnej
 
-[![CI](https://github.com/hretheum/detektr/actions/workflows/ci.yml/badge.svg)](https://github.com/hretheum/detektr/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/hretheum/detektr/branch/main/graph/badge.svg)](https://codecov.io/gh/hretheum/detektr)
+[![CI](https://github.com/hretheum/bezrobocie-detektor/actions/workflows/ci.yml/badge.svg)](https://github.com/hretheum/bezrobocie-detektor/actions/workflows/ci.yml)
+[![Deploy](https://github.com/hretheum/bezrobocie-detektor/actions/workflows/deploy.yml/badge.svg)](https://github.com/hretheum/bezrobocie-detektor/actions/workflows/deploy.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -20,13 +20,15 @@ Stworzenie kompletnego systemu który:
 
 ## Stack Technologiczny
 
-- **Serwer**: Ubuntu z GTX 4070 Super (16GB VRAM), i7, 64GB RAM
+- **Serwer**: Ubuntu z GTX 4070 Super (16GB VRAM), i7, 64GB RAM (hostname: nebula)
 - **Infrastruktura**: Docker, Docker Compose, container-first
+- **CI/CD**: GitHub Actions + GitHub Container Registry (ghcr.io)
 - **Języki**: Python 3.11+, FastAPI
 - **AI/ML**: YOLO v8, MediaPipe, InsightFace, Whisper
 - **LLM**: OpenAI/Anthropic API
 - **Observability**: Jaeger, Prometheus, Grafana
 - **Architektura**: Clean Architecture, DDD, Event Sourcing, TDD
+- **Secrets**: SOPS z age encryption
 
 ## Architektura
 
@@ -36,12 +38,15 @@ System składa się z 7 faz implementacji:
 Faza 0: Dokumentacja i planowanie          ✅ [UKOŃCZONA]
 Faza 1: Fundament z observability          ✅ [UKOŃCZONA]
   ✅ Docker & NVIDIA setup
-  ✅ Git repository & CI/CD
+  ✅ Git repository & struktura
   ✅ Observability stack (Jaeger, Prometheus, Grafana, Loki)
   ✅ OpenTelemetry SDK
   ✅ Frame tracking design
   ✅ TDD setup
   ✅ Monitoring dashboard
+  ✅ CI/CD Pipeline (GitHub Actions + GHCR)
+  ✅ Automated deployment (registry-based)
+  ✅ Example services z pełnym observability
 Faza 2: Akwizycja i storage                🚧 [W TRAKCIE]
   ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
   ⏳ RTSP Capture Service
@@ -55,16 +60,18 @@ Faza 6: Optymalizacja i refinement         ⏳ [ZAPLANOWANA]
 
 ## Quick Start
 
+### Lokalne development
+
 ```bash
 # Klonowanie
-git clone git@github.com:hretheum/detektr.git
-cd detektr
+git clone git@github.com:hretheum/bezrobocie-detektor.git
+cd detektor
 
 # Setup environment
 make secrets-init
 make secrets-edit  # Dodaj swoje klucze API
 
-# Uruchomienie stacku
+# Uruchomienie stacku lokalnie
 make up
 
 # Monitoring
@@ -73,20 +80,36 @@ open http://localhost:16686   # Jaeger
 open http://localhost:9090    # Prometheus
 ```
 
+### Deployment na produkcję (Nebula)
+
+```bash
+# Wszystko przez CI/CD!
+git push origin main
+
+# Lub manual deployment
+./scripts/deploy-to-nebula.sh
+
+# Sprawdzenie statusu
+ssh nebula "/opt/detektor/scripts/health-check-all.sh"
+```
+
 ## Dokumentacja
 
 - 📋 **[Architektura Systemu](./architektura_systemu.md)** - Główny dokument projektu
-- 🛠️ **[Zasady Projektu (CLAUDE.md)](./CLAUDE.md)** - Wzorce i standardy
+- 🛠️ **[Zasady Projektu (CLAUDE.md)](./CLAUDE.md)** - Wzorce i standardy (zawiera CI/CD guidelines!)
+- 🚀 **[CI/CD Setup](./docs/CI_CD_SETUP.md)** - Konfiguracja pipeline
+- 📊 **[Deployment Phase 1](./docs/DEPLOYMENT_PHASE_1.md)** - Status i instrukcje
 - 📁 **[Dekompozycje Zadań](./docs/)** - Szczegółowe plany implementacji
 - 🔍 **[Analiza eofek/detektor](./docs/analysis/eofek-detektor-analysis.md)** - Inspiracje i patterns
 
 ## Kluczowe Zasady
 
-1. **🚨 ZASADA ZERO**: NIGDY nie hardkoduj sekretów
+1. **🚨 ZASADA ZERO**: NIGDY nie hardkoduj sekretów (używaj SOPS!)
 2. **TDD**: Test-driven development od początku
 3. **Observability First**: Tracing i metryki w każdym serwisie
 4. **Clean Architecture**: Separacja warstw, DDD patterns
 5. **Container First**: Wszystko w Docker
+6. **CI/CD First**: Build w GitHub Actions, deploy z registry (NIGDY build na produkcji!)
 
 ## Influences i Inspiracje
 
@@ -147,10 +170,13 @@ git commit    # Zapisz zmiany
 - **8002**: face-recognition
 - **8003**: object-detection
 - **8004**: ha-bridge
-- **8005**: llm-intent
-- **9090**: Prometheus
-- **16686**: Jaeger
-- **3000**: Grafana
+- **8005**: example-otel ✅ (działający przykład)
+- **8006**: frame-tracking
+- **8007**: echo-service
+- **8008**: gpu-demo
+- **9090**: Prometheus ✅
+- **16686**: Jaeger ✅
+- **3000**: Grafana ✅
 
 ## Bounded Contexts
 
@@ -160,23 +186,27 @@ git commit    # Zapisz zmiany
 
 ## Status Projektu
 
-**Aktualny stan**: Faza 1 ukończona - przechodzenie do Fazy 2
+**Aktualny stan**: Faza 1 COMPLETED ✅ - Faza 2 w trakcie
 
-**Ukończone zadania**:
-- ✅ Konfiguracja Docker + NVIDIA Container Toolkit
-- ✅ Setup repozytorium Git z CI/CD
-- ✅ Deploy stacku observability (Jaeger, Prometheus, Grafana, Loki)
-- ✅ Konfiguracja OpenTelemetry SDK
-- ✅ Frame tracking design z Event Sourcing i TimescaleDB
-- ✅ TDD setup z BaseService template i comprehensive testing
+**Faza 1 - Ukończone komponenty**:
+- ✅ Infrastruktura observability (Prometheus, Jaeger, Grafana)
+- ✅ CI/CD pipeline (GitHub Actions + GHCR)
+- ✅ Deployment automation (scripts/deploy-to-nebula.sh)
+- ✅ Example service z pełnym observability (example-otel)
+- ✅ Secrets management (SOPS z age)
+- ✅ Health monitoring (scripts/health-check-all.sh)
 
-**Metryki jakości**:
-- 📊 Dokumentacja: 100% tasks decomposed
-- 🔐 Security: SOPS configured, zero secrets in code
-- 🧪 Testing: TDD setup complete (91.7% validation rate)
-- 📈 Observability: Full stack operational with dashboards
-- 🐳 Infrastructure: Docker + GPU ready
-- 🔍 Tracing: Frame journey tracking implemented
+**Strategia deployment (obowiązkowa)**:
+1. Build: Obrazy budowane w GitHub Actions
+2. Registry: Publikacja do ghcr.io/hretheum/bezrobocie-detektor/
+3. Deploy: Pull z registry na Nebula (NIGDY build na produkcji!)
+4. Monitor: Health checks i observability od początku
+
+**Faza 2 - W trakcie**:
+- ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
+- 🚧 RTSP Capture Service (Block 0 completed)
+- ⏳ PostgreSQL/TimescaleDB
+- ⏳ Frame tracking implementation
 
 ## Kontrybuowanie
 
