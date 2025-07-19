@@ -82,6 +82,9 @@ open http://localhost:9090    # Prometheus
 
 ### Deployment na produkcję (Nebula)
 
+⚠️ **WAŻNE**: Przed pierwszym deploymentem skonfiguruj sekrety GitHub!
+Zobacz: [docs/GITHUB_SECRETS_SETUP.md](./docs/GITHUB_SECRETS_SETUP.md)
+
 ```bash
 # Wszystko przez CI/CD!
 git push origin main
@@ -98,6 +101,7 @@ ssh nebula "/opt/detektor/scripts/health-check-all.sh"
 - 📋 **[Architektura Systemu](./architektura_systemu.md)** - Główny dokument projektu
 - 🛠️ **[Zasady Projektu (CLAUDE.md)](./CLAUDE.md)** - Wzorce i standardy (zawiera CI/CD guidelines!)
 - 🚀 **[CI/CD Setup](./docs/CI_CD_SETUP.md)** - Konfiguracja pipeline
+- 🔐 **[GitHub Secrets Setup](./docs/GITHUB_SECRETS_SETUP.md)** - WYMAGANE dla CI/CD!
 - 📊 **[Deployment Phase 1](./docs/DEPLOYMENT_PHASE_1.md)** - Status i instrukcje
 - 📁 **[Dekompozycje Zadań](./docs/)** - Szczegółowe plany implementacji
 - 🔍 **[Analiza eofek/detektor](./docs/analysis/eofek-detektor-analysis.md)** - Inspiracje i patterns
