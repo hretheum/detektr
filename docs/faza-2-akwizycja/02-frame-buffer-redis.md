@@ -130,6 +130,88 @@ Zaimplementować wydajny system buforowania klatek wideo wykorzystując Redis St
 - **lz4**: Fast compression
 - **locust**: Load testing
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA ⚠️ KRYTYCZNE
+
+### Zadania atomowe
+
+1. **[ ] Uruchomienie Redis na Nebuli**
+   - **Metryka**: Redis container running z persistence
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     ssh nebula "docker ps | grep redis"
+     # STATUS: Up X minutes (healthy)
+     ssh nebula "docker exec redis redis-cli ping"
+     # PONG
+     ```
+   - **Quality Gate**: Persistence verified (restart test)
+   - **Guardrails**: Max memory set, AOF enabled
+   - **Czas**: 1h
+
+2. **[ ] Weryfikacja Redis Exporter**
+   - **Metryka**: Redis metrics in Prometheus
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     curl http://nebula:9121/metrics | grep redis_up
+     # redis_up 1
+     curl http://nebula:9090/api/v1/query?query=redis_connected_clients
+     # Shows data
+     ```
+   - **Quality Gate**: All Redis metrics collected
+   - **Guardrails**: Exporter auto-restarts
+   - **Czas**: 1h
+
+3. **[ ] Refactor kodu do użycia Redis**
+   - **Metryka**: Queue używa Redis Streams zamiast in-memory
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     ssh nebula "docker exec redis redis-cli XINFO STREAM frame_queue"
+     # Shows stream info
+     ```
+   - **Quality Gate**: Integration tests pass z Redis
+   - **Guardrails**: Fallback to in-memory if Redis down
+   - **Czas**: 4h
+
+4. **[ ] Deployment queue service na Nebuli**
+   - **Metryka**: Frame buffer service containerized
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     ssh nebula "docker ps | grep frame-buffer"
+     # Running
+     curl http://nebula:9090/metrics | grep frame_queue
+     # Metrics visible
+     ```
+   - **Quality Gate**: E2E test frame flow
+   - **Guardrails**: Circuit breaker active
+   - **Czas**: 2h
+
+5. **[ ] Performance test z Redis**
+   - **Metryka**: 1000+ fps with Redis backend
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     ssh nebula "redis-cli --stat"
+     # Shows ops/sec >1000
+     ```
+   - **Quality Gate**: Latency <10ms p99
+   - **Guardrails**: Memory usage stable
+   - **Czas**: 2h
+
+6. **[ ] Grafana dashboard dla Queue + Redis**
+   - **Metryka**: Full visibility of queue operations
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     curl http://nebula:3000/api/dashboards/uid/frame-queue
+     # Dashboard exists with data
+     ```
+   - **Quality Gate**: No blind spots in monitoring
+   - **Guardrails**: Alerts configured
+   - **Czas**: 2h
+
+### Metryki sukcesu bloku
+- Redis i Queue service działają na Nebuli
+- Pełna integracja z Prometheus/Grafana
+- Performance zgodny z założeniami (1000+ fps)
+- Automatic failover i recovery
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

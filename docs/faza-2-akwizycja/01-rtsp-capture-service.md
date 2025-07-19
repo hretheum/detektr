@@ -124,6 +124,82 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
    - **Walidacja**: Stress test for 24h
    - **Czas**: 3h
 
+### Blok 5: DEPLOYMENT NA SERWERZE NEBULA ⚠️ KRYTYCZNE
+
+#### Zadania atomowe
+
+1. **[ ] Utworzenie production-ready Dockerfile**
+   - **Metryka**: Multi-stage build, final image <150MB
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     ssh nebula "docker images | grep rtsp-capture"
+     # rtsp-capture:latest <150MB
+     ```
+   - **Quality Gate**: Image security scan pass (trivy)
+   - **Guardrails**: No secrets in image, non-root user
+   - **Czas**: 2h
+
+2. **[ ] Integracja z głównym docker-compose.yml**
+   - **Metryka**: Service zdefiniowany w docker-compose.yml
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     ssh nebula "cd /path/to/detektor && docker-compose config | grep rtsp-capture"
+     # Shows service definition
+     ```
+   - **Quality Gate**: Health check defined, restart policy
+   - **Guardrails**: Resource limits set (CPU/memory)
+   - **Czas**: 1h
+
+3. **[ ] Uruchomienie kontenera na Nebuli**
+   - **Metryka**: Container running i healthy
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     ssh nebula "docker ps | grep rtsp-capture"
+     # STATUS: Up X minutes (healthy)
+     ```
+   - **Quality Gate**: Health endpoint returns 200
+   - **Guardrails**: Auto-restart on failure
+   - **Czas**: 1h
+
+4. **[ ] Weryfikacja metryk w Prometheus**
+   - **Metryka**: RTSP metrics visible in Prometheus
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     curl http://nebula:9090/api/v1/query?query=rtsp_frames_captured_total
+     # Returns data points
+     ```
+   - **Quality Gate**: All key metrics exported
+   - **Guardrails**: No metric gaps >1min
+   - **Czas**: 1h
+
+5. **[ ] Integracja z Jaeger tracing**
+   - **Metryka**: Traces visible for each frame
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     curl http://nebula:16686/api/traces?service=rtsp-capture
+     # Returns trace data
+     ```
+   - **Quality Gate**: <1% traces dropped
+   - **Guardrails**: Trace context propagated
+   - **Czas**: 2h
+
+6. **[ ] Load test na serwerze**
+   - **Metryka**: Handle real RTSP stream 24h
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     ssh nebula "docker stats rtsp-capture --no-stream"
+     # CPU <50%, MEM <500MB after 24h
+     ```
+   - **Quality Gate**: 0% frame loss, stable memory
+   - **Guardrails**: Alerts on high CPU/memory
+   - **Czas**: 24h
+
+#### Metryki sukcesu bloku
+- Service działa stabilnie na Nebuli 24/7
+- Metryki i traces dostępne w Prometheus/Jaeger
+- Automatic recovery po crash
+- Resource usage w limitach
+
 ## Całościowe metryki sukcesu zadania
 
 1. **Reliability**: 99.9% uptime z auto-recovery
