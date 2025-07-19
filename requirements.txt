@@ -18,9 +18,14 @@ asyncio==3.4.3
 redis==5.0.1
 aioredis==2.0.1
 
+# Serialization
+msgpack==1.0.7
+lz4==4.3.2
+
 # Utils
 click==8.1.7
 structlog==24.1.0
+numpy==1.26.2
 
 # Web framework for example service
 fastapi==0.104.1

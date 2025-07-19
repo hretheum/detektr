@@ -43,17 +43,17 @@ Zaimplementować wydajny system buforowania klatek wideo wykorzystując Redis St
 
 #### Zadania atomowe
 
-1. **[ ] TDD: Frame serializer tests**
+1. **[x] TDD: Frame serializer tests**
    - **Metryka**: Tests dla różnych formatów
    - **Walidacja**: Round-trip serialization test
    - **Czas**: 2h
 
-2. **[ ] Implementacja binary frame serialization**
+2. **[x] Implementacja binary frame serialization**
    - **Metryka**: <5ms dla Full HD frame
    - **Walidacja**: Performance benchmark
    - **Czas**: 2h
 
-3. **[ ] Optional compression (LZ4)**
+3. **[x] Optional compression (LZ4)**
    - **Metryka**: 50% size reduction, <2ms overhead
    - **Walidacja**: Compression ratio test
    - **Czas**: 2h
