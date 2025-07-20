@@ -10,6 +10,13 @@ STRATEGIA CI/CD:
 - Obrazy publikowane do GitHub Container Registry (ghcr.io)
 - Serwer Nebula TYLKO pobiera gotowe obrazy - NIGDY nie buduje lokalnie
 - Deploy odbywa się przez ./scripts/deploy-to-nebula.sh lub automatycznie z GitHub Actions
+
+STATUS na 2025-01-20:
+- CI/CD pipeline: ✅ GOTOWY (wymaga tylko konfiguracji sekretów GitHub)
+- Skrypty deployment: ✅ GOTOWE
+- Serwis example-otel: ✅ ZAIMPLEMENTOWANY (lokalnie, wymaga dodania do docker-compose.yml)
+- Pozostałe serwisy: ❌ DO IMPLEMENTACJI
+- Deploy na Nebula: ❌ NIEWYKONANY
 -->
 
 ## Cel zadania
@@ -80,11 +87,13 @@ ssh nebula "cd /opt/detektor && docker-compose logs [service-name]"
 LLM PROMPT: Ten blok jest ABSOLUTNIE KRYTYCZNY.
 Każda komenda MUSI być poprzedzona "ssh nebula".
 Jeśli cokolwiek nie przejdzie, ZATRZYMAJ wykonanie i napraw problem.
+
+STATUS: Skrypty weryfikacyjne przygotowane, ale NIE WYKONANE na serwerze.
 -->
 
 #### Zadania atomowe
 
-1. **[x] Weryfikacja dostępu SSH i uprawnień**
+1. **[PREP] Weryfikacja dostępu SSH i uprawnień** ⚠️ **DO WYKONANIA NA SERWERZE**
    - **Metryka**: SSH działa, sudo access, git configured
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -96,7 +105,7 @@ Jeśli cokolwiek nie przejdzie, ZATRZYMAJ wykonanie i napraw problem.
    - **Guardrails**: Abort if any check fails
    - **Czas**: 0.5h
 
-2. **[x] Weryfikacja infrastruktury observability**
+2. **[PREP] Weryfikacja infrastruktury observability** ⚠️ **DO WYKONANIA NA SERWERZE**
    - **Metryka**: Prometheus, Grafana, Jaeger healthy
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -108,7 +117,7 @@ Jeśli cokolwiek nie przejdzie, ZATRZYMAJ wykonanie i napraw problem.
    - **Guardrails**: Fix unhealthy services first
    - **Czas**: 0.5h
 
-3. **[x] Weryfikacja GPU i przestrzeni dyskowej**
+3. **[PREP] Weryfikacja GPU i przestrzeni dyskowej** ⚠️ **DO WYKONANIA NA SERWERZE**
    - **Metryka**: GPU accessible, >20GB free space
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -127,11 +136,32 @@ Jeśli cokolwiek nie przejdzie, ZATRZYMAJ wykonanie i napraw problem.
 <!--
 LLM PROMPT: Najpierw napraw restartujący się kontener, potem deploy przykładu.
 PAMIĘTAJ: ssh nebula przed każdą komendą!
+
+STATUS:
+- example-otel: ✅ ZAIMPLEMENTOWANY lokalnie
+- Brakuje: konfiguracja w docker-compose.yml
+- Brakuje: faktyczny deployment na Nebula
 -->
 
 #### Zadania atomowe
 
-1. **[ ] Debug i naprawa telemetry_service-jaeger-1**
+1. **[ ] Najpierw skonfiguruj sekrety GitHub** 🚨 **KRYTYCZNE**
+   - **Metryka**: Wszystkie 4 sekrety skonfigurowane w GitHub
+   - **Instrukcja**: Zobacz `/docs/GITHUB_SECRETS_SETUP.md`
+   - **Wymagane sekrety**:
+     - NEBULA_SSH_KEY
+     - NEBULA_HOST
+     - NEBULA_USER
+     - SOPS_AGE_KEY
+   - **Walidacja**:
+     ```bash
+     gh secret list
+     ```
+   - **Quality Gate**: Wszystkie 4 sekrety widoczne
+   - **Guardrails**: Bez tego CI/CD nie zadziała!
+   - **Czas**: 0.5h
+
+2. **[ ] Debug i naprawa telemetry_service-jaeger-1** (jeśli istnieje)
    - **Metryka**: Container running stable, no restarts
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -144,9 +174,20 @@ PAMIĘTAJ: ssh nebula przed każdą komendą!
    - **Guardrails**: Remove if unfixable
    - **Czas**: 1h
 
-2. **[ ] Deploy OpenTelemetry example service z registry**
+3. **[ ] Dodaj example-otel do docker-compose.yml i zdeployuj**
    - **Metryka**: Example service running, exporting traces
-   - **Prerequisites**: Obrazy muszą być zbudowane w GitHub Actions i dostępne w ghcr.io
+   - **Prerequisites**:
+     - Sekrety GitHub skonfigurowane
+     - Serwis example-otel już zaimplementowany w `/services/example-otel/`
+   - **Kroki**:
+     ```bash
+     # 1. Dodaj serwis do docker-compose.yml
+     # 2. Dodaj do .env niezbędne zmienne
+     # 3. Commit i push - CI/CD zbuduje obraz
+     git add . && git commit -m "feat: add example-otel to docker-compose" && git push
+     # 4. Po zbudowaniu obrazu, deploy:
+     ./scripts/deploy-to-nebula.sh
+     ```
    - **Walidacja NA SERWERZE**:
      ```bash
      # Pull latest image from registry
@@ -163,7 +204,7 @@ PAMIĘTAJ: ssh nebula przed każdą komendą!
    - **Guardrails**: CPU usage <50%
    - **Czas**: 2h
 
-3. **[ ] Verify GPU access in container**
+4. **[ ] Verify GPU access in container**
    - **Metryka**: Container can access GPU
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -186,11 +227,15 @@ PAMIĘTAJ: ssh nebula przed każdą komendą!
 <!--
 LLM PROMPT: Frame tracking to CORE functionality.
 Deploy z TimescaleDB dla time-series data.
+
+STATUS:
+- PostgreSQL config: ❌ BRAK docker-compose.storage.yml
+- frame-tracking service: ❌ DO IMPLEMENTACJI
 -->
 
 #### Zadania atomowe
 
-1. **[ ] Deploy PostgreSQL z TimescaleDB**
+1. **[ ] Stwórz docker-compose.storage.yml i deploy PostgreSQL**
    - **Metryka**: PostgreSQL running with TimescaleDB extension
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -204,11 +249,17 @@ Deploy z TimescaleDB dla time-series data.
    - **Guardrails**: Data persistence configured
    - **Czas**: 1.5h
 
-2. **[ ] Deploy Frame Tracking Service z registry**
+2. **[ ] Implementuj i deploy Frame Tracking Service**
    - **Metryka**: Frame tracking API running with event sourcing
    - **Prerequisites**:
      - PostgreSQL z TimescaleDB running (poprzednie zadanie)
-     - Image zbudowany w GitHub Actions: ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest
+   - **Kroki implementacji**:
+     ```bash
+     # 1. Stwórz serwis w services/frame-tracking/
+     # 2. Dodaj do GitHub Actions workflow matrix
+     # 3. Dodaj do docker-compose.yml
+     # 4. Commit, push i deploy
+     ```
    - **Walidacja NA SERWERZE**:
      ```bash
      # Pull latest image from registry
@@ -255,11 +306,16 @@ Deploy z TimescaleDB dla time-series data.
 <!--
 LLM PROMPT: Template musi być DZIAŁAJĄCYM serwisem, nie tylko kodem.
 To będzie wzorzec dla wszystkich przyszłych serwisów.
+
+STATUS:
+- base-template: ❌ DO STWORZENIA
+- echo-service: ❌ DO IMPLEMENTACJI
+- Grafana dashboards: ❌ BRAK
 -->
 
 #### Zadania atomowe
 
-1. **[ ] Przygotowanie service template z wszystkimi best practices**
+1. **[ ] Stwórz base-template jako wzorzec dla nowych serwisów**
    - **Metryka**: Template service implementing all patterns
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -271,9 +327,10 @@ To będzie wzorzec dla wszystkich przyszłych serwisów.
    - **Guardrails**: 100% test coverage
    - **Czas**: 2h
 
-2. **[ ] Deploy echo-service z registry**
+2. **[ ] Implementuj echo-service bazując na template i deploy**
    - **Metryka**: Working service demonstrating all features
-   - **Prerequisites**: Echo service zbudowany z base-template w GitHub Actions
+   - **Prerequisites**: base-template gotowy
+   - **Kroki**: Analogicznie jak frame-tracking
    - **Walidacja NA SERWERZE**:
      ```bash
      # Pull latest image from registry
@@ -317,13 +374,18 @@ To będzie wzorzec dla wszystkich przyszłych serwisów.
 <!--
 LLM PROMPT: Musimy pokazać że GPU faktycznie działa.
 Simple ML inference service jako dowód koncepcji.
+
+STATUS:
+- gpu-demo: ❌ DO IMPLEMENTACJI
+- GPU metrics: ❌ BRAK konfiguracji
 -->
 
 #### Zadania atomowe
 
-1. **[ ] Deploy GPU demo service z registry**
+1. **[ ] Implementuj GPU demo service z prostym modelem ML**
    - **Metryka**: Service using GPU for inference
-   - **Prerequisites**: GPU-enabled image zbudowany w GitHub Actions
+   - **Prerequisites**: NVIDIA runtime w Docker
+   - **Sugerowana implementacja**: YOLO lub prosty classifier
    - **Walidacja NA SERWERZE**:
      ```bash
      # Pull latest GPU image from registry
@@ -362,6 +424,10 @@ Simple ML inference service jako dowód koncepcji.
 <!--
 LLM PROMPT: Weryfikacja że WSZYSTKO działa razem.
 To jest final checkpoint przed Fazą 2.
+
+STATUS:
+- Skrypty testowe: ❌ DO STWORZENIA
+- Dokumentacja deployment: ❌ DO WYGENEROWANIA
 -->
 
 #### Zadania atomowe
@@ -423,18 +489,20 @@ To jest final checkpoint przed Fazą 2.
 5. **Performance**: Response times <100ms dla wszystkich API
 6. **Documentation**: Deployment guide umożliwia odtworzenie w <30min
 
-## Deliverables
+## Deliverables - Status wykonania
 
-1. `/opt/detektor/services/example-otel/` - Working OTEL example
-2. `/opt/detektor/services/frame-tracking/` - Frame tracking z event sourcing
-3. `/opt/detektor/services/echo-service/` - Base template demonstration
-4. `/opt/detektor/services/gpu-demo/` - GPU utilization proof
-5. `/opt/detektor/docker-compose.yml` - Updated with all services
-6. `/opt/detektor/docker-compose.storage.yml` - PostgreSQL/TimescaleDB
-7. `/opt/detektor/docker-compose.gpu.yml` - GPU services config
-8. `/opt/detektor/docs/DEPLOYMENT_GUIDE_FAZA1.md` - Complete guide
-9. `/opt/detektor/scripts/health-check-all.sh` - Stack validation
-10. `/opt/detektor/dashboards/*.json` - Grafana dashboards
+| Deliverable | Status | Opis |
+|------------|--------|------|
+| `/opt/detektor/services/example-otel/` | ✅ LOCAL | Zaimplementowany, wymaga deployment |
+| `/opt/detektor/services/frame-tracking/` | ❌ | Do implementacji |
+| `/opt/detektor/services/echo-service/` | ❌ | Do implementacji |
+| `/opt/detektor/services/gpu-demo/` | ❌ | Do implementacji |
+| `/opt/detektor/docker-compose.yml` | ⚠️ | Wymaga dodania serwisów |
+| `/opt/detektor/docker-compose.storage.yml` | ❌ | Do stworzenia |
+| `/opt/detektor/docker-compose.gpu.yml` | ❌ | Do stworzenia |
+| `/opt/detektor/docs/DEPLOYMENT_GUIDE_FAZA1.md` | ✅ | Istnieje jako DEPLOYMENT_PHASE_1.md |
+| `/opt/detektor/scripts/health-check-all.sh` | ✅ | Gotowy |
+| `/opt/detektor/dashboards/*.json` | ❌ | Do stworzenia |
 
 ## Narzędzia
 
@@ -488,9 +556,40 @@ Po ukończeniu tego zadania:
 
 → Przejdź do [Faza 2 - Akwizycja danych](../../faza-2-akwizycja/README.md)
 
+## 🎯 Podsumowanie - Co konkretnie zostało do zrobienia
+
+### Krok 1: Przygotowanie (30 min)
+1. [ ] Skonfiguruj 4 sekrety GitHub zgodnie z `/docs/GITHUB_SECRETS_SETUP.md`
+2. [ ] Zweryfikuj dostęp SSH do Nebula i działanie observability stack
+
+### Krok 2: Deploy example-otel (1h)
+1. [ ] Dodaj example-otel do docker-compose.yml
+2. [ ] Commit, push i poczekaj na build w GitHub Actions
+3. [ ] Deploy na Nebula używając `./scripts/deploy-to-nebula.sh`
+4. [ ] Zweryfikuj traces w Jaeger
+
+### Krok 3: Implementacja brakujących serwisów (6-8h)
+1. [ ] Stwórz docker-compose.storage.yml z PostgreSQL/TimescaleDB
+2. [ ] Implementuj frame-tracking service
+3. [ ] Stwórz base-template i echo-service
+4. [ ] Implementuj gpu-demo z prostym modelem ML
+5. [ ] Dodaj wszystkie serwisy do GitHub Actions workflow
+
+### Krok 4: Finalizacja (2h)
+1. [ ] Uruchom pełny stack na Nebula
+2. [ ] Wykonaj testy integracyjne
+3. [ ] Stwórz dashboardy Grafana
+4. [ ] 24h test stabilności
+
+**Całkowity czas**: ~12h aktywnej pracy + 24h test stabilności
+
 <!--
 LLM FINAL REMINDER:
 To zadanie jest KRYTYCZNE dla sukcesu projektu.
 BEZ działających serwisów na serwerze cały projekt to tylko "localhost development".
 KAŻDA komenda musi być wykonana przez SSH na Nebuli!
+
+PRIORYTET #1: Skonfiguruj sekrety GitHub!
+PRIORYTET #2: Deploy example-otel jako proof of concept!
+PRIORYTET #3: Reszta serwisów może być implementowana iteracyjnie.
 -->
