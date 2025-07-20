@@ -146,7 +146,7 @@ jobs:
           docker pull ${REGISTRY}/${IMAGE_PREFIX}/echo-service:latest
 
           # Create docker-compose.prod.yml
-          cd ${DEPLOY_DIR}
+          cd ${DEPLOY_DIR} || { echo "Cannot access ${DEPLOY_DIR}"; exit 1; }
 
           cat > docker-compose.prod.yml << 'COMPOSE_EOF'
           services:
