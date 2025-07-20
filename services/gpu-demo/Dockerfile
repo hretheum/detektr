@@ -21,8 +21,8 @@ WORKDIR /app
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy requirements first for better caching - context is project root
+COPY services/gpu-demo/requirements.txt .
 
 # Install dependencies
 RUN pip install --upgrade pip && \
@@ -54,13 +54,11 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy application code
-COPY --chown=appuser:appuser . .
+# Copy application code - context is project root
+COPY --chown=appuser:appuser services/gpu-demo/ .
 
-# Download YOLO model during build to avoid runtime download
-# Use the virtual environment Python
-RUN /opt/venv/bin/python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')" && \
-    chown -R appuser:appuser /app
+# Create directory for model cache
+RUN mkdir -p /app/.cache && chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser
