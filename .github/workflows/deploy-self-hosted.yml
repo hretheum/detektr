@@ -76,18 +76,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            scripts/deploy-from-runner.sh
+            scripts/deploy-local-on-nebula.sh
           sparse-checkout-cone-mode: false
 
       - name: Deploy to Nebula
         env:
-          NEBULA_HOST: ${{ secrets.NEBULA_HOST }}
-          NEBULA_USER: ${{ secrets.NEBULA_USER }}
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: |
-          chmod +x scripts/deploy-from-runner.sh
-          ./scripts/deploy-from-runner.sh
+          chmod +x scripts/deploy-local-on-nebula.sh
+          ./scripts/deploy-local-on-nebula.sh
 
       - name: Deployment Summary
         if: always()
