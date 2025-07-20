@@ -58,7 +58,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY --chown=appuser:appuser . .
 
 # Download YOLO model during build to avoid runtime download
-RUN python3 -c "from ultralytics import YOLO; YOLO('yolov8n.pt')" && \
+# Use the virtual environment Python
+RUN /opt/venv/bin/python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')" && \
     chown -R appuser:appuser /app
 
 # Switch to non-root user
