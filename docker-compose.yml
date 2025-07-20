@@ -144,6 +144,32 @@ services:
     depends_on:
       - redis
 
+  # GPU Demo Service - ML inference with GPU support
+  # Note: Requires docker-compose.gpu.yml for full GPU configuration
+  gpu-demo:
+    image: ghcr.io/hretheum/bezrobocie-detektor/gpu-demo:latest
+    container_name: gpu-demo
+    ports:
+      - "8008:8008"
+    environment:
+      - SERVICE_NAME=gpu-demo
+      - SERVICE_VERSION=0.1.0
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - LOG_LEVEL=info
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=8008"
+      - "prometheus.io/path=/metrics"
+
 volumes:
   redis-data:
 

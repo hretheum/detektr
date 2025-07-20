@@ -1,0 +1,65 @@
+# GPU-enabled services configuration
+# This file extends the main docker-compose.yml with GPU support
+
+services:
+  gpu-demo:
+    image: ghcr.io/hretheum/bezrobocie-detektor/gpu-demo:latest
+    container_name: gpu-demo
+    ports:
+      - "8008:8008"
+    environment:
+      - SERVICE_NAME=gpu-demo
+      - SERVICE_VERSION=0.1.0
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - LOG_LEVEL=info
+    networks:
+      - detektor-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    runtime: nvidia
+    volumes:
+      - /tmp/gpu-demo-cache:/root/.cache # Cache for model downloads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=8008"
+      - "prometheus.io/path=/metrics"
+
+  # GPU metrics exporter for Prometheus
+  gpu-exporter:
+    image: nvidia/dcgm-exporter:3.1.8-3.1.5-ubuntu20.04
+    container_name: gpu-exporter
+    ports:
+      - "9400:9400"
+    environment:
+      - DCGM_EXPORTER_NO_HOSTNAME=1
+    networks:
+      - detektor-network
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=9400"
+      - "prometheus.io/path=/metrics"
+
+networks:
+  detektor-network:
+    external: true

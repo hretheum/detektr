@@ -32,8 +32,7 @@ jobs:
           - frame-tracking
           - base-template
           - echo-service
-          # TODO: Dodać po implementacji:
-          # - gpu-demo
+          - gpu-demo
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
