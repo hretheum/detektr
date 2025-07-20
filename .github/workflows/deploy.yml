@@ -152,12 +152,6 @@ jobs:
           docker pull ${REGISTRY}/${IMAGE_PREFIX}/base-template:latest
           docker pull ${REGISTRY}/${IMAGE_PREFIX}/echo-service:latest
 
-          # Copy files to deployment directory
-          sudo cp scripts/deploy-local.sh /opt/detektor/
-          sudo cp docker-compose.observability.yml /opt/detektor/
-          sudo cp docker-compose.storage.yml /opt/detektor/
-          sudo chown hretheum:hretheum /opt/detektor/deploy-local.sh
-          sudo chmod +x /opt/detektor/deploy-local.sh
-
-          # Execute deployment in deployment directory
-          cd /opt/detektor && ./deploy-local.sh
+          # Execute deployment
+          chmod +x scripts/deploy-local.sh
+          sudo scripts/deploy-local.sh
