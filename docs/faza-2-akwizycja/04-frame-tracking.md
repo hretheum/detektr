@@ -4,31 +4,55 @@
 
 Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline z wykorzystaniem OpenTelemetry, zapewniając 100% observability.
 
-## Blok 0: Prerequisites check
+## Blok 0: Prerequisites check NA SERWERZE NEBULA ⚠️
 
 #### Zadania atomowe
 
-1. **[ ] Weryfikacja OpenTelemetry SDK**
+1. **[ ] Weryfikacja OpenTelemetry setup na Nebuli**
    - **Metryka**: OTEL SDK zainstalowane, Jaeger dostępny
-   - **Walidacja**:
+   - **Walidacja NA SERWERZE**:
 
      ```bash
-     python -c "import opentelemetry; print(opentelemetry.__version__)"
-     curl http://localhost:16686/api/services | jq length
+     # Check Jaeger availability
+     curl -s http://nebula:16686/api/services | jq length
      # >0 services registered
-     ```
 
+     # Verify OTEL collector
+     curl -s http://nebula:4318/v1/traces
+     # Returns 405 (endpoint active but needs POST)
+     ```
+   - **Quality Gate**: Jaeger UI accessible
+   - **Guardrails**: OTEL collector accepting traces
    - **Czas**: 0.5h
 
-2. **[ ] Test trace propagation**
+2. **[ ] Test trace propagation na Nebuli**
    - **Metryka**: Context propagation między serwisami działa
-   - **Walidacja**:
+   - **Walidacja NA SERWERZE**:
 
      ```bash
-     python test_trace_propagation.py
+     # Run trace test between services
+     ssh nebula "docker exec example-otel python /app/test_trace_propagation.py"
      # Trace visible in Jaeger with 2+ services
-     ```
 
+     # Verify in Jaeger UI
+     open http://nebula:16686/search?service=example-otel
+     ```
+   - **Quality Gate**: Multi-service traces visible
+   - **Guardrails**: No orphaned spans
+   - **Czas**: 0.5h
+
+3. **[ ] Weryfikacja storage dla traces**
+   - **Metryka**: Sufficient space for trace data
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     ssh nebula "df -h /var/lib/docker/volumes/jaeger_data"
+     # >20GB available
+
+     ssh nebula "docker exec jaeger-collector curl -s localhost:14269/metrics | grep jaeger_collector_spans_received_total"
+     # Collector operational
+     ```
+   - **Quality Gate**: Storage configured
+   - **Guardrails**: Retention policy set
    - **Czas**: 0.5h
 
 ## Dekompozycja na bloki zadań
@@ -167,6 +191,137 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 - Search/analytics working
 - Performance acceptable
 
+### Blok 4: CI/CD Pipeline dla Frame Tracking
+
+#### Zadania atomowe
+
+1. **[ ] Utworzenie shared library package**
+   - **Metryka**: frame-tracking jako reusable package
+   - **Walidacja**:
+     ```bash
+     # Build and test package
+     cd services/shared/frame-tracking
+     python -m build
+     pip install dist/frame_tracking-*.whl
+     python -c "from frame_tracking import FrameID; print(FrameID.generate())"
+     ```
+   - **Quality Gate**: Package installable
+   - **Guardrails**: All tests passing
+   - **Czas**: 1.5h
+
+2. **[ ] Dockerfile dla frame-tracking service**
+   - **Metryka**: Service image z OTEL instrumentation
+   - **Walidacja**:
+     ```bash
+     docker build -f services/frame-tracking/Dockerfile -t frame-tracking:test .
+     docker run --rm frame-tracking:test python -m frame_tracking.health
+     # Health check passed
+     ```
+   - **Quality Gate**: Image <200MB
+   - **Guardrails**: OTEL auto-instrumentation included
+   - **Czas**: 1h
+
+3. **[ ] GitHub Actions dla tracking components**
+   - **Metryka**: Automated builds and tests
+   - **Walidacja**:
+     ```bash
+     # Check workflow
+     cat .github/workflows/frame-tracking-deploy.yml
+     git push origin main
+     # Monitor build: https://github.com/hretheum/bezrobocie/actions
+     ```
+   - **Quality Gate**: Build <5min
+   - **Guardrails**: Integration tests included
+   - **Czas**: 1.5h
+
+### Blok 5: DEPLOYMENT NA NEBULA I WALIDACJA ⚠️
+
+#### Zadania atomowe
+
+1. **[ ] Deploy frame-tracking service na Nebuli**
+   - **Metryka**: Service running with tracing enabled
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     # Deploy service
+     ssh nebula "cd /opt/detektor && docker-compose -f docker-compose.yml -f docker-compose.tracking.yml pull"
+     ssh nebula "cd /opt/detektor && docker-compose -f docker-compose.yml -f docker-compose.tracking.yml up -d frame-tracking"
+
+     # Health check
+     curl -s http://nebula:8006/health | jq .status
+     # "healthy"
+     ```
+   - **Quality Gate**: Service healthy
+   - **Guardrails**: Connected to Jaeger
+   - **Czas**: 1h
+
+2. **[ ] E2E trace validation na produkcji**
+   - **Metryka**: Complete traces from capture to storage
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     # Generate test frames
+     ssh nebula "docker exec frame-tracking python -m frame_tracking.test_generator --count 100"
+
+     # Verify traces in Jaeger
+     curl -s "http://nebula:16686/api/traces?service=frame-tracking&limit=10" | jq '.[].spans | length'
+     # Multiple spans per trace
+
+     # Check frame IDs in traces
+     curl -s "http://nebula:16686/api/traces?service=frame-tracking&limit=1" | \
+       jq '.[0].spans[].tags[] | select(.key=="frame.id")'
+     ```
+   - **Quality Gate**: 100% traces have frame IDs
+   - **Guardrails**: No missing spans
+   - **Czas**: 1.5h
+
+3. **[ ] Performance impact assessment**
+   - **Metryka**: <1% overhead from tracing
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     # Baseline without tracing
+     ssh nebula "OTEL_SDK_DISABLED=true docker exec frame-tracking python -m frame_tracking.benchmark"
+     # Record throughput
+
+     # With tracing enabled
+     ssh nebula "docker exec frame-tracking python -m frame_tracking.benchmark"
+     # Compare throughput (should be within 1%)
+     ```
+   - **Quality Gate**: Performance degradation <1%
+   - **Guardrails**: CPU overhead <5%
+   - **Czas**: 2h
+
+4. **[ ] Grafana dashboard deployment**
+   - **Metryka**: Frame tracking visualizations live
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     # Import dashboard
+     ssh nebula "curl -X POST http://localhost:3000/api/dashboards/db \
+       -H 'Content-Type: application/json' \
+       -d @/opt/detektor/dashboards/frame-tracking.json"
+
+     # Verify data
+     open http://nebula:3000/d/frame-tracking/frame-journey
+     # Shows frame processing times and paths
+     ```
+   - **Quality Gate**: All panels populated
+   - **Guardrails**: Query performance <1s
+   - **Czas**: 1h
+
+5. **[ ] 24h trace retention test**
+   - **Metryka**: Traces searchable for 24h+
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     # Generate frames with known IDs
+     ssh nebula "docker exec frame-tracking python -m frame_tracking.generate_test_data"
+
+     # After 24h, search for old frames
+     frame_id="test_$(date -d '24 hours ago' +%Y%m%d_%H%M%S)"
+     curl -s "http://nebula:16686/api/traces?tags=frame.id:$frame_id"
+     # Should return trace
+     ```
+   - **Quality Gate**: 24h retention working
+   - **Guardrails**: Storage growth sustainable
+   - **Czas**: 24h
+
 ## Całościowe metryki sukcesu zadania
 
 1. **Coverage**: 100% frames have complete traces
@@ -216,6 +371,56 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
    - [ ] Investigate root cause
 
 3. **Czas rollback**: <5 min
+
+## CI/CD i Deployment Guidelines
+
+### Image Registry Structure
+```
+ghcr.io/hretheum/bezrobocie-detektor/
+├── frame-tracking:latest      # Main tracking service
+├── frame-tracking:main-SHA    # Tagged versions
+└── frame-tracking-lib:latest  # Shared library package
+```
+
+### Deployment Checklist
+- [ ] Frame tracking library published
+- [ ] Service images built with OTEL
+- [ ] docker-compose.tracking.yml ready
+- [ ] Jaeger configured for retention
+- [ ] Grafana dashboards imported
+- [ ] Performance baselines established
+
+### Monitoring Endpoints
+- Frame tracking health: `http://nebula:8006/health`
+- Frame tracking metrics: `http://nebula:8006/metrics`
+- Jaeger UI: `http://nebula:16686`
+- OTEL collector: `http://nebula:4318/v1/traces`
+
+### Key Configuration
+```yaml
+# OTEL environment variables
+OTEL_SERVICE_NAME: frame-tracking
+OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+OTEL_TRACES_EXPORTER: otlp
+OTEL_METRICS_EXPORTER: prometheus
+OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production
+
+# Sampling configuration
+OTEL_TRACES_SAMPLER: traceidratio
+OTEL_TRACES_SAMPLER_ARG: 0.1  # 10% sampling in production
+```
+
+### Trace Search Queries
+```bash
+# Find frame by ID
+curl "http://nebula:16686/api/traces?tags=frame.id:FRAME_ID"
+
+# Find slow frames (>1s processing)
+curl "http://nebula:16686/api/traces?minDuration=1000ms&service=frame-tracking"
+
+# Find failed frames
+curl "http://nebula:16686/api/traces?tags=error:true&service=frame-tracking"
+```
 
 ## Następne kroki
 

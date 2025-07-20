@@ -105,60 +105,96 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
    - **Walidacja**: K8s-style probes responding correctly
    - **Czas**: 1h
 
-### Blok 4: Containerization i deployment
+### Blok 4: CI/CD Pipeline i Registry
 
 #### Zadania atomowe
 
 1. **[ ] Multi-stage Dockerfile z optimization**
-   - **Metryka**: Image size <100MB
-   - **Walidacja**: `docker images | grep rtsp-capture`
+   - **Metryka**: Image size <100MB, secure base image
+   - **Walidacja**:
+     ```bash
+     docker build -f services/rtsp-capture/Dockerfile -t rtsp-capture:test .
+     docker images | grep rtsp-capture
+     # Size <100MB
+     trivy image rtsp-capture:test
+     # No HIGH/CRITICAL vulnerabilities
+     ```
+   - **Quality Gate**: Build time <3min
+   - **Guardrails**: No build secrets exposed
    - **Czas**: 2h
 
-2. **[ ] Docker Compose integration**
-   - **Metryka**: Service starts in <10s
-   - **Walidacja**: `docker-compose ps` shows healthy
-   - **Czas**: 1h
+2. **[ ] GitHub Actions workflow dla RTSP service**
+   - **Metryka**: Automated build/test/push na każdy commit
+   - **Walidacja**:
+     ```bash
+     cat .github/workflows/rtsp-capture-deploy.yml
+     git push origin main
+     # Check: https://github.com/hretheum/bezrobocie/actions
+     ```
+   - **Quality Gate**: All tests pass in CI
+   - **Guardrails**: Only builds from main branch
+   - **Czas**: 1.5h
 
-3. **[ ] Performance testing i tuning**
-   - **Metryka**: 4 cameras @ 10 FPS, CPU <50%
-   - **Walidacja**: Stress test for 24h
-   - **Czas**: 3h
+3. **[ ] Push do GitHub Container Registry**
+   - **Metryka**: Image available at ghcr.io
+   - **Walidacja**:
+     ```bash
+     docker pull ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+     # Successfully pulled
+     ```
+   - **Quality Gate**: Image tagged properly
+   - **Guardrails**: Registry credentials secure
+   - **Czas**: 1h
 
 ### Blok 5: DEPLOYMENT NA SERWERZE NEBULA ⚠️ KRYTYCZNE
 
 #### Zadania atomowe
 
-1. **[ ] Utworzenie production-ready Dockerfile**
-   - **Metryka**: Multi-stage build, final image <150MB
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     ssh nebula "docker images | grep rtsp-capture"
-     # rtsp-capture:latest <150MB
+1. **[ ] Update docker-compose.yml z registry image**
+   - **Metryka**: Service uses ghcr.io image, not local build
+   - **Walidacja**:
+     ```yaml
+     # docker-compose.yml should contain:
+     services:
+       rtsp-capture:
+         image: ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+         ports:
+           - "8001:8001"
      ```
-   - **Quality Gate**: Image security scan pass (trivy)
-   - **Guardrails**: No secrets in image, non-root user
-   - **Czas**: 2h
-
-2. **[ ] Integracja z głównym docker-compose.yml**
-   - **Metryka**: Service zdefiniowany w docker-compose.yml
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     ssh nebula "cd /path/to/detektor && docker-compose config | grep rtsp-capture"
-     # Shows service definition
-     ```
-   - **Quality Gate**: Health check defined, restart policy
-   - **Guardrails**: Resource limits set (CPU/memory)
+   - **Quality Gate**: No build directives in compose
+   - **Guardrails**: Environment variables from .env
    - **Czas**: 1h
 
-3. **[ ] Uruchomienie kontenera na Nebuli**
-   - **Metryka**: Container running i healthy
+2. **[ ] Deploy via deployment script**
+   - **Metryka**: Automated deployment to Nebula
    - **Walidacja NA SERWERZE**:
      ```bash
+     ./scripts/deploy-to-nebula.sh --service rtsp-capture
+     # Deployment successful
+
      ssh nebula "docker ps | grep rtsp-capture"
      # STATUS: Up X minutes (healthy)
      ```
-   - **Quality Gate**: Health endpoint returns 200
-   - **Guardrails**: Auto-restart on failure
+   - **Quality Gate**: Zero downtime deployment
+   - **Guardrails**: Rollback on failure
+   - **Czas**: 1h
+
+3. **[ ] Konfiguracja RTSP stream na Nebuli**
+   - **Metryka**: Real camera stream connected
+   - **Walidacja NA SERWERZE**:
+     ```bash
+     # Set RTSP URL in environment
+     ssh nebula "cd /opt/detektor && echo 'RTSP_URL=rtsp://camera_ip:554/stream' >> .env"
+
+     # Restart service
+     ssh nebula "cd /opt/detektor && docker-compose restart rtsp-capture"
+
+     # Check logs
+     ssh nebula "docker logs rtsp-capture -f"
+     # "Successfully connected to RTSP stream"
+     ```
+   - **Quality Gate**: Stable connection >5min
+   - **Guardrails**: Auto-reconnect on disconnect
    - **Czas**: 1h
 
 4. **[ ] Weryfikacja metryk w Prometheus**
@@ -222,6 +258,61 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 - **asyncio**: Concurrent connections
 - **Redis**: Frame queue
 - **pytest**: Testing framework
+
+## CI/CD i Deployment Guidelines
+
+### Image Registry Structure
+```
+ghcr.io/hretheum/bezrobocie-detektor/
+├── rtsp-capture:latest        # Latest stable version
+├── rtsp-capture:main-SHA      # Git commit tagged
+└── rtsp-capture:v1.0.0        # Semantic version tags
+```
+
+### Deployment Checklist
+- [ ] Image built and pushed to ghcr.io
+- [ ] docker-compose.yml references registry image
+- [ ] Environment variables configured (.env)
+- [ ] RTSP URL validated and accessible
+- [ ] Health endpoint responding
+- [ ] Metrics exposed to Prometheus
+- [ ] Traces visible in Jaeger
+- [ ] Resource limits configured
+
+### Monitoring Endpoints
+- Health check: `http://nebula:8001/health`
+- Metrics: `http://nebula:8001/metrics`
+- API docs: `http://nebula:8001/docs`
+
+### Key Metrics to Monitor
+```promql
+# Frame capture rate
+rate(rtsp_frames_captured_total[5m])
+
+# Connection stability
+rtsp_connection_status{camera_id="main"}
+
+# Processing latency
+histogram_quantile(0.99, rtsp_frame_processing_duration_seconds)
+
+# Error rate
+rate(rtsp_errors_total[5m])
+```
+
+### Troubleshooting Commands
+```bash
+# Check service logs
+ssh nebula "docker logs rtsp-capture --tail 100 -f"
+
+# Verify RTSP connection
+ssh nebula "docker exec rtsp-capture ffprobe -v quiet -print_format json -show_streams $RTSP_URL"
+
+# Test frame capture
+ssh nebula "docker exec rtsp-capture python -m rtsp_capture.test_connection"
+
+# Check resource usage
+ssh nebula "docker stats rtsp-capture --no-stream"
+```
 
 ## Następne kroki
 

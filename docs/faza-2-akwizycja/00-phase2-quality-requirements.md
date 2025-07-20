@@ -177,3 +177,113 @@ async def decode_frame(self, frame_data: bytes):
 3. Document API BEFORE implementation
 4. Measure performance IMMEDIATELY
 5. Create ADR for EACH major decision
+
+## 🏭 Production Deployment Requirements
+
+### Deployment Quality Gates
+**Każdy serwis MUSI spełnić przed deployment na Nebula:**
+
+1. **CI/CD Pipeline Success**
+   ```bash
+   # All checks must pass
+   - Unit tests: 100% pass rate
+   - Integration tests: 100% pass rate
+   - Docker build: Success
+   - Security scan: No critical vulnerabilities
+   ```
+
+2. **Health Check Endpoint**
+   ```python
+   @app.get("/health", response_model=HealthResponse)
+   async def health_check():
+       return {
+           "status": "healthy",
+           "timestamp": datetime.utcnow(),
+           "version": settings.VERSION,
+           "checks": {
+               "database": await check_db_connection(),
+               "redis": await check_redis_connection(),
+               "dependencies": await check_external_deps()
+           }
+       }
+   ```
+
+3. **Production Configuration**
+   ```yaml
+   # docker-compose.prod.yml
+   services:
+     rtsp-capture:
+       image: ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+       restart: unless-stopped
+       healthcheck:
+         test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+         interval: 30s
+         timeout: 10s
+         retries: 3
+       environment:
+         - LOG_LEVEL=INFO
+         - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+   ```
+
+### Production Validation Checklist
+**Po deployment na Nebula:**
+
+```bash
+# 1. Service health
+ssh nebula "curl -s http://localhost:8001/health | jq"
+
+# 2. Metrics available
+ssh nebula "curl -s http://localhost:9090/api/v1/query?query=up{job='rtsp-capture'}"
+
+# 3. Traces visible
+ssh nebula "curl -s http://localhost:16686/api/traces?service=rtsp-capture"
+
+# 4. Logs flowing
+ssh nebula "docker logs rtsp-capture --tail 50"
+
+# 5. Resource usage acceptable
+ssh nebula "docker stats rtsp-capture --no-stream"
+```
+
+### Rollback Plan
+**Każdy deployment MUSI mieć:**
+
+1. **Previous version tag saved**
+   ```bash
+   export PREVIOUS_VERSION=$(ssh nebula "docker inspect rtsp-capture --format='{{.Config.Image}}' | cut -d: -f2")
+   ```
+
+2. **Quick rollback script**
+   ```bash
+   # scripts/rollback-service.sh
+   SERVICE=$1
+   VERSION=$2
+   ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/${SERVICE}:${VERSION}"
+   ssh nebula "docker stop ${SERVICE} && docker rm ${SERVICE}"
+   ssh nebula "cd /opt/detektor && docker-compose up -d ${SERVICE}"
+   ```
+
+3. **Validation after rollback**
+   ```bash
+   ssh nebula "curl -s http://localhost:8001/health | jq '.status'"
+   # Should return "healthy"
+   ```
+
+### Performance Guardrails for Production
+**Limity które nie mogą być przekroczone:**
+
+- CPU usage: <80% sustained
+- Memory: <2GB per service
+- Response time p99: <100ms
+- Error rate: <0.1%
+- Restart frequency: <1 per hour
+
+**Monitoring:**
+```bash
+# Alert configuration
+- name: HighCPUUsage
+  expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+  for: 5m
+  annotations:
+    summary: "High CPU usage for {{ $labels.container_name }}"
+```
