@@ -7,32 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-07-20
+
 ### Added
-- Frame Buffer implementation with exceptional performance (Phase 2, Task 2)
-  - In-memory queue with AsyncIO achieving 80,239 fps
-  - Backpressure handling with adaptive buffer sizing (100-10,000 frames)
-  - Dead Letter Queue with automatic retry (exponential backoff)
-  - Circuit Breaker pattern for graceful degradation
-  - Prometheus metrics export on `/metrics` endpoint
-  - Health check endpoint on `/health`
-  - Frame serialization with MessagePack and LZ4 compression
-  - Comprehensive test suite (unit + integration)
-- RTSP Capture Service - Block 1 implementation
-  - Basic frame capture from RTSP stream
-  - OpenCV integration
-  - Health check endpoint
-- Frame serialization infrastructure (Block 2)
-  - MessagePack binary serialization
-  - Optional LZ4 compression
-  - Performance: <5ms for Full HD frame
+- **CI/CD Infrastructure** - Complete automation pipeline
+  - Self-hosted GitHub Actions runner on Nebula server
+  - Automated deployment on push to main branch
+  - GitHub Container Registry (GHCR) integration
+  - Multi-stage Docker builds with optimization
+  - Deployment script (`scripts/deploy-local.sh`)
+  - Full sudo permissions for github-runner
+- **Service Implementations**
+  - GPU demo service with YOLO v8 object detection
+  - Example services fully operational (example-otel, frame-tracking, echo-service, base-template)
+  - Health check endpoints for all services
+  - Full observability integration
+- **Documentation**
+  - Phase 1 completion report
+  - CI/CD implementation guide
+  - Self-hosted runner setup documentation
 
 ### Changed
-- Updated project documentation to reflect completed tasks
-- Enhanced architecture documentation with implementation details
+- Docker base images optimized (python:3.11-slim)
+- Port mappings standardized (8005:8000, 8010:8000)
+- Project status updated to reflect Phase 1 completion
 
 ### Fixed
-- Various linting issues (flake8, mypy, black)
-- Import optimizations
+- SQLAlchemy metadata reserved word conflict (renamed to metadata_json)
+- Missing dependency: opentelemetry-exporter-prometheus
+- Docker build context paths in all services
+- Service startup issues resolved
 
 ## [0.1.0] - 2024-07-19
 

@@ -22,7 +22,7 @@ Stworzenie kompletnego systemu który:
 
 - **Serwer**: Ubuntu z GTX 4070 Super (16GB VRAM), i7, 64GB RAM (hostname: nebula)
 - **Infrastruktura**: Docker, Docker Compose, container-first
-- **CI/CD**: GitHub Actions + GitHub Container Registry (ghcr.io)
+- **CI/CD**: GitHub Actions + Self-hosted Runner + GHCR
 - **Języki**: Python 3.11+, FastAPI
 - **AI/ML**: YOLO v8, MediaPipe, InsightFace, Whisper
 - **LLM**: OpenAI/Anthropic API
@@ -36,7 +36,7 @@ System składa się z 7 faz implementacji:
 
 ```
 Faza 0: Dokumentacja i planowanie          ✅ [UKOŃCZONA]
-Faza 1: Fundament z observability          ✅ [UKOŃCZONA]
+Faza 1: Fundament z observability          ✅ [UKOŃCZONA + CI/CD]
   ✅ Docker & NVIDIA setup
   ✅ Git repository & struktura
   ✅ Observability stack (Jaeger, Prometheus, Grafana, Loki)
@@ -44,10 +44,11 @@ Faza 1: Fundament z observability          ✅ [UKOŃCZONA]
   ✅ Frame tracking design
   ✅ TDD setup
   ✅ Monitoring dashboard
-  ✅ CI/CD Pipeline (GitHub Actions + GHCR)
-  ✅ Automated deployment (registry-based)
+  ✅ CI/CD Pipeline (GitHub Actions + Self-hosted Runner)
+  ✅ Automated deployment (push to main = auto deploy)
   ✅ Example services z pełnym observability
-Faza 2: Akwizycja i storage                🚧 [W TRAKCIE]
+  ✅ GPU demo service (YOLO v8)
+Faza 2: Akwizycja i storage                📋 [GOTOWA DO STARTU]
   ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
   ⏳ RTSP Capture Service
   ⏳ PostgreSQL/TimescaleDB
@@ -82,18 +83,23 @@ open http://localhost:9090    # Prometheus
 
 ### Deployment na produkcję (Nebula)
 
-⚠️ **WAŻNE**: Przed pierwszym deploymentem skonfiguruj sekrety GitHub!
-Zobacz: [docs/GITHUB_SECRETS_SETUP.md](./docs/GITHUB_SECRETS_SETUP.md)
-
 ```bash
-# Wszystko przez CI/CD!
+# Automatyczny deployment przy push!
 git push origin main
 
-# Lub manual deployment
-./scripts/deploy-to-nebula.sh
+# GitHub Actions automatycznie:
+# 1. Buduje obrazy Docker
+# 2. Pushuje do GitHub Container Registry
+# 3. Self-hosted runner deployuje na Nebula
 
 # Sprawdzenie statusu
-ssh nebula "/opt/detektor/scripts/health-check-all.sh"
+ssh nebula "cd /opt/detektor && docker compose ps"
+
+# Health check wszystkich serwisów
+ssh nebula "curl -s http://localhost:8005/health | jq"  # example-otel
+ssh nebula "curl -s http://localhost:8006/health | jq"  # frame-tracking
+ssh nebula "curl -s http://localhost:8007/health | jq"  # echo-service
+ssh nebula "curl -s http://localhost:8010/health | jq"  # base-template
 ```
 
 ## Dokumentacja
