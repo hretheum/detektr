@@ -1,0 +1,87 @@
+# Optimized multi-stage build for GPU demo service
+# Strategy: Separate base dependencies from ML dependencies for better caching
+
+# Base image with CUDA support
+FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04 AS cuda-base
+
+# Install Python and system dependencies once
+RUN apt-get update && apt-get install -y \
+    python3.11 \
+    python3.11-venv \
+    python3-pip \
+    curl \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libglu1-mesa \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Python 3.11 as default
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+
+# Stage 1: Base dependencies (FastAPI, observability, etc.)
+FROM cuda-base AS base-deps
+
+WORKDIR /app
+
+# Create virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy and install base requirements first (these rarely change)
+COPY services/gpu-demo/requirements-base.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements-base.txt
+
+# Stage 2: ML dependencies (PyTorch, etc.)
+FROM base-deps AS ml-deps
+
+# Copy and install ML requirements (these are heavy)
+COPY services/gpu-demo/requirements-ml.txt .
+RUN pip install --no-cache-dir -r requirements-ml.txt
+
+# Optional: Pre-download the YOLO model
+RUN python3 -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
+
+# Stage 3: Production image
+FROM cuda-base AS production
+
+WORKDIR /app
+
+# Copy virtual environment with all dependencies
+COPY --from=ml-deps /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy pre-downloaded models
+COPY --from=ml-deps /root/.cache/torch /home/appuser/.cache/torch
+COPY --from=ml-deps /root/.cache/ultralytics /home/appuser/.cache/ultralytics
+
+# Copy application code
+COPY --chown=appuser:appuser services/gpu-demo/ .
+
+# Fix permissions
+RUN chown -R appuser:appuser /home/appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8008
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV SERVICE_NAME=gpu-demo
+ENV SERVICE_VERSION=0.1.0
+ENV YOLO_VERBOSE=False
+
+# Health check with curl from venv
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8008/health')" || exit 1
+
+# Run the application
+CMD ["python3", "-u", "main.py"]

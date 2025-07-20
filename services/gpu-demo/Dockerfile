@@ -1,19 +1,13 @@
 # Multi-stage build for GPU demo service
-# Uses NVIDIA CUDA base image for GPU support
+# Optimized for faster builds - models downloaded at runtime
 
-# Build stage
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04 AS builder
+# Use slim Python image for faster builds
+FROM python:3.11-slim AS builder
 
-# Install Python and dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
-    python3.11 \
-    python3.11-venv \
-    python3-pip \
-    curl \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
-
-# Set Python 3.11 as default
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
 WORKDIR /app
 
@@ -28,22 +22,21 @@ COPY services/gpu-demo/requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Production stage
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+# Production stage - using slim image for fast builds
+# Note: This won't have CUDA support out of the box
+# For GPU support, use nvidia/cuda base image
+FROM python:3.11-slim
 
-# Install Python runtime and required libraries
+# Install runtime dependencies for OpenCV and GUI libraries
 RUN apt-get update && apt-get install -y \
-    python3.11 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
     libgomp1 \
     libglu1-mesa \
+    curl \
     && rm -rf /var/lib/apt/lists/*
-
-# Set Python 3.11 as default
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser
