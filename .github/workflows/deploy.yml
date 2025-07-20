@@ -123,22 +123,111 @@ jobs:
   #         rm -f ~/.ssh/id_rsa
   #         rm -f .env.decrypted
 
-  notify-manual-deploy:
-    name: Notify Manual Deploy
+  deploy-self-hosted:
+    name: Deploy via Self-hosted Runner
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nebula]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Manual Deploy Instructions
+      - name: Deploy to Nebula
         run: |
-          echo "🚀 Images built and pushed to registry!"
-          echo ""
-          echo "To deploy to Nebula server, run on Nebula:"
-          echo "  git pull origin main"
-          echo "  ./scripts/manual-deploy.sh"
-          echo ""
-          echo "Built images:"
-          echo "  - ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest"
-          echo "  - ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest"
-          echo "  - ghcr.io/hretheum/bezrobocie-detektor/base-template:latest"
-          echo "  - ghcr.io/hretheum/bezrobocie-detektor/echo-service:latest"
+          echo "🚀 Deploying via self-hosted runner..."
+
+          # Configuration
+          REGISTRY="ghcr.io"
+          IMAGE_PREFIX="hretheum/bezrobocie-detektor"
+          DEPLOY_DIR="/opt/detektor"
+
+          # Pull latest images
+          echo "📦 Pulling latest images..."
+          docker pull ${REGISTRY}/${IMAGE_PREFIX}/example-otel:latest
+          docker pull ${REGISTRY}/${IMAGE_PREFIX}/frame-tracking:latest
+          docker pull ${REGISTRY}/${IMAGE_PREFIX}/base-template:latest
+          docker pull ${REGISTRY}/${IMAGE_PREFIX}/echo-service:latest
+
+          # Create docker-compose.prod.yml
+          cd ${DEPLOY_DIR}
+
+          cat > docker-compose.prod.yml << 'COMPOSE_EOF'
+          services:
+            example-otel:
+              image: ${REGISTRY}/${IMAGE_PREFIX}/example-otel:latest
+              container_name: example-otel
+              ports:
+                - "8005:8005"
+              environment:
+                - SERVICE_NAME=example-otel
+                - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+              networks:
+                - detektor-network
+              restart: unless-stopped
+
+            frame-tracking:
+              image: ${REGISTRY}/${IMAGE_PREFIX}/frame-tracking:latest
+              container_name: frame-tracking
+              ports:
+                - "8006:8006"
+              environment:
+                - SERVICE_NAME=frame-tracking
+                - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+              networks:
+                - detektor-network
+              restart: unless-stopped
+
+            base-template:
+              image: ${REGISTRY}/${IMAGE_PREFIX}/base-template:latest
+              container_name: base-template
+              ports:
+                - "8010:8010"
+              environment:
+                - SERVICE_NAME=base-template
+                - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+              networks:
+                - detektor-network
+              restart: unless-stopped
+
+            echo-service:
+              image: ${REGISTRY}/${IMAGE_PREFIX}/echo-service:latest
+              container_name: echo-service
+              ports:
+                - "8007:8007"
+              environment:
+                - SERVICE_NAME=echo-service
+                - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+              networks:
+                - detektor-network
+              restart: unless-stopped
+
+          networks:
+            detektor-network:
+              external: true
+          COMPOSE_EOF
+
+          # Ensure network exists
+          docker network create detektor-network 2>/dev/null || true
+
+          # Start infrastructure
+          echo "🚀 Starting infrastructure services..."
+          docker compose -f docker-compose.observability.yml up -d
+          docker compose -f docker-compose.storage.yml up -d
+
+          # Wait for infrastructure
+          sleep 10
+
+          # Deploy application services
+          echo "🚀 Deploying application services..."
+          docker compose -f docker-compose.prod.yml up -d
+
+          # Health check
+          echo "🏥 Health check..."
+          sleep 5
+
+          for port in 8005 8006 8007 8010; do
+            if curl -sf "http://localhost:${port}/health" >/dev/null 2>&1; then
+              echo "✅ Service on port ${port} is healthy"
+            else
+              echo "❌ Service on port ${port} is not responding"
+            fi
+          done
+
+          echo "✅ Deployment completed!"
