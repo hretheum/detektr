@@ -6,7 +6,7 @@ CREATE SCHEMA IF NOT EXISTS tracking;
 
 -- Frame events table (Event Sourcing pattern)
 CREATE TABLE IF NOT EXISTS tracking.frame_events (
-    id BIGSERIAL,
+    id TEXT NOT NULL,
     event_id UUID NOT NULL DEFAULT gen_random_uuid(),
     frame_id TEXT NOT NULL,
     camera_id TEXT NOT NULL,
@@ -42,7 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_frame_events_data
 
 -- Detections table for AI results
 CREATE TABLE IF NOT EXISTS tracking.detections (
-    id BIGSERIAL,
+    id TEXT NOT NULL,
     detection_id UUID NOT NULL DEFAULT gen_random_uuid(),
     frame_id TEXT NOT NULL,
     detection_type TEXT NOT NULL, -- 'face', 'object', 'gesture', etc.

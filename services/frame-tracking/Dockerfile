@@ -13,7 +13,7 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy requirements and install dependencies
-COPY services/frame-tracking/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Production stage
@@ -36,7 +36,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /app
 
 # Copy application code
-COPY --chown=appuser:appuser ./services/frame-tracking/ .
+COPY --chown=appuser:appuser . .
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1 \

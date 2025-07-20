@@ -151,7 +151,7 @@ class FrameTrackingService:
                     event_timestamp=e.event_timestamp,
                     correlation_id=e.correlation_id,
                     data=e.data,
-                    metadata=e.metadata,
+                    metadata=e.event_metadata,
                     created_at=e.created_at,
                 )
                 for e in events
@@ -187,7 +187,9 @@ class FrameTrackingService:
     async def _check_database(self, db: AsyncSession) -> bool:
         """Check database connectivity."""
         try:
-            await db.execute("SELECT 1")
+            from sqlalchemy import text
+
+            await db.execute(text("SELECT 1"))
             return True
         except Exception as e:
             self.logger.error("database_health_check_failed", error=str(e))
@@ -275,7 +277,7 @@ async def create_frame_event(
         event_timestamp=event.event_timestamp,
         correlation_id=event.correlation_id,
         data=event.data,
-        metadata=event.metadata,
+        metadata=event.event_metadata,
         created_at=event.created_at,
     )
 
@@ -327,7 +329,7 @@ async def get_latest_frames(
             event_timestamp=e.event_timestamp,
             correlation_id=e.correlation_id,
             data=e.data,
-            metadata=e.metadata,
+            metadata=e.event_metadata,
             created_at=e.created_at,
         )
         for e in events

@@ -53,7 +53,7 @@ class FrameEvent(Base):
 
     # JSON data
     data = Column(JSON, nullable=False, default=dict)
-    metadata = Column(JSON, nullable=False, default=dict)
+    event_metadata = Column("metadata", JSON, nullable=False, default=dict)
 
     # Audit
     created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
