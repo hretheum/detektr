@@ -113,12 +113,8 @@ EOF
 log "Creating Docker network..."
 docker network create detektor-network 2>/dev/null || true
 
-# Copy infrastructure files if they were checked out
-if [[ -f "$GITHUB_WORKSPACE/docker-compose.observability.yml" ]]; then
-    log "Copying infrastructure files from checkout..."
-    cp "$GITHUB_WORKSPACE/docker-compose.observability.yml" .
-    cp "$GITHUB_WORKSPACE/docker-compose.storage.yml" .
-fi
+# Infrastructure files should already be in deployment directory
+# (copied by the workflow)
 
 # Start infrastructure services
 log "Starting infrastructure services..."
