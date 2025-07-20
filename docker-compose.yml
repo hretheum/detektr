@@ -34,16 +34,29 @@ services:
       timeout: 5s
       retries: 5
 
-  # Example service configuration
-  api:
-    <<: *common-service
+  # OpenTelemetry example service
+  example-otel:
+    image: ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8005:8000"
     environment:
       <<: *common-variables
-      SERVICE_NAME: api
+      SERVICE_NAME: example-otel
       PORT: 8000
-    command: ["python", "-m", "src.interfaces.api"]
+      OTEL_SERVICE_NAME: example-otel
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=production}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
 
 volumes:
   redis-data:

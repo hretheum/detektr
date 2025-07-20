@@ -1,5 +1,5 @@
 keys:
-  - &main_key age1gp2tm83t80f5qt5hcsanswxmrl3urlf22ds6jla5d8u3ufznwsyqwqkcw3
+  - &main_key age1s2840svgp97g3vtmz3l4hptzlpcq4u245usdg5jaq9c722ghnchqkr5msq
 
 creation_rules:
   - path_regex: \.env$

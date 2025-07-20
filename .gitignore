@@ -111,3 +111,4 @@ htmlcov/
 prometheus_data/
 grafana_data/
 jaeger_data/
+keys.txt
