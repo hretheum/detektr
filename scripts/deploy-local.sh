@@ -40,7 +40,7 @@ services:
     image: ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest
     container_name: example-otel
     ports:
-      - "8005:8005"
+      - "8005:8000"
     environment:
       - SERVICE_NAME=example-otel
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
@@ -48,7 +48,7 @@ services:
       - detektor-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -74,7 +74,7 @@ services:
     image: ghcr.io/hretheum/bezrobocie-detektor/base-template:latest
     container_name: base-template
     ports:
-      - "8010:8010"
+      - "8010:8000"
     environment:
       - SERVICE_NAME=base-template
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
@@ -82,7 +82,7 @@ services:
       - detektor-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
