@@ -75,50 +75,70 @@ jobs:
             BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
             VCS_REF=${{ github.sha }}
 
-  deploy:
-    name: Deploy to Nebula
+  # deploy:
+  #   name: Deploy to Nebula
+  #   needs: build-and-push
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Install age for SOPS
+  #       run: |
+  #         AGE_VERSION="1.1.1"
+  #         curl -LO "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz"
+  #         tar xzf age-v${AGE_VERSION}-linux-amd64.tar.gz
+  #         sudo mv age/age /usr/local/bin/
+  #         sudo mv age/age-keygen /usr/local/bin/
+  #
+  #     - name: Install SOPS
+  #       run: |
+  #         SOPS_VERSION="3.8.1"
+  #         curl -LO "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
+  #         sudo mv sops-v${SOPS_VERSION}.linux.amd64 /usr/local/bin/sops
+  #         sudo chmod +x /usr/local/bin/sops
+  #
+  #     - name: Configure SSH
+  #       env:
+  #         SSH_PRIVATE_KEY: ${{ secrets.NEBULA_SSH_KEY }}
+  #       run: |
+  #         mkdir -p ~/.ssh
+  #         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+  #         chmod 600 ~/.ssh/id_rsa
+  #         ssh-keyscan -H ${{ secrets.NEBULA_HOST }} >> ~/.ssh/known_hosts
+  #
+  #     - name: Deploy to Nebula
+  #       env:
+  #         SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+  #         NEBULA_HOST: ${{ secrets.NEBULA_HOST }}
+  #         NEBULA_USER: ${{ secrets.NEBULA_USER }}
+  #       run: |
+  #         # Deploy using the deployment script
+  #         ./scripts/deploy-to-nebula.sh
+  #
+  #     - name: Clean up
+  #       if: always()
+  #       run: |
+  #         rm -f ~/.ssh/id_rsa
+  #         rm -f .env.decrypted
+
+  notify-manual-deploy:
+    name: Notify Manual Deploy
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install age for SOPS
+      - name: Manual Deploy Instructions
         run: |
-          AGE_VERSION="1.1.1"
-          curl -LO "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz"
-          tar xzf age-v${AGE_VERSION}-linux-amd64.tar.gz
-          sudo mv age/age /usr/local/bin/
-          sudo mv age/age-keygen /usr/local/bin/
-
-      - name: Install SOPS
-        run: |
-          SOPS_VERSION="3.8.1"
-          curl -LO "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
-          sudo mv sops-v${SOPS_VERSION}.linux.amd64 /usr/local/bin/sops
-          sudo chmod +x /usr/local/bin/sops
-
-      - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.NEBULA_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.NEBULA_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy to Nebula
-        env:
-          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
-          NEBULA_HOST: ${{ secrets.NEBULA_HOST }}
-          NEBULA_USER: ${{ secrets.NEBULA_USER }}
-        run: |
-          # Deploy using the deployment script
-          ./scripts/deploy-to-nebula.sh
-
-      - name: Clean up
-        if: always()
-        run: |
-          rm -f ~/.ssh/id_rsa
-          rm -f .env.decrypted
+          echo "🚀 Images built and pushed to registry!"
+          echo ""
+          echo "To deploy to Nebula server, run on Nebula:"
+          echo "  git pull origin main"
+          echo "  ./scripts/manual-deploy.sh"
+          echo ""
+          echo "Built images:"
+          echo "  - ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest"
+          echo "  - ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest"
+          echo "  - ghcr.io/hretheum/bezrobocie-detektor/base-template:latest"
+          echo "  - ghcr.io/hretheum/bezrobocie-detektor/echo-service:latest"
