@@ -1,0 +1,38 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Example OTEL service
+  - job_name: "example-otel"
+    static_configs:
+      - targets: ["example-otel:8000"]
+    metrics_path: "/metrics"
+
+  # Frame tracking service (future)
+  - job_name: "frame-tracking"
+    static_configs:
+      - targets: ["frame-tracking:8006"]
+    metrics_path: "/metrics"
+
+  # Echo service (future)
+  - job_name: "echo-service"
+    static_configs:
+      - targets: ["echo-service:8007"]
+    metrics_path: "/metrics"
+
+  # GPU demo service (future)
+  - job_name: "gpu-demo"
+    static_configs:
+      - targets: ["gpu-demo:8008"]
+    metrics_path: "/metrics"
+
+  # Docker daemon
+  - job_name: "docker"
+    static_configs:
+      - targets: ["docker-exporter:9323"]
