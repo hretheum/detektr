@@ -30,8 +30,9 @@ jobs:
         service:
           - example-otel
           - frame-tracking
+          - base-template
+          - echo-service
           # TODO: Dodać po implementacji:
-          # - echo-service
           # - gpu-demo
     steps:
       - name: Checkout code

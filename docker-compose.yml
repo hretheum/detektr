@@ -88,6 +88,62 @@ services:
       - redis
       # postgres is in docker-compose.storage.yml
 
+  # Base template service - wzorzec dla nowych serwisów
+  base-template:
+    image: ghcr.io/hretheum/bezrobocie-detektor/base-template:latest
+    build:
+      context: .
+      dockerfile: services/base-template/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8010:8000"
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: base-template
+      PORT: 8000
+      DATABASE_URL: postgresql+asyncpg://detektor:detektor_pass@postgres:5432/detektor_db
+      OTEL_SERVICE_NAME: base-template
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=production}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+      # postgres is in docker-compose.storage.yml
+
+  # Echo service - prosty serwis demonstracyjny
+  echo-service:
+    image: ghcr.io/hretheum/bezrobocie-detektor/echo-service:latest
+    build:
+      context: .
+      dockerfile: services/echo-service/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: echo-service
+      PORT: 8007
+      OTEL_SERVICE_NAME: echo-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=production}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+
 volumes:
   redis-data:
 
