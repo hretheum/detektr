@@ -29,8 +29,8 @@ jobs:
       matrix:
         service:
           - example-otel
+          - frame-tracking
           # TODO: Dodać po implementacji:
-          # - frame-tracking
           # - echo-service
           # - gpu-demo
     steps:

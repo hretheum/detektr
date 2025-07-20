@@ -59,6 +59,35 @@ services:
     depends_on:
       - redis
 
+  # Frame tracking service with event sourcing
+  frame-tracking:
+    image: ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest
+    build:
+      context: .
+      dockerfile: services/frame-tracking/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: frame-tracking
+      PORT: 8006
+      DATABASE_URL: postgresql+asyncpg://detektor:detektor_pass@postgres:5432/detektor_db
+      OTEL_SERVICE_NAME: frame-tracking
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=production}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+      # postgres is in docker-compose.storage.yml
+
 volumes:
   redis-data:
 
