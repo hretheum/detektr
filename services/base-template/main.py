@@ -303,7 +303,7 @@ async def create_entity(
         description=entity.description,
         correlation_id=entity.correlation_id,
         data=entity.data,
-        metadata=entity.metadata,
+        metadata=entity.metadata_json,
         created_at=entity.created_at,
         updated_at=entity.updated_at,
     )
@@ -334,7 +334,7 @@ async def get_entity(
         description=entity.description,
         correlation_id=entity.correlation_id,
         data=entity.data,
-        metadata=entity.metadata,
+        metadata=entity.metadata_json,
         created_at=entity.created_at,
         updated_at=entity.updated_at,
     )
@@ -364,7 +364,7 @@ async def list_entities(
             description=e.description,
             correlation_id=e.correlation_id,
             data=e.data,
-            metadata=e.metadata,
+            metadata=e.metadata_json,
             created_at=e.created_at,
             updated_at=e.updated_at,
         )
@@ -398,7 +398,7 @@ async def update_entity(
         description=entity.description,
         correlation_id=entity.correlation_id,
         data=entity.data,
-        metadata=entity.metadata,
+        metadata=entity.metadata_json,
         created_at=entity.created_at,
         updated_at=entity.updated_at,
     )

@@ -25,7 +25,7 @@ class ExampleEntity(Base):
 
     # JSON data for flexibility
     data = Column(JSON, nullable=False, default=dict)
-    metadata = Column("metadata_json", JSON, nullable=False, default=dict)
+    metadata_json = Column("metadata_json", JSON, nullable=False, default=dict)
 
     # Audit fields
     created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
