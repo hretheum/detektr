@@ -1,0 +1,164 @@
+name: RTSP Capture Service CI/CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'services/rtsp-capture/**'
+      - '.github/workflows/rtsp-capture-deploy.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'services/rtsp-capture/**'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: hretheum/bezrobocie-detektor/rtsp-capture
+
+jobs:
+  test:
+    name: Test RTSP Capture Service
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('services/rtsp-capture/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        cd services/rtsp-capture
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Run linting
+      run: |
+        cd services/rtsp-capture
+        black --check src/ tests/
+        isort --check-only src/ tests/
+        flake8 src/ tests/
+
+    - name: Run type checking
+      run: |
+        cd services/rtsp-capture
+        mypy src/ --ignore-missing-imports
+
+    - name: Run tests with coverage
+      run: |
+        cd services/rtsp-capture
+        pytest tests/ -v --cov=src --cov-report=xml --cov-report=term
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./services/rtsp-capture/coverage.xml
+        flags: rtsp-capture
+        name: rtsp-capture-coverage
+
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix=main-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: services/rtsp-capture
+        file: services/rtsp-capture/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64
+
+    - name: Image digest
+      run: echo ${{ steps.docker_build.outputs.digest }}
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  deploy:
+    name: Deploy to Nebula
+    runs-on: self-hosted
+    needs: [build-and-push, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to Nebula
+      run: |
+        cd /opt/detektor
+        ./scripts/deploy-to-nebula.sh --service rtsp-capture --no-prompt
+
+    - name: Health check
+      run: |
+        sleep 30
+        curl -f http://localhost:8001/health || exit 1
+
+    - name: Verify deployment
+      run: |
+        docker ps | grep rtsp-capture
+        docker logs rtsp-capture --tail 50

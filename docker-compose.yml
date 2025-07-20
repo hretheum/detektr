@@ -170,6 +170,36 @@ services:
       - "prometheus.io/port=8008"
       - "prometheus.io/path=/metrics"
 
+  # RTSP Capture Service - przechwytywanie strumieni RTSP z kamer
+  rtsp-capture:
+    image: ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      <<: *common-variables
+      SERVICE_NAME: rtsp-capture
+      PORT: 8001
+      RTSP_URL: ${RTSP_URL:-rtsp://localhost:8554/stream}
+      FRAME_BUFFER_SIZE: ${FRAME_BUFFER_SIZE:-100}
+      OTEL_SERVICE_NAME: rtsp-capture
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+      OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=production}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=8001"
+      - "prometheus.io/path=/metrics"
+
 volumes:
   redis-data:
 
