@@ -36,7 +36,7 @@ services:
 
   # OpenTelemetry example service
   example-otel:
-    image: ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest
+    image: example-otel:simple # TODO: Change to ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest after GitHub login
     restart: unless-stopped
     ports:
       - "8005:8000"
@@ -47,6 +47,7 @@ services:
       OTEL_SERVICE_NAME: example-otel
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
       OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=production}
+      PYTHONPATH: /app
     networks:
       - detektor-network
     healthcheck:

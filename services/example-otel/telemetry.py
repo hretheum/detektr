@@ -227,15 +227,29 @@ class ObservabilityMiddleware:
             await self.app(scope, receive, send)
 
 
-# Metrics for the example service
+# Initialize metrics early
+_meter = None
 request_counter = None
 request_duration = None
 active_requests = None
 
 
-def init_metrics(meter):
+def get_meter():
+    """Get or create meter instance."""
+    global _meter
+    if _meter is None:
+        _meter = metrics.get_meter(service_name)
+    return _meter
+
+
+def init_metrics(meter=None):
     """Initialize application metrics."""
-    global request_counter, request_duration, active_requests
+    global request_counter, request_duration, active_requests, _meter
+
+    if meter:
+        _meter = meter
+    else:
+        meter = get_meter()
 
     request_counter = meter.create_counter(
         name="http_requests_total",

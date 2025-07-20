@@ -1,0 +1,116 @@
+version: "3.8"
+
+services:
+  # Prometheus - metrics collection
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      # - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro  # TODO: Fix mount issue
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+      - "--storage.tsdb.retention.time=30d"
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Grafana - visualization
+  grafana:
+    image: grafana/grafana:10.2.3
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=redis-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - detektor-network
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Jaeger - distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    restart: unless-stopped
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14268:14268" # Accept thrift format directly from clients
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=memory
+      - MEMORY_MAX_TRACES=10000
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16687/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Loki - log aggregation
+  loki:
+    image: grafana/loki:2.9.3
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Promtail - log collector
+  promtail:
+    image: grafana/promtail:2.9.3
+    restart: unless-stopped
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      # - ./promtail.yml:/etc/promtail/config.yml:ro  # TODO: Create config
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - detektor-network
+    depends_on:
+      - loki
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+
+networks:
+  detektor-network:
+    external: true

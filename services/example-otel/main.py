@@ -18,17 +18,15 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 import structlog
+import telemetry
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
 from telemetry import (
     ObservabilityMiddleware,
-    active_requests,
     get_or_create_correlation_id,
     init_metrics,
-    request_counter,
-    request_duration,
     setup_telemetry,
     traced,
 )
@@ -145,16 +143,17 @@ def get_processing_service() -> ProcessingService:
 _processing_service_dependency = Depends(get_processing_service)
 
 
+# Setup telemetry early to ensure metrics are available
+tracer, meter = setup_telemetry()
+init_metrics(meter)
+
+
 # Application lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger = structlog.get_logger()
     logger.info("service_starting", service_name="example-otel")
-
-    # Setup telemetry
-    tracer, meter = setup_telemetry()
-    init_metrics(meter)
 
     # Initialize services
     global processing_service
@@ -189,8 +188,14 @@ async def track_metrics(request: Request, call_next):
         # Skip metrics endpoint to avoid recursion
         return await call_next(request)
 
+    # Initialize metrics if not already done
+    if telemetry.active_requests is None:
+        init_metrics()
+
     # Record active requests
-    active_requests.add(1, {"method": request.method, "endpoint": request.url.path})
+    telemetry.active_requests.add(
+        1, {"method": request.method, "endpoint": request.url.path}
+    )
 
     start_time = time.time()
     try:
@@ -198,7 +203,7 @@ async def track_metrics(request: Request, call_next):
         duration = time.time() - start_time
 
         # Record metrics
-        request_counter.add(
+        telemetry.request_counter.add(
             1,
             {
                 "method": request.method,
@@ -206,7 +211,7 @@ async def track_metrics(request: Request, call_next):
                 "status": response.status_code,
             },
         )
-        request_duration.record(
+        telemetry.request_duration.record(
             duration,
             {
                 "method": request.method,
@@ -216,7 +221,7 @@ async def track_metrics(request: Request, call_next):
 
         return response
     finally:
-        active_requests.add(
+        telemetry.active_requests.add(
             -1, {"method": request.method, "endpoint": request.url.path}
         )
 
