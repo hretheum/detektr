@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **RTSP Capture Service** (Phase 2, Blocks 0-4)
+  - Core RTSP client with PyAV library
+  - Auto-reconnect mechanism (5s default)
+  - Circular frame buffer with zero-copy operations
+  - Redis queue integration (synchronous implementation)
+  - Full observability with OpenTelemetry tracing
+  - Prometheus metrics (frame_counter, processing_time, buffer_size, errors_total)
+  - Health check endpoints (/health, /ready, /metrics, /ping)
+  - Multi-stage Dockerfile (204MB optimized image)
+  - GitHub Actions CI/CD workflow
+  - API documentation
+- **Documentation Updates**
+  - Updated Phase 2 task completion status
+  - Added RTSP Capture API documentation
+  - Updated README with current service status
+
+### Changed
+- Docker Compose now uses GHCR images for all services
+- RTSP service configured on port 8001
+
 ## [0.2.0] - 2025-07-20
 
 ### Added

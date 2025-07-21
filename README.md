@@ -48,9 +48,9 @@ Faza 1: Fundament z observability          ✅ [UKOŃCZONA + CI/CD]
   ✅ Automated deployment (push to main = auto deploy)
   ✅ Example services z pełnym observability
   ✅ GPU demo service (YOLO v8)
-Faza 2: Akwizycja i storage                📋 [GOTOWA DO STARTU]
+Faza 2: Akwizycja i storage                🚧 [W TRAKCIE]
   ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
-  ⏳ RTSP Capture Service
+  ✅ RTSP Capture Service (Bloki 0-4 ukończone, CI/CD gotowe)
   ⏳ PostgreSQL/TimescaleDB
   ⏳ Frame tracking
 Faza 3: AI services podstawy               ⏳ [ZAPLANOWANA]
@@ -96,6 +96,7 @@ git push origin main
 ssh nebula "cd /opt/detektor && docker compose ps"
 
 # Health check wszystkich serwisów
+ssh nebula "curl -s http://localhost:8001/health | jq"  # rtsp-capture
 ssh nebula "curl -s http://localhost:8005/health | jq"  # example-otel
 ssh nebula "curl -s http://localhost:8006/health | jq"  # frame-tracking
 ssh nebula "curl -s http://localhost:8007/health | jq"  # echo-service
@@ -176,14 +177,15 @@ git commit    # Zapisz zmiany
 
 ## Porty Serwisów
 
-- **8001**: rtsp-capture
+- **8001**: rtsp-capture ✅ (CI/CD ready)
 - **8002**: face-recognition
 - **8003**: object-detection
 - **8004**: ha-bridge
 - **8005**: example-otel ✅ (działający przykład)
-- **8006**: frame-tracking
-- **8007**: echo-service
-- **8008**: gpu-demo
+- **8006**: frame-tracking ✅
+- **8007**: echo-service ✅
+- **8008**: gpu-demo ✅
+- **8010**: base-template ✅
 - **9090**: Prometheus ✅
 - **16686**: Jaeger ✅
 - **3000**: Grafana ✅
@@ -214,7 +216,13 @@ git commit    # Zapisz zmiany
 
 **Faza 2 - W trakcie**:
 - ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
-- 🚧 RTSP Capture Service (Block 0 completed)
+- ✅ RTSP Capture Service:
+  - ✅ Block 0: Prerequisites (PyAV, RTSP simulator, API spec)
+  - ✅ Block 1: Core RTSP client (connection manager, auto-reconnect)
+  - ✅ Block 2: Buffering & Redis queue (circular buffer, sync Redis)
+  - ✅ Block 3: Observability (OpenTelemetry, Prometheus, health checks)
+  - ✅ Block 4: CI/CD Pipeline (multi-stage Docker, GitHub Actions, GHCR)
+  - ⏳ Block 5: Deployment na Nebula (czeka na push/deploy)
 - ⏳ PostgreSQL/TimescaleDB
 - ⏳ Frame tracking implementation
 
