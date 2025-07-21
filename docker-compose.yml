@@ -85,8 +85,10 @@ services:
       retries: 3
       start_period: 40s
     depends_on:
-      - redis
-      # postgres is in docker-compose.storage.yml
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   # Base template service - wzorzec dla nowych serwisów
   base-template:
@@ -114,8 +116,10 @@ services:
       retries: 3
       start_period: 40s
     depends_on:
-      - redis
-      # postgres is in docker-compose.storage.yml
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   # Echo service - prosty serwis demonstracyjny
   echo-service:

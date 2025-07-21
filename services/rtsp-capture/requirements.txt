@@ -15,6 +15,8 @@ fastapi==0.104.1              # Web framework
 uvicorn==0.24.0               # ASGI server
 pydantic==2.5.0               # Data validation
 requests==2.31.0              # HTTP client for health checks
+httpx==0.25.2                 # HTTP client for testing
+redis==5.0.1                  # Redis client
 
 # Monitoring and observability
 opentelemetry-api==1.22.0

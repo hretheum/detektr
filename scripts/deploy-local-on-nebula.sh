@@ -41,7 +41,8 @@ main() {
 
     # Check if running on Nebula (self-hosted runner or actual server)
     if [[ "${SKIP_HOSTNAME_CHECK:-0}" != "1" ]]; then
-        local hostname=$(hostname)
+        local hostname
+        hostname=$(hostname)
         if [[ "$hostname" != "nebula" ]] && [[ ! "$hostname" =~ ^(nebula|runner-|github-) ]]; then
             error "This script should only run on Nebula server or self-hosted runner!"
             error "Current hostname: $hostname"
@@ -83,6 +84,13 @@ main() {
     log "Waiting for infrastructure to be ready..."
     sleep 10
 
+    # Clean up orphaned containers and images
+    log "Cleaning up orphaned containers and images..."
+    docker container prune -f
+    docker image prune -f
+    docker network prune -f
+    docker volume prune -f
+
     # Pull latest application images
     log "Pulling application images..."
     for service in "${SERVICES[@]}"; do
@@ -98,6 +106,10 @@ main() {
     # Deploy application services
     log "Starting application services..."
     docker compose up -d
+
+    # Wait for services to start
+    log "Waiting for services to stabilize..."
+    sleep 10
 
     # Wait for services to start
     sleep 5
