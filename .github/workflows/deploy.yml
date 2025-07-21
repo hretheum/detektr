@@ -1,168 +1,64 @@
-name: Self-hosted Deployment
+name: Auto-Deploy Services
+
 on:
   push:
     branches: [main]
     paths:
       - 'services/**'
       - 'docker-compose.yml'
-      - '.github/workflows/deploy.yml'
 
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/${{ github.repository }}
 
 jobs:
-  detect-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      services: ${{ steps.changes.outputs.services }}
-      changed-services: ${{ steps.changes.outputs.changed-services }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-      
-      - name: Install yq
-        run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
-      
-      - name: Parse docker-compose.yml services
-        id: parse
-        run: |
-          # Extract services from docker-compose.yml
-          SERVICES=$(yq eval '.services | keys | .[]' docker-compose.yml | grep -E '^(rtsp-capture|frame-tracking|base-template|echo-service|example-otel|gpu-demo)$' | jq -R -s -c 'split("\n")[:-1]')
-          echo "all-services=$SERVICES" >> $GITHUB_OUTPUT
-      
-      - name: Detect changed services
-        id: changes
-        run: |
-          # Get list of changed services based on file paths
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
-          CHANGED_SERVICES=""
-          
-          # Check which services have changes
-          for service in $(echo '${{ steps.parse.outputs.all-services }}' | jq -r '.[]'); do
-            if echo "$CHANGED_FILES" | grep -q "services/$service/"; then
-              CHANGED_SERVICES="$CHANGED_SERVICES $service"
-            fi
-          done
-          
-          # Convert to JSON array
-          CHANGED_JSON=$(echo "$CHANGED_SERVICES" | tr ' ' '\n' | grep -v '^$' | jq -R -s -c 'split("\n")[:-1]')
-          if [ -z "$CHANGED_JSON" ] || [ "$CHANGED_JSON" = "[]" ]; then
-            CHANGED_JSON="[\"rtsp-capture\"]"  # Default to rtsp-capture if no changes detected
-          fi
-          
-          echo "services=${{ steps.parse.outputs.all-services }}" >> $GITHUB_OUTPUT
-          echo "changed-services=$CHANGED_JSON" >> $GITHUB_OUTPUT
-
   build-and-push:
-    needs: detect-changes
     runs-on: ubuntu-latest
-    if: needs.detect-changes.outputs.changed-services != '[]'
     strategy:
       matrix:
-        service: ${{ fromJson(needs.detect-changes.outputs.changed-services) }}
+        service: [rtsp-capture, frame-tracking, echo-service, example-otel, base-template]
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=sha-
-      
-      - name: Build and push
+
+      - name: Build and push ${{ matrix.service }}
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: services/${{ matrix.service }}
           file: services/${{ matrix.service }}/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy-on-nebula:
-    needs: [detect-changes, build-and-push]
-    runs-on: self-hosted  # Uses the GitHub Runner on Nebula
-    if: needs.detect-changes.outputs.changed-services != '[]'
-    strategy:
-      matrix:
-        service: ${{ fromJson(needs.detect-changes.outputs.changed-services) }}
+  deploy:
+    runs-on: self-hosted
+    needs: build-and-push
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Deploy service locally
-        run: |
-          cd /opt/detektor
-          echo "Deploying ${{ matrix.service }}..."
-          
-          # Update docker-compose.prod.yml if service doesn't exist
-          if ! grep -q "${{ matrix.service }}:" docker-compose.prod.yml; then
-            echo "Adding ${{ matrix.service }} to docker-compose.prod.yml"
-            cat >> docker-compose.prod.yml << EOF
 
-  ${{ matrix.service }}:
-    image: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
-    container_name: ${{ matrix.service }}
-    ports:
-      - "8001:8000"
-    environment:
-      - SERVICE_NAME=${{ matrix.service }}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
-    networks:
-      - detektor-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-EOF
-          fi
-          
-          # Pull latest image
-          docker compose -f docker-compose.prod.yml pull ${{ matrix.service }}
-          
-          # Deploy service
-          docker compose -f docker-compose.prod.yml up -d ${{ matrix.service }}
-          
-          # Wait for health check
-          echo "Waiting for ${{ matrix.service }} to be healthy..."
-          for i in {1..30}; do
-            if docker compose -f docker-compose.prod.yml ps ${{ matrix.service }} | grep -q "healthy"; then
-              echo "${{ matrix.service }} is healthy!"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Service failed to become healthy"
-              docker compose -f docker-compose.prod.yml logs ${{ matrix.service }}
-              exit 1
-            fi
-            sleep 10
-          done
-          
-          # Verify deployment
-          docker compose -f docker-compose.prod.yml ps ${{ matrix.service }}
-      
-      - name: Verify service health
+      - name: Pull latest images
         run: |
           cd /opt/detektor
-          # Test health endpoint
-          PORT=$(docker compose -f docker-compose.prod.yml config | yq eval '.services.${{ matrix.service }}.ports[0]' - | cut -d: -f1)
-          curl -f http://localhost:${PORT}/health || exit 1
+          docker compose pull
+
+      - name: Restart services
+        run: |
+          cd /opt/detektor
+          docker compose up -d
+
+      - name: Health check
+        run: |
+          cd /opt/detektor
+          docker compose ps
