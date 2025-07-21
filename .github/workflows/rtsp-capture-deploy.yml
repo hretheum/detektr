@@ -86,6 +86,13 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Security scan (print only)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        format: 'table'
+        exit-code: '0'
+
   deploy:
     name: Deploy to Nebula
     runs-on: self-hosted
@@ -99,7 +106,6 @@ jobs:
     - name: Deploy service
       run: |
         cd /opt/detektor
-        source .env.local 2>/dev/null || echo "Using existing environment"
         docker compose pull rtsp-capture
         docker compose up -d rtsp-capture
 
