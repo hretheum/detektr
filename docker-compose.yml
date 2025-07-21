@@ -180,7 +180,7 @@ services:
       <<: *common-variables
       SERVICE_NAME: rtsp-capture
       PORT: 8001
-      RTSP_URL: ${RTSP_URL:-rtsp://localhost:8554/stream}
+      RTSP_URL: ${RTSP_URL:-${RTSP_URL_MAIN:-rtsp://localhost:8554/stream}}
       FRAME_BUFFER_SIZE: ${FRAME_BUFFER_SIZE:-100}
       OTEL_SERVICE_NAME: rtsp-capture
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}

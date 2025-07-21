@@ -1,1 +1,1 @@
-Trigger build attempt 2: $(date)
+Build fix: added missing opentelemetry-instrumentation-redis dependency $(date)

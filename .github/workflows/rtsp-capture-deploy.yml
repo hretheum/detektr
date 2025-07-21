@@ -1,4 +1,4 @@
-name: RTSP Capture Build & Deploy
+name: RTSP Capture CI/CD
 
 on:
   push:
@@ -12,17 +12,57 @@ env:
   IMAGE_NAME: hretheum/bezrobocie-detektor/rtsp-capture
 
 jobs:
-  build-and-push:
-    name: Build & Push
+  test-and-build:
+    name: Test & Build RTSP Capture
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
       packages: write
 
+    services:
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('services/rtsp-capture/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        cd services/rtsp-capture
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Run tests
+      run: |
+        cd services/rtsp-capture
+        pytest tests/ -v --tb=short
+      env:
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        RTSP_URL: rtsp://test:8554/stream
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -42,24 +82,32 @@ jobs:
         push: true
         tags: |
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
   deploy:
-    name: Deploy on Nebula
+    name: Deploy to Nebula
     runs-on: self-hosted
-    needs: build-and-push
-    if: github.event_name == 'push'
+    needs: test-and-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-    - name: Deploy
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Deploy service
       run: |
         cd /opt/detektor
+        source .env.local 2>/dev/null || echo "Using existing environment"
         docker compose pull rtsp-capture
         docker compose up -d rtsp-capture
 
     - name: Health check
       run: |
-        sleep 10
-        curl -f http://localhost:8001/health || exit 1
+        cd /opt/detektor
+        timeout 60 bash -c 'until curl -f http://localhost:8001/health; do sleep 5; done' || {
+          echo "❌ Health check failed"
+          docker compose logs rtsp-capture
+          exit 1
+        }

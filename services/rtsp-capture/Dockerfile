@@ -45,7 +45,8 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir --no-index --find-links=/wheels \
     fastapi uvicorn pydantic requests \
     opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp \
-    opentelemetry-instrumentation-fastapi prometheus-client aioredis && \
+    opentelemetry-instrumentation-fastapi opentelemetry-instrumentation-redis \
+    prometheus-client aioredis && \
     rm -rf /wheels
 
 # Set working directory
