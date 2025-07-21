@@ -14,19 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /wheels
 
 # Copy requirements and build wheels
-COPY requirements-prod.txt .
+COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel && \
-    pip wheel --no-cache-dir --wheel-dir /wheels \
-    fastapi==0.104.1 \
-    uvicorn==0.24.0 \
-    pydantic==2.5.0 \
-    requests==2.31.0 \
-    opentelemetry-api==1.22.0 \
-    opentelemetry-sdk==1.22.0 \
-    opentelemetry-exporter-otlp==1.22.0 \
-    opentelemetry-instrumentation-fastapi==0.43b0 \
-    prometheus-client==0.19.0 \
-    aioredis==2.0.1
+    pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
 # Stage 2: Runtime image
 FROM python:3.11-slim
@@ -39,15 +29,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create non-root user
 RUN useradd -m -u 1000 -s /bin/bash appuser
 
-# Copy wheels and install
-COPY --from=builder /wheels /wheels
+# Copy requirements and install
+COPY requirements.txt .
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir --no-index --find-links=/wheels \
-    fastapi uvicorn pydantic requests \
-    opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp \
-    opentelemetry-instrumentation-fastapi opentelemetry-instrumentation-redis \
-    prometheus-client aioredis && \
-    rm -rf /wheels
+    pip install --no-cache-dir -r requirements.txt
 
 # Set working directory
 WORKDIR /app
