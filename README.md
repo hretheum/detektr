@@ -66,11 +66,16 @@ Faza 1: Fundament z observability          ✅ [UKOŃCZONA + CI/CD]
   ✅ Example services z pełnym observability
   ✅ GPU demo service (YOLO v8)
 Faza 2: Akwizycja i storage                🚧 [W TRAKCIE]
-  ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
   ✅ RTSP Capture Service (Bloki 0-5 ukończone, deployed on Nebula)
     - Service running: http://nebula:8001
     - Reolink camera configured with /Preview_01_main
     - Status: "degraded" (Redis not initialized - expected)
+  ✅ Frame Buffer Service (Blok 5 ukończony, deployed on Nebula)
+    - Service running: http://nebula:8002
+    - Redis Streams backend with persistence
+    - Full observability (Prometheus + OpenTelemetry)
+    - DLQ support, 80k fps, 0.01ms latency
+  ⏳ Redis/RabbitMQ Configuration
   ⏳ PostgreSQL/TimescaleDB
   ⏳ Frame tracking implementation
 Faza 3: AI services podstawy               ⏳ [ZAPLANOWANA]

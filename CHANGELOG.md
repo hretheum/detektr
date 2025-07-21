@@ -24,9 +24,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Reolink camera properly configured with /Preview_01_main endpoint
     - RTSP URL: rtsp://192.168.1.195:554/Preview_01_main
     - Service status: "degraded" (Redis not initialized - expected at this stage)
+- **Frame Buffer Service** (Phase 2, Block 5 ✅ COMPLETED)
+  - Standalone service with Redis Streams backend
+  - High-performance buffering (80k fps, 0.01ms latency)
+  - Dead Letter Queue (DLQ) for failed frames
+  - JSON serialization with LZ4 compression support
+  - Full observability with OpenTelemetry and Prometheus
+  - Health check and metrics endpoints
+  - API endpoints: /frames/enqueue, /frames/dequeue, /frames/status, /frames/dlq/clear
+  - Multi-stage Dockerfile with non-root user
+  - GitHub Actions CI/CD workflow (frame-buffer-deploy.yml)
+  - **Successful deployment to Nebula server**
+    - Service running at http://nebula:8002
+    - Redis backend on port 6379 with persistence
+    - All health checks passing
 - **Documentation Updates**
   - Updated Phase 2 task completion status
   - Added RTSP Capture API documentation
+  - Added Frame Buffer deployment documentation
   - Updated README with current service status
   - Synchronized all deployment documentation
 

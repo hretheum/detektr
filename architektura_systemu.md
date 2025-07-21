@@ -386,9 +386,11 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **[Szczegóły →](docs/faza-2-akwizycja/01-rtsp-capture-service.md)**
    - **Completed blocks**:
      - [x] Block 0: Prerequisites (ADR, API spec, tests, environment setup)
-     - [ ] Block 1: Core implementation
-     - [ ] Block 2: Integration & monitoring
-     - [ ] Block 3: Testing & validation
+     - [x] Block 1: Core implementation
+     - [x] Block 2: Integration & monitoring
+     - [x] Block 3: Testing & validation
+     - [x] Block 4: Deployment on Nebula
+     - [x] Block 5: Production readiness
 
 2. **Frame Buffer z Redis/RabbitMQ** ✅ **COMPLETED**
    - **Metryki**:
@@ -398,11 +400,14 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Walidacja**:
 
      ```bash
-     curl http://localhost:9090/metrics | grep frame_queue
+     curl http://nebula:8002/health  # Health check
+     curl http://nebula:8002/metrics | grep frame_buffer  # Prometheus metrics
      # Dead Letter Queue stats, backpressure metrics
      ```
-
-   - **Sukces**: Wszystkie metryki przekroczone, DLQ z auto-retry, Prometheus metrics
+   - **Status produkcyjny**:
+     - Service running: http://nebula:8002 ✅
+     - Redis Streams backend with persistence ✅
+     - CI/CD pipeline: frame-buffer-deploy.yml ✅
    - **[Szczegóły →](docs/faza-2-akwizycja/02-frame-buffer-redis.md)**
 
 3. **Setup PostgreSQL/TimescaleDB z monitoringiem**
