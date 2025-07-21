@@ -45,8 +45,8 @@ def init_telemetry(service_name: str) -> None:
     tracer = trace.get_tracer(service_name)
 
     # Auto-instrument libraries
-    FastAPIInstrumentor.instrument()
-    RedisInstrumentor.instrument()
+    FastAPIInstrumentor().instrument()
+    RedisInstrumentor().instrument()
 
     print(f"✅ OpenTelemetry initialized for {service_name}")
     print(f"   Sending traces to: {otlp_endpoint}")

@@ -8,21 +8,21 @@ This service provides:
 - Full observability (metrics, tracing)
 """
 
-import asyncio
+import json
 import os
 import time
 from contextlib import asynccontextmanager
 from typing import Optional
 
 import redis.asyncio as redis
-from fastapi import FastAPI, HTTPException, Response, status
+from fastapi import FastAPI, HTTPException, status
 
 # Import health check router
-from health import health_router, service_metrics, update_health_state
+from health import health_router, update_health_state
 
 # Import observability
 from observability import init_telemetry
-from prometheus_client import Counter, Gauge, Histogram, generate_latest
+from prometheus_client import Counter, Gauge, Histogram
 
 # Configuration
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
@@ -38,7 +38,7 @@ SERVICE_PORT = int(os.getenv("PORT", "8002"))
 frame_counter = Counter(
     "frame_buffer_frames_total", "Total frames processed", ["operation", "status"]
 )
-buffer_size_gauge = Gauge("frame_buffer_size", "Current buffer size")
+buffer_size_gauge = Gauge("frame_buffer_queue_size", "Current buffer size")
 frame_processing_time = Histogram(
     "frame_buffer_processing_seconds", "Frame processing time", ["operation"]
 )
@@ -90,6 +90,20 @@ app = FastAPI(
 app.include_router(health_router)
 
 
+def compress_frame(data: dict) -> bytes:
+    """Compress frame data (placeholder for LZ4)."""
+    import lz4.frame
+    json_data = json.dumps(data)
+    return lz4.frame.compress(json_data.encode())
+
+
+def decompress_frame(data: bytes) -> dict:
+    """Decompress frame data (placeholder for LZ4)."""
+    import lz4.frame
+    json_data = lz4.frame.decompress(data).decode()
+    return json.loads(json_data)
+
+
 @app.post("/frames/enqueue")
 async def enqueue_frame(frame_data: dict):
     """Add frame to buffer."""
@@ -117,13 +131,21 @@ async def enqueue_frame(frame_data: dict):
                     detail="Buffer full",
                 )
 
-            # Add to queue
-            message_id = await redis_client.xadd(FRAME_QUEUE_NAME, frame_data)
+            # Add to queue with JSON serialization
+            message_id = await redis_client.xadd(
+                FRAME_QUEUE_NAME,
+                {"frame_data": json.dumps(frame_data)}
+            )
 
             frame_counter.labels(operation="enqueue", status="success").inc()
             buffer_size_gauge.set(current_size + 1)
 
-            return {"message_id": message_id, "queue_size": current_size + 1}
+            return {
+                "status": "enqueued",
+                "frame_id": frame_data.get("frame_id", "unknown"),
+                "message_id": message_id,
+                "queue_size": current_size + 1
+            }
 
         except Exception as e:
             frame_counter.labels(operation="enqueue", status="error").inc()
@@ -154,14 +176,25 @@ async def dequeue_frame(count: int = 1):
                     "remaining": await redis_client.xlen(FRAME_QUEUE_NAME),
                 }
 
-            # Extract frame data
+            # Extract and parse frame data
             result_frames = []
             message_ids = []
 
-            for stream_name, messages in frames:
+            for _, messages in frames:
                 for message_id, data in messages:
-                    result_frames.append({"id": message_id, "data": data})
-                    message_ids.append(message_id)
+                    try:
+                        # Parse JSON frame data
+                        frame_json = data.get("frame_data", "{}")
+                        frame_data = json.loads(frame_json)
+                        result_frames.append(frame_data)
+                        message_ids.append(message_id)
+                    except Exception as e:
+                        # Send to DLQ if parsing fails
+                        await redis_client.xadd(
+                            DLQ_NAME,
+                            {"frame": str(data), "reason": f"parse_failed: {str(e)}"}
+                        )
+                        dlq_counter.labels(reason="parse_failed").inc()
 
             # Acknowledge and remove frames
             if message_ids:
@@ -174,7 +207,7 @@ async def dequeue_frame(count: int = 1):
             remaining = await redis_client.xlen(FRAME_QUEUE_NAME)
             buffer_size_gauge.set(remaining)
 
-            return {"frames": result_frames, "remaining": remaining}
+            return {"frames": result_frames, "count": len(result_frames), "remaining": remaining}
 
         except Exception as e:
             frame_counter.labels(operation="dequeue", status="error").inc()
@@ -183,7 +216,7 @@ async def dequeue_frame(count: int = 1):
             )
 
 
-@app.get("/buffer/status")
+@app.get("/frames/status")
 async def get_buffer_status():
     """Get current buffer status."""
     if not redis_client:
@@ -234,6 +267,31 @@ async def clear_buffer():
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@app.post("/frames/dlq/clear")
+async def clear_dlq():
+    """Clear all frames from DLQ."""
+    if not redis_client:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Redis not connected",
+        )
+    
+    try:
+        # Get current size
+        size_before = await redis_client.xlen(DLQ_NAME)
+        
+        # Clear the DLQ
+        await redis_client.delete(DLQ_NAME)
+        
+        return {"status": "cleared", "message": "DLQ cleared successfully", "cleared_count": size_before}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
 
 
