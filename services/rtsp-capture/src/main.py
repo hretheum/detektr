@@ -8,9 +8,8 @@ import os
 import time
 
 from fastapi import FastAPI
-
-from .health import health_router, update_health_state
-from .observability import init_telemetry
+from health import health_router, update_health_state
+from observability import init_telemetry
 
 # Create FastAPI app
 app = FastAPI(
