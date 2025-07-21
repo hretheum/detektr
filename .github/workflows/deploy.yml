@@ -1,157 +1,168 @@
-name: Build and Deploy
-
+name: Self-hosted Deployment
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      deploy_to_nebula:
-        description: 'Deploy to Nebula server after build'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
+    paths:
+      - 'services/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/deploy.yml'
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: hretheum/bezrobocie-detektor
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
 
 jobs:
-  build-and-push:
-    name: Build and Push Docker Images
+  detect-changes:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    outputs:
+      services: ${{ steps.changes.outputs.services }}
+      changed-services: ${{ steps.changes.outputs.changed-services }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+      
+      - name: Parse docker-compose.yml services
+        id: parse
+        run: |
+          # Extract services from docker-compose.yml
+          SERVICES=$(yq eval '.services | keys | .[]' docker-compose.yml | grep -E '^(rtsp-capture|frame-tracking|base-template|echo-service|example-otel|gpu-demo)$' | jq -R -s -c 'split("\n")[:-1]')
+          echo "all-services=$SERVICES" >> $GITHUB_OUTPUT
+      
+      - name: Detect changed services
+        id: changes
+        run: |
+          # Get list of changed services based on file paths
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+          CHANGED_SERVICES=""
+          
+          # Check which services have changes
+          for service in $(echo '${{ steps.parse.outputs.all-services }}' | jq -r '.[]'); do
+            if echo "$CHANGED_FILES" | grep -q "services/$service/"; then
+              CHANGED_SERVICES="$CHANGED_SERVICES $service"
+            fi
+          done
+          
+          # Convert to JSON array
+          CHANGED_JSON=$(echo "$CHANGED_SERVICES" | tr ' ' '\n' | grep -v '^$' | jq -R -s -c 'split("\n")[:-1]')
+          if [ -z "$CHANGED_JSON" ] || [ "$CHANGED_JSON" = "[]" ]; then
+            CHANGED_JSON="[\"rtsp-capture\"]"  # Default to rtsp-capture if no changes detected
+          fi
+          
+          echo "services=${{ steps.parse.outputs.all-services }}" >> $GITHUB_OUTPUT
+          echo "changed-services=$CHANGED_JSON" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.changed-services != '[]'
     strategy:
       matrix:
-        service:
-          - example-otel
-          - frame-tracking
-          - base-template
-          - echo-service
-          # TODO: Fix gpu-demo build issues
-          # - gpu-demo
+        service: ${{ fromJson(needs.detect-changes.outputs.changed-services) }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
+      
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
+      
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
+            type=raw,value=latest
+            type=sha,prefix=sha-
+      
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./services/${{ matrix.service }}/Dockerfile
-          platforms: linux/amd64
+          file: services/${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            SERVICE_NAME=${{ matrix.service }}
-            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
-            VCS_REF=${{ github.sha }}
 
-  # deploy:
-  #   name: Deploy to Nebula
-  #   needs: build-and-push
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Install age for SOPS
-  #       run: |
-  #         AGE_VERSION="1.1.1"
-  #         curl -LO "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz"
-  #         tar xzf age-v${AGE_VERSION}-linux-amd64.tar.gz
-  #         sudo mv age/age /usr/local/bin/
-  #         sudo mv age/age-keygen /usr/local/bin/
-  #
-  #     - name: Install SOPS
-  #       run: |
-  #         SOPS_VERSION="3.8.1"
-  #         curl -LO "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
-  #         sudo mv sops-v${SOPS_VERSION}.linux.amd64 /usr/local/bin/sops
-  #         sudo chmod +x /usr/local/bin/sops
-  #
-  #     - name: Configure SSH
-  #       env:
-  #         SSH_PRIVATE_KEY: ${{ secrets.NEBULA_SSH_KEY }}
-  #       run: |
-  #         mkdir -p ~/.ssh
-  #         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-  #         chmod 600 ~/.ssh/id_rsa
-  #         ssh-keyscan -H ${{ secrets.NEBULA_HOST }} >> ~/.ssh/known_hosts
-  #
-  #     - name: Deploy to Nebula
-  #       env:
-  #         SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
-  #         NEBULA_HOST: ${{ secrets.NEBULA_HOST }}
-  #         NEBULA_USER: ${{ secrets.NEBULA_USER }}
-  #       run: |
-  #         # Deploy using the deployment script
-  #         ./scripts/deploy-to-nebula.sh
-  #
-  #     - name: Clean up
-  #       if: always()
-  #       run: |
-  #         rm -f ~/.ssh/id_rsa
-  #         rm -f .env.decrypted
-
-  deploy-self-hosted:
-    name: Deploy via Self-hosted Runner
-    needs: build-and-push
-    runs-on: [self-hosted, nebula]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  deploy-on-nebula:
+    needs: [detect-changes, build-and-push]
+    runs-on: self-hosted  # Uses the GitHub Runner on Nebula
+    if: needs.detect-changes.outputs.changed-services != '[]'
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.changed-services) }}
     steps:
-      - name: Checkout deployment scripts
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            scripts/deploy-local.sh
-            docker-compose.observability.yml
-            docker-compose.storage.yml
-          sparse-checkout-cone-mode: false
-
-      - name: Deploy to Local Directory
-        env:
-          REGISTRY: ghcr.io
-          IMAGE_PREFIX: hretheum/bezrobocie-detektor
+      - uses: actions/checkout@v4
+      
+      - name: Deploy service locally
         run: |
-          echo "🚀 Deploying via self-hosted runner..."
+          cd /opt/detektor
+          echo "Deploying ${{ matrix.service }}..."
+          
+          # Update docker-compose.prod.yml if service doesn't exist
+          if ! grep -q "${{ matrix.service }}:" docker-compose.prod.yml; then
+            echo "Adding ${{ matrix.service }} to docker-compose.prod.yml"
+            cat >> docker-compose.prod.yml << EOF
 
-          # Pull latest images
-          echo "📦 Pulling latest images..."
-          docker pull ${REGISTRY}/${IMAGE_PREFIX}/example-otel:latest
-          docker pull ${REGISTRY}/${IMAGE_PREFIX}/frame-tracking:latest
-          docker pull ${REGISTRY}/${IMAGE_PREFIX}/base-template:latest
-          docker pull ${REGISTRY}/${IMAGE_PREFIX}/echo-service:latest
-
-          # Execute deployment
-          chmod +x scripts/deploy-local.sh
-          sudo scripts/deploy-local.sh
+  ${{ matrix.service }}:
+    image: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
+    container_name: ${{ matrix.service }}
+    ports:
+      - "8001:8000"
+    environment:
+      - SERVICE_NAME=${{ matrix.service }}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+    networks:
+      - detektor-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+EOF
+          fi
+          
+          # Pull latest image
+          docker compose -f docker-compose.prod.yml pull ${{ matrix.service }}
+          
+          # Deploy service
+          docker compose -f docker-compose.prod.yml up -d ${{ matrix.service }}
+          
+          # Wait for health check
+          echo "Waiting for ${{ matrix.service }} to be healthy..."
+          for i in {1..30}; do
+            if docker compose -f docker-compose.prod.yml ps ${{ matrix.service }} | grep -q "healthy"; then
+              echo "${{ matrix.service }} is healthy!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Service failed to become healthy"
+              docker compose -f docker-compose.prod.yml logs ${{ matrix.service }}
+              exit 1
+            fi
+            sleep 10
+          done
+          
+          # Verify deployment
+          docker compose -f docker-compose.prod.yml ps ${{ matrix.service }}
+      
+      - name: Verify service health
+        run: |
+          cd /opt/detektor
+          # Test health endpoint
+          PORT=$(docker compose -f docker-compose.prod.yml config | yq eval '.services.${{ matrix.service }}.ports[0]' - | cut -d: -f1)
+          curl -f http://localhost:${PORT}/health || exit 1
