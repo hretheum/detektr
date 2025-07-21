@@ -155,7 +155,7 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 
 #### Zadania atomowe
 
-1. **[x] Update docker-compose.yml z registry image** ✅ COMPLETED
+1. **[x] Update docker-compose.yml z registry image
    - **Metryka**: Service uses ghcr.io image, not local build
    - **Walidacja**:
      ```yaml

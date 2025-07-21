@@ -8,6 +8,23 @@
 
 Hobbystyczny system przechwytywania obrazu z kamery IP z wykorzystaniem AI do rozpoznawania i automatyzacji Home Assistant.
 
+## 🚨 **DOKUMENTACJA DEPLOYMENT - NOWA LOKALIZACJA**
+
+### **📍 DLA WSZYSTKICH LLM - ZACZNIJ TUTAJ:**
+**Wszystkie aktualne dokumentacje deploymentu** przeniesione do: `docs/deployment/`
+
+### **🔗 Kluczowe Linki:**
+- **[Przewodnik Deploymentu](docs/deployment/README.md)** - Główny przewodnik
+- **[Szybki Start](docs/deployment/quick-start.md)** - 30-sekundowe wdrożenie
+- **[RTSP Capture Service](docs/deployment/services/rtsp-capture.md)** - Konkretna usługa
+- **[Szablon Nowej Usługi](docs/deployment/templates/service-template.md)** - Kopiuj i użyj
+
+### **🤖 Instrukcje dla LLM:**
+1. **Zawsze zacznij od**: `docs/deployment/README.md`
+2. **Dla nowych usług**: Użyj szablonu `service-template.md`
+3. **Deployment**: Tylko `git push origin main` (CI/CD)
+4. **Problemy**: `docs/deployment/troubleshooting/common-issues.md`
+
 ## Cel Projektu
 
 Stworzenie kompletnego systemu który:
@@ -50,9 +67,9 @@ Faza 1: Fundament z observability          ✅ [UKOŃCZONA + CI/CD]
   ✅ GPU demo service (YOLO v8)
 Faza 2: Akwizycja i storage                🚧 [W TRAKCIE]
   ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
-  ✅ RTSP Capture Service (Bloki 0-4 ukończone, CI/CD gotowe)
+  ✅ RTSP Capture Service (Bloki 0-5 ukończone, CI/CD gotowe)
   ⏳ PostgreSQL/TimescaleDB
-  ⏳ Frame tracking
+  ⏳ Frame tracking implementation
 Faza 3: AI services podstawy               ⏳ [ZAPLANOWANA]
 Faza 4: Integracja z Home Assistant        ⏳ [ZAPLANOWANA]
 Faza 5: Zaawansowane AI i voice            ⏳ [ZAPLANOWANA]
@@ -103,15 +120,27 @@ ssh nebula "curl -s http://localhost:8007/health | jq"  # echo-service
 ssh nebula "curl -s http://localhost:8010/health | jq"  # base-template
 ```
 
-## Dokumentacja
+## 📋 **NOWA DOKUMENTACJA - STRUKTURA HYBRYDOWA**
 
-- 📋 **[Architektura Systemu](./architektura_systemu.md)** - Główny dokument projektu
-- 🛠️ **[Zasady Projektu (CLAUDE.md)](./CLAUDE.md)** - Wzorce i standardy (zawiera CI/CD guidelines!)
-- 🚀 **[CI/CD Setup](./docs/CI_CD_SETUP.md)** - Konfiguracja pipeline
-- 🔐 **[GitHub Secrets Setup](./docs/GITHUB_SECRETS_SETUP.md)** - WYMAGANE dla CI/CD!
-- 📊 **[Deployment Phase 1](./docs/DEPLOYMENT_PHASE_1.md)** - Status i instrukcje
-- 📁 **[Dekompozycje Zadań](./docs/)** - Szczegółowe plany implementacji
-- 🔍 **[Analiza eofek/detektor](./docs/analysis/eofek-detektor-analysis.md)** - Inspiracje i patterns
+### **Dla Developerów:**
+- **[Przewodnik Deploymentu](docs/deployment/README.md)** - Kompletny przewodnik
+- **[Szybki Start](docs/deployment/quick-start.md)** - 30-sekundowe wdrożenie
+- **[Szablony Usług](docs/deployment/templates/)** - Gotowe do kopiowania
+
+### **Dla Usług:**
+- **[RTSP Capture Service](docs/deployment/services/rtsp-capture.md)** - Szczegółowa dokumentacja
+- **[Frame Tracking Service](docs/deployment/services/frame-tracking.md)** - Szczegółowa dokumentacja
+- **[Szablon Nowej Usługi](docs/deployment/templates/service-template.md)** - Kopiuj i użyj
+
+### **Dla Rozwiązywania Problemów:**
+- **[Problemy i Rozwiązania](docs/deployment/troubleshooting/common-issues.md)** - 15+ problemów
+- **[Procedury Awaryjne](docs/deployment/troubleshooting/emergency.md)** - Krok-po-kroku
+
+## 🚨 **DOKUMENTACJA PRZESTARZAŁA - IGNORUJ**
+- `docs/CI_CD_*.md` - PRZESTARZAŁE
+- `docs/DEPLOYMENT_*.md` - PRZESTARZAŁE
+- `docs/MANUAL_DEPLOYMENT.md` - PRZESTARZAŁE
+- **Wszystkie aktualne dokumentacje**: `docs/deployment/`
 
 ## Kluczowe Zasady
 
@@ -122,32 +151,9 @@ ssh nebula "curl -s http://localhost:8010/health | jq"  # base-template
 5. **Container First**: Wszystko w Docker
 6. **CI/CD First**: Build w GitHub Actions, deploy z registry (NIGDY build na produkcji!)
 
-## Influences i Inspiracje
-
-Ten projekt czerpie proven patterns z:
-
-### 🎯 [eofek/detektor](https://github.com/eofek/detektor)
-
-*Repozytorium autorskie - kod dostępny do wykorzystania*
-
-**Adoptowane patterns**:
-
-- Metrics abstraction layer dla Prometheus
-- Redis Streams event-driven architecture
-- GPU monitoring z comprehensive checks
-- Docker organization (dev/prod configs)
-- Event acknowledgement dla reliability
-
-**Ulepszenia względem eofek/detektor**:
-
-- Uproszczona architektura (mniej over-engineering)
-- Rozszerzenie AI models (YOLO, gesture detection)
-- Home Assistant integration (czego brakuje w oryginale)
-- Better developer experience (TDD, pre-commit hooks)
-
 ## Zarządzanie Sekretami
 
-Projekt wykorzystuje **SOPS + age** dla bezpiecznego zarządzania sekretów:
+Projekt wykorzystuje **SOPS + age** dla bezpiecznego zarządzania sekretami:
 
 ```bash
 # Edycja sekretów
@@ -190,12 +196,6 @@ git commit    # Zapisz zmiany
 - **16686**: Jaeger ✅
 - **3000**: Grafana ✅
 
-## Bounded Contexts
-
-1. **Frame Processing** - Capture, buffering, storage
-2. **AI Detection** - Face, gesture, object recognition
-3. **Home Automation** - HA integration, action execution
-
 ## Status Projektu
 
 **Aktualny stan**: Faza 1 COMPLETED ✅ - Faza 2 w trakcie
@@ -207,33 +207,22 @@ git commit    # Zapisz zmiany
 - ✅ Example service z pełnym observability (example-otel)
 - ✅ Secrets management (SOPS z age)
 - ✅ Health monitoring (scripts/health-check-all.sh)
-
-**Strategia deployment (obowiązkowa)**:
-1. Build: Obrazy budowane w GitHub Actions
-2. Registry: Publikacja do ghcr.io/hretheum/bezrobocie-detektor/
-3. Deploy: Pull z registry na Nebula (NIGDY build na produkcji!)
-4. Monitor: Health checks i observability od początku
+- ✅ **NOWA DOKUMENTACJA**: Unified deployment docs (`docs/deployment/`)
 
 **Faza 2 - W trakcie**:
 - ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
-- ✅ RTSP Capture Service:
-  - ✅ Block 0: Prerequisites (PyAV, RTSP simulator, API spec)
-  - ✅ Block 1: Core RTSP client (connection manager, auto-reconnect)
-  - ✅ Block 2: Buffering & Redis queue (circular buffer, sync Redis)
-  - ✅ Block 3: Observability (OpenTelemetry, Prometheus, health checks)
-  - ✅ Block 4: CI/CD Pipeline (multi-stage Docker, GitHub Actions, GHCR)
-  - ⏳ Block 5: Deployment na Nebula (czeka na push/deploy)
-- ⏳ PostgreSQL/TimescaleDB
-- ⏳ Frame tracking implementation
+- ✅ RTSP Capture Service (Bloki 0-5 ukończone, CI/CD gotowe)
+- ✅ **NOWA DOKUMENTACJA**: Hybrydowa struktura deploymentu
 
 ## Kontrybuowanie
 
 Ten projekt realizuje podejście **observability-first** i **TDD**.
 
-Przed rozpoczęciem pracy:
+**Dla LLM - zawsze zacznij od**: `docs/deployment/README.md`
 
-1. Przeczytaj [CLAUDE.md](./CLAUDE.md) - zasady projektu
-2. Sprawdź aktualną fazę w [architektura_systemu.md](./architektura_systemu.md)
+Przed rozpoczęciem pracy:
+1. Przeczytaj **NOWĄ dokumentację**: `docs/deployment/README.md`
+2. Sprawdź **szablon usługi**: `docs/deployment/templates/service-template.md`
 3. Użyj `/nakurwiaj` dla automatycznego wykonania bloków zadań
 
 ## Licencja

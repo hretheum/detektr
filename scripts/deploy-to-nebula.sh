@@ -22,6 +22,7 @@ SERVICES=(
     "frame-tracking"
     "echo-service"
     "gpu-demo"
+    "rtsp-capture"
 )
 
 # Colors for output
@@ -190,6 +191,29 @@ services:
       timeout: 10s
       retries: 3
 
+  rtsp-capture:
+    image: ${REGISTRY}/${IMAGE_PREFIX}/rtsp-capture:${tag}
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - SERVICE_NAME=rtsp-capture
+      - RTSP_URL=${RTSP_URL:-rtsp://localhost:8554/stream}
+      - FRAME_BUFFER_SIZE=${FRAME_BUFFER_SIZE:-100}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger:14268/api/traces
+      - OTEL_SERVICE_NAME=rtsp-capture
+    networks:
+      - detektor-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   detektor-network:
     external: true
@@ -257,6 +281,7 @@ verify_deployment() {
             frame-tracking) port=8006 ;;
             echo-service) port=8007 ;;
             gpu-demo) port=8008 ;;
+            rtsp-capture) port=8001 ;;
         esac
 
         if ssh "${NEBULA_USER}@${NEBULA_HOST}" "curl -sf http://localhost:'${port}'/health >/dev/null 2>&1"; then
@@ -319,6 +344,7 @@ main() {
 
     log "Deployment completed successfully! 🚀"
     log "Access services at:"
+    log "  - RTSP Capture: http://${NEBULA_HOST}:8001"
     log "  - Example OTEL: http://${NEBULA_HOST}:8005"
     log "  - Frame Tracking: http://${NEBULA_HOST}:8006"
     log "  - Echo Service: http://${NEBULA_HOST}:8007"
