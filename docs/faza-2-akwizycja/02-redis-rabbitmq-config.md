@@ -226,91 +226,69 @@ Skonfigurować wysokowydajny message broker (Redis/RabbitMQ) do kolejkowania kla
    - **Guardrails**: Images pulled from registry only
    - **Czas**: 1h
 
-### Blok 5: DEPLOYMENT VALIDATION NA NEBULI ⚠️ FINAL CHECK
+### Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+#### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/message-broker.md`
 
 #### Zadania atomowe
 
-1. **[ ] Deployment script update i test**
-   - **Metryka**: deploy-to-nebula.sh handles broker services
-   - **Walidacja**:
-     ```bash
-     # Update deployment script
-     ./scripts/deploy-to-nebula.sh --service broker
-     # Verify on Nebula
-     ssh nebula "docker ps | grep -E 'redis|rabbit'"
-     ```
-   - **Quality Gate**: Zero manual steps required
-   - **Guardrails**: Automatic rollback on failure
-   - **Czas**: 1h
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/message-broker.md#deploy](docs/deployment/services/message-broker.md#deploy)
 
-2. **[ ] Full stack deployment na Nebuli**
-   - **Metryka**: All broker services running with latest images
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     ssh nebula "cd /opt/detektor && docker-compose -f docker-compose.yml -f docker-compose.broker.yml pull"
-     ssh nebula "cd /opt/detektor && docker-compose -f docker-compose.yml -f docker-compose.broker.yml up -d"
-     ssh nebula "docker-compose ps | grep broker"
-     # All services "Up (healthy)"
-     ```
-   - **Quality Gate**: Zero failed containers
-   - **Guardrails**: Rollback script ready
-   - **Czas**: 1h
+2. **[ ] Konfiguracja Redis/RabbitMQ na Nebuli**
+   - **Metryka**: Message broker running with persistence
+   - **Walidacja**: `.env.sops` contains broker configuration
+   - **Procedura**: [docs/deployment/services/message-broker.md#configuration](docs/deployment/services/message-broker.md#configuration)
 
-3. **[ ] E2E message flow test NA SERWERZE**
-   - **Metryka**: Message flows from producer to consumer
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Test Redis Streams
-     ssh nebula "docker exec redis redis-cli XADD test-stream * msg 'hello'"
-     ssh nebula "docker exec redis redis-cli XREAD COUNT 1 STREAMS test-stream 0"
-     # Returns the message
+3. **[ ] Weryfikacja metryk w Prometheus**
+   - **Metryka**: Broker metrics visible at http://nebula:9090
+   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=redis_up`
+   - **Procedura**: [docs/deployment/services/message-broker.md#monitoring](docs/deployment/services/message-broker.md#monitoring)
 
-     # Check metrics endpoint
-     curl -s http://nebula:9121/metrics | grep redis_up
-     # redis_up 1
-     ```
-   - **Quality Gate**: <10ms latency
-   - **Guardrails**: No errors in logs
-   - **Czas**: 1h
+4. **[ ] Grafana dashboard dla broker**
+   - **Metryka**: Message broker dashboard operational
+   - **Walidacja**: Dashboard shows throughput and latency
+   - **Procedura**: [docs/deployment/services/message-broker.md#dashboard](docs/deployment/services/message-broker.md#dashboard)
 
-4. **[ ] Production monitoring setup**
-   - **Metryka**: Grafana dashboard shows live data
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Import dashboard
-     ssh nebula "curl -X POST http://localhost:3000/api/dashboards/db \
-       -H 'Content-Type: application/json' \
-       -d @/opt/detektor/dashboards/message-broker.json"
+5. **[ ] Load test message flow**
+   - **Metryka**: >100 msg/s sustained throughput
+   - **Walidacja**: Performance tests via CI/CD
+   - **Procedura**: [docs/deployment/services/message-broker.md#load-testing](docs/deployment/services/message-broker.md#load-testing)
 
-     # Verify data flow
-     open http://nebula:3000/d/broker-metrics/message-broker
-     # Should show real metrics
-     ```
-   - **Quality Gate**: All panels populated
-   - **Guardrails**: Alert rules active
-   - **Czas**: 1h
+#### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
 
-5. **[ ] 24h stability test**
-   - **Metryka**: No crashes or memory leaks in production
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Start monitoring
-     ssh nebula "/opt/detektor/scripts/broker-monitor.sh start"
+#### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+ssh nebula "docker ps | grep -E 'redis|rabbit'"
 
-     # After 24h check report
-     ssh nebula "/opt/detektor/scripts/broker-monitor.sh report"
-     # Memory stable, no restarts, <0.01% message loss
-     ```
-   - **Quality Gate**: Memory growth <10%
-   - **Guardrails**: Automated alerts on issues
-   - **Czas**: 24h
+# Test Redis:
+ssh nebula "docker exec redis redis-cli ping"
 
-#### Metryki sukcesu bloku
+# Sprawdź metryki:
+curl http://nebula:9121/metrics | grep redis_up
+```
 
-- CI/CD pipeline operational
-- All images in registry
-- Production deployment stable
-- Monitoring fully configured
+#### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/message-broker.md](docs/deployment/services/message-broker.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+#### **🔍 Metryki sukcesu bloku:**
+- ✅ Redis/RabbitMQ running with persistence
+- ✅ Prometheus exporter operational
+- ✅ >100 msg/s throughput verified
+- ✅ Grafana dashboard showing metrics
+- ✅ 24h stability test passed
+- ✅ Zero-downtime deployment via CI/CD
 
 ## Całościowe metryki sukcesu zadania
 

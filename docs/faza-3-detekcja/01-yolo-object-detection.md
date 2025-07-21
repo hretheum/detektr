@@ -119,6 +119,70 @@ Zaimplementować serwis detekcji obiektów wykorzystując YOLO v8 na GPU, z opty
 - **OpenCV**: Image processing
 - **MLflow**: Model versioning
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/yolo-detection.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/yolo-detection.md#deploy](docs/deployment/services/yolo-detection.md#deploy)
+
+2. **[ ] Konfiguracja YOLO z TensorRT na GTX 4070**
+   - **Metryka**: TensorRT optimized model running
+   - **Walidacja**: `docker exec yolo-detection nvidia-smi`
+   - **Procedura**: [docs/deployment/services/yolo-detection.md#tensorrt-optimization](docs/deployment/services/yolo-detection.md#tensorrt-optimization)
+
+3. **[ ] Weryfikacja metryk w Prometheus**
+   - **Metryka**: Detection metrics visible at http://nebula:9090
+   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=yolo_detections_total`
+   - **Procedura**: [docs/deployment/services/yolo-detection.md#monitoring](docs/deployment/services/yolo-detection.md#monitoring)
+
+4. **[ ] Custom model deployment**
+   - **Metryka**: Custom trained YOLO model loaded
+   - **Walidacja**: Model detects project-specific classes
+   - **Procedura**: [docs/deployment/services/yolo-detection.md#custom-models](docs/deployment/services/yolo-detection.md#custom-models)
+
+5. **[ ] Performance validation**
+   - **Metryka**: >30 FPS on 1080p with TensorRT
+   - **Walidacja**: Load test via CI/CD pipeline
+   - **Procedura**: [docs/deployment/services/yolo-detection.md#performance-testing](docs/deployment/services/yolo-detection.md#performance-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula:8003/health
+
+# Test TensorRT:
+ssh nebula "docker exec yolo-detection python -c 'import tensorrt; print(tensorrt.__version__)'"
+
+# Test detekcji:
+curl -X POST http://nebula:8003/detect/custom -F "image=@test_scene.jpg"
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/yolo-detection.md](docs/deployment/services/yolo-detection.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ YOLOv8 with TensorRT optimization
+- ✅ >30 FPS on GTX 4070 Super
+- ✅ Custom model detecting project classes
+- ✅ MLflow model registry integrated
+- ✅ Grafana dashboard operational
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

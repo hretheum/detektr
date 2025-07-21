@@ -303,6 +303,70 @@ Zbudować dwukierunkową integrację MQTT między systemem Detektor a Home Assis
 
 3. **Czas rollback**: <15 min
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/mqtt-bridge.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/mqtt-bridge.md#deploy](docs/deployment/services/mqtt-bridge.md#deploy)
+
+2. **[ ] Konfiguracja MQTT broker na Nebuli**
+   - **Metryka**: Mosquitto broker operational
+   - **Walidacja**: `mosquitto_sub -h nebula -t '$SYS/#' -C 1`
+   - **Procedura**: [docs/deployment/services/mqtt-bridge.md#mqtt-setup](docs/deployment/services/mqtt-bridge.md#mqtt-setup)
+
+3. **[ ] Home Assistant integration**
+   - **Metryka**: HA discovers Detektor entities
+   - **Walidacja**: Entities visible in HA UI
+   - **Procedura**: [docs/deployment/services/mqtt-bridge.md#ha-integration](docs/deployment/services/mqtt-bridge.md#ha-integration)
+
+4. **[ ] Event flow configuration**
+   - **Metryka**: Detection events → HA automations
+   - **Walidacja**: Test automation triggers
+   - **Procedura**: [docs/deployment/services/mqtt-bridge.md#event-flow](docs/deployment/services/mqtt-bridge.md#event-flow)
+
+5. **[ ] Performance test MQTT**
+   - **Metryka**: 1000 msg/sec throughput
+   - **Walidacja**: Load test via CI/CD
+   - **Procedura**: [docs/deployment/services/mqtt-bridge.md#performance-testing](docs/deployment/services/mqtt-bridge.md#performance-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź MQTT broker:
+mosquitto_sub -h nebula -t 'detektor/#' -v
+
+# Sprawdź bridge service:
+curl http://nebula:8016/health
+
+# Test HA discovery:
+mosquitto_pub -h nebula -t 'homeassistant/sensor/detektor/test/config' -m '{"name": "Test Sensor"}'
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/mqtt-bridge.md](docs/deployment/services/mqtt-bridge.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ MQTT broker handling 1000 msg/sec
+- ✅ Auto-discovery working in HA
+- ✅ Bidirectional communication operational
+- ✅ All Detektor entities in HA
+- ✅ Automations triggered by events
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

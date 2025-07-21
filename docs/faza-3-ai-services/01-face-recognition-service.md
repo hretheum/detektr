@@ -238,6 +238,71 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
 | GPU OOM | Średnie | Wysoki | Batch size tuning, memory monitoring |
 | Latency spikes | Niskie | Średni | Request queuing, timeout handling |
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/face-recognition.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/face-recognition.md#deploy](docs/deployment/services/face-recognition.md#deploy)
+
+2. **[ ] Konfiguracja GPU na Nebuli**
+   - **Metryka**: Service has GPU access in container
+   - **Walidacja**: `docker exec face-recognition nvidia-smi`
+   - **Procedura**: [docs/deployment/services/face-recognition.md#gpu-configuration](docs/deployment/services/face-recognition.md#gpu-configuration)
+
+3. **[ ] Weryfikacja metryk w Prometheus**
+   - **Metryka**: Face detection metrics visible at http://nebula:9090
+   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=face_detections_total`
+   - **Procedura**: [docs/deployment/services/face-recognition.md#monitoring](docs/deployment/services/face-recognition.md#monitoring)
+
+4. **[ ] Integracja z Jaeger tracing**
+   - **Metryka**: Traces visible at http://nebula:16686
+   - **Walidacja**: `curl http://nebula:16686/api/traces?service=face-recognition`
+   - **Procedura**: [docs/deployment/services/face-recognition.md#tracing](docs/deployment/services/face-recognition.md#tracing)
+
+5. **[ ] Performance test na produkcji**
+   - **Metryka**: <100ms inference p95 on Nebula GPU
+   - **Walidacja**: Load test via CI/CD pipeline
+   - **Procedura**: [docs/deployment/services/face-recognition.md#performance-testing](docs/deployment/services/face-recognition.md#performance-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula:8002/health
+curl http://nebula:8002/metrics
+
+# Test GPU:
+ssh nebula "docker exec face-recognition nvidia-smi"
+
+# Test inference:
+curl -X POST http://nebula:8002/detect -F "image=@test_face.jpg"
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/face-recognition.md](docs/deployment/services/face-recognition.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ Service running on Nebula with GPU access
+- ✅ >95% accuracy on test dataset
+- ✅ <100ms inference p95
+- ✅ Metrics and traces in monitoring stack
+- ✅ Grafana dashboard operational
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

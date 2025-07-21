@@ -119,6 +119,70 @@ Zaimplementować detekcję gestów dłoni wykorzystując MediaPipe, umożliwiaj�
 - **OpenCV**: Video processing
 - **PyYAML**: Configuration
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/gesture-detection.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/gesture-detection.md#deploy](docs/deployment/services/gesture-detection.md#deploy)
+
+2. **[ ] Konfiguracja MediaPipe na Nebuli**
+   - **Metryka**: MediaPipe using GPU acceleration
+   - **Walidacja**: `docker exec gesture-detection python -c 'import mediapipe; print(mediapipe.__version__)'`
+   - **Procedura**: [docs/deployment/services/gesture-detection.md#mediapipe-configuration](docs/deployment/services/gesture-detection.md#mediapipe-configuration)
+
+3. **[ ] Gesture mappings configuration**
+   - **Metryka**: Custom gestures configured
+   - **Walidacja**: Test each defined gesture
+   - **Procedura**: [docs/deployment/services/gesture-detection.md#gesture-mappings](docs/deployment/services/gesture-detection.md#gesture-mappings)
+
+4. **[ ] Integration z event bus**
+   - **Metryka**: Gesture events published to Kafka
+   - **Walidacja**: Events visible in Kafka topics
+   - **Procedura**: [docs/deployment/services/gesture-detection.md#event-integration](docs/deployment/services/gesture-detection.md#event-integration)
+
+5. **[ ] Performance validation**
+   - **Metryka**: 30 FPS gesture tracking
+   - **Walidacja**: Load test via CI/CD pipeline
+   - **Procedura**: [docs/deployment/services/gesture-detection.md#performance-testing](docs/deployment/services/gesture-detection.md#performance-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula:8013/health
+
+# Test MediaPipe:
+ssh nebula "docker exec gesture-detection python -c 'import mediapipe as mp; print(\"MediaPipe ready\")'"
+
+# Test gesture detection:
+curl -X POST http://nebula:8013/detect -F "video=@test_gesture.mp4"
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/gesture-detection.md](docs/deployment/services/gesture-detection.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ MediaPipe with GPU acceleration
+- ✅ 5+ gestures recognized reliably
+- ✅ 30 FPS real-time tracking
+- ✅ <100ms gesture recognition latency
+- ✅ Event integration with automation
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

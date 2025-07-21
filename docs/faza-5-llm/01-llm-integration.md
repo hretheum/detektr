@@ -119,6 +119,70 @@ Zintegrować Large Language Models dla zaawansowanej analizy intencji użytkowni
 - **Redis**: Response caching
 - **LangSmith**: Prompt monitoring
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/llm-service.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/llm-service.md#deploy](docs/deployment/services/llm-service.md#deploy)
+
+2. **[ ] Konfiguracja LLM providers**
+   - **Metryka**: API keys secure in SOPS
+   - **Walidacja**: Connection to OpenAI/Anthropic
+   - **Procedura**: [docs/deployment/services/llm-service.md#providers](docs/deployment/services/llm-service.md#providers)
+
+3. **[ ] Response caching setup**
+   - **Metryka**: Redis cache for LLM responses
+   - **Walidacja**: Cache hit rate >50%
+   - **Procedura**: [docs/deployment/services/llm-service.md#caching](docs/deployment/services/llm-service.md#caching)
+
+4. **[ ] Cost monitoring**
+   - **Metryka**: Token usage tracking
+   - **Walidacja**: Cost alerts configured
+   - **Procedura**: [docs/deployment/services/llm-service.md#cost-monitoring](docs/deployment/services/llm-service.md#cost-monitoring)
+
+5. **[ ] Performance validation**
+   - **Metryka**: <2s response time p95
+   - **Walidacja**: Load test via CI/CD
+   - **Procedura**: [docs/deployment/services/llm-service.md#performance-testing](docs/deployment/services/llm-service.md#performance-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula:8005/health
+
+# Test LLM connection:
+curl -X POST http://nebula:8005/api/complete -d '{"prompt": "Hello, test", "max_tokens": 10}'
+
+# Check cache stats:
+curl http://nebula:8005/api/cache/stats
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/llm-service.md](docs/deployment/services/llm-service.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ Multi-provider LLM support
+- ✅ Secure API key management
+- ✅ Response caching operational
+- ✅ Cost monitoring and alerts
+- ✅ <2s response time p95
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

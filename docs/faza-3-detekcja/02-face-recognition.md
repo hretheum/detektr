@@ -132,6 +132,70 @@ Zaimplementować system rozpoznawania twarzy dla zarejestrowanych użytkowników
 - **PostgreSQL + pgvector**: Face storage
 - **age encryption**: Face data security
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/face-recognition-v2.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/face-recognition-v2.md#deploy](docs/deployment/services/face-recognition-v2.md#deploy)
+
+2. **[ ] Konfiguracja FAISS z GPU na Nebuli**
+   - **Metryka**: FAISS GPU index operational
+   - **Walidacja**: `docker exec face-recognition-v2 python -c 'import faiss; print(faiss.get_num_gpus())'`
+   - **Procedura**: [docs/deployment/services/face-recognition-v2.md#faiss-gpu](docs/deployment/services/face-recognition-v2.md#faiss-gpu)
+
+3. **[ ] Face enrollment system**
+   - **Metryka**: Secure face enrollment API
+   - **Walidacja**: Enroll test users with GDPR compliance
+   - **Procedura**: [docs/deployment/services/face-recognition-v2.md#enrollment](docs/deployment/services/face-recognition-v2.md#enrollment)
+
+4. **[ ] Privacy compliance verification**
+   - **Metryka**: GDPR compliant data handling
+   - **Walidacja**: Encrypted face embeddings in DB
+   - **Procedura**: [docs/deployment/services/face-recognition-v2.md#privacy](docs/deployment/services/face-recognition-v2.md#privacy)
+
+5. **[ ] Performance test recognition**
+   - **Metryka**: <50ms recognition on 1000 faces
+   - **Walidacja**: Load test via CI/CD pipeline
+   - **Procedura**: [docs/deployment/services/face-recognition-v2.md#performance-testing](docs/deployment/services/face-recognition-v2.md#performance-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula:8012/health
+
+# Test FAISS GPU:
+ssh nebula "docker exec face-recognition-v2 python -c 'import faiss; print(\"GPU count:\", faiss.get_num_gpus())'"
+
+# Test rozpoznawania:
+curl -X POST http://nebula:8012/recognize -F "image=@test_face.jpg"
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/face-recognition-v2.md](docs/deployment/services/face-recognition-v2.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ InsightFace + FAISS GPU operational
+- ✅ <50ms recognition on 1000+ faces
+- ✅ GDPR compliant face storage
+- ✅ Secure enrollment system
+- ✅ Monitoring dashboard with privacy metrics
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

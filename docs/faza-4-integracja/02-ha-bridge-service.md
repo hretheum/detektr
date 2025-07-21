@@ -213,6 +213,70 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
 
 3. **Czas rollback**: <5 min
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/ha-bridge.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/ha-bridge.md#deploy](docs/deployment/services/ha-bridge.md#deploy)
+
+2. **[ ] Konfiguracja HA API credentials**
+   - **Metryka**: Secure HA token in SOPS
+   - **Walidacja**: Bridge connects to HA instance
+   - **Procedura**: [docs/deployment/services/ha-bridge.md#ha-configuration](docs/deployment/services/ha-bridge.md#ha-configuration)
+
+3. **[ ] Action queue setup**
+   - **Metryka**: Redis queue for HA actions
+   - **Walidacja**: Actions queued and executed
+   - **Procedura**: [docs/deployment/services/ha-bridge.md#action-queue](docs/deployment/services/ha-bridge.md#action-queue)
+
+4. **[ ] Rate limiting configuration**
+   - **Metryka**: Respect HA API limits
+   - **Walidacja**: No 429 errors under load
+   - **Procedura**: [docs/deployment/services/ha-bridge.md#rate-limiting](docs/deployment/services/ha-bridge.md#rate-limiting)
+
+5. **[ ] Integration test with HA**
+   - **Metryka**: End-to-end action execution
+   - **Walidacja**: Test automation via bridge
+   - **Procedura**: [docs/deployment/services/ha-bridge.md#integration-testing](docs/deployment/services/ha-bridge.md#integration-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula:8004/health
+
+# Test HA connection:
+curl http://nebula:8004/api/ha/status
+
+# Execute test action:
+curl -X POST http://nebula:8004/api/actions -d '{"service": "light.turn_on", "entity_id": "light.test"}'
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/ha-bridge.md](docs/deployment/services/ha-bridge.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ HA Bridge service operational
+- ✅ Secure API token management
+- ✅ Action queue processing
+- ✅ Rate limiting working
+- ✅ Full tracing of all actions
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

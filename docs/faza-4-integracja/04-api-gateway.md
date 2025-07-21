@@ -386,6 +386,71 @@ Zbudować unified API gateway zapewniający spójny, bezpieczny dostęp do wszys
 
 3. **Czas rollback**: <5 min
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/api-gateway.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/api-gateway.md#deploy](docs/deployment/services/api-gateway.md#deploy)
+
+2. **[ ] Konfiguracja Kong/Traefik na Nebuli**
+   - **Metryka**: API Gateway routing all services
+   - **Walidacja**: Single entry point working
+   - **Procedura**: [docs/deployment/services/api-gateway.md#gateway-setup](docs/deployment/services/api-gateway.md#gateway-setup)
+
+3. **[ ] Authentication/Authorization**
+   - **Metryka**: JWT/API key validation
+   - **Walidacja**: Protected endpoints secure
+   - **Procedura**: [docs/deployment/services/api-gateway.md#authentication](docs/deployment/services/api-gateway.md#authentication)
+
+4. **[ ] Rate limiting i caching**
+   - **Metryka**: Rate limits enforced, cache hit >80%
+   - **Walidacja**: Load test with limits
+   - **Procedura**: [docs/deployment/services/api-gateway.md#rate-limiting](docs/deployment/services/api-gateway.md#rate-limiting)
+
+5. **[ ] Performance test gateway**
+   - **Metryka**: <10ms added latency
+   - **Walidacja**: Benchmark via CI/CD
+   - **Procedura**: [docs/deployment/services/api-gateway.md#performance-testing](docs/deployment/services/api-gateway.md#performance-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula/api/health
+
+# Test routing:
+curl http://nebula/api/v1/face-recognition/health
+curl http://nebula/api/v1/object-detection/health
+
+# Test auth:
+curl -H "Authorization: Bearer invalid" http://nebula/api/v1/protected
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/api-gateway.md](docs/deployment/services/api-gateway.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ Single API entry point for all services
+- ✅ Authentication/authorization working
+- ✅ Rate limiting protecting backend
+- ✅ Response caching operational
+- ✅ <10ms gateway overhead
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

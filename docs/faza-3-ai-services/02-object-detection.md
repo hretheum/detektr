@@ -208,6 +208,71 @@ Wdrożyć wysokowydajny serwis detekcji obiektów oparty na YOLO v8 z pełnym mo
 
 3. **Czas rollback**: <10 min
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/object-detection.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/object-detection.md#deploy](docs/deployment/services/object-detection.md#deploy)
+
+2. **[ ] Konfiguracja YOLO z GPU na Nebuli**
+   - **Metryka**: YOLOv8 running on GTX 4070
+   - **Walidacja**: `docker exec object-detection nvidia-smi`
+   - **Procedura**: [docs/deployment/services/object-detection.md#gpu-configuration](docs/deployment/services/object-detection.md#gpu-configuration)
+
+3. **[ ] Weryfikacja metryk w Prometheus**
+   - **Metryka**: Object detection metrics visible at http://nebula:9090
+   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=object_detections_total`
+   - **Procedura**: [docs/deployment/services/object-detection.md#monitoring](docs/deployment/services/object-detection.md#monitoring)
+
+4. **[ ] Integracja z Jaeger tracing**
+   - **Metryka**: Traces visible at http://nebula:16686
+   - **Walidacja**: `curl http://nebula:16686/api/traces?service=object-detection`
+   - **Procedura**: [docs/deployment/services/object-detection.md#tracing](docs/deployment/services/object-detection.md#tracing)
+
+5. **[ ] Performance test YOLO na GTX 4070**
+   - **Metryka**: >10 FPS z YOLOv8m na 1080p
+   - **Walidacja**: Load test via CI/CD pipeline
+   - **Procedura**: [docs/deployment/services/object-detection.md#performance-testing](docs/deployment/services/object-detection.md#performance-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula:8003/health
+curl http://nebula:8003/metrics
+
+# Test GPU i YOLO:
+ssh nebula "docker exec object-detection python -c 'from ultralytics import YOLO; print(YOLO(\"yolov8m.pt\").model.device)'"
+
+# Test detekcji:
+curl -X POST http://nebula:8003/detect -F "image=@test_scene.jpg"
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/object-detection.md](docs/deployment/services/object-detection.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ YOLOv8 running on GTX 4070 Super
+- ✅ >10 FPS on 1080p video streams
+- ✅ GPU memory usage <8GB
+- ✅ Metrics and traces in monitoring stack
+- ✅ Grafana GPU dashboard operational
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

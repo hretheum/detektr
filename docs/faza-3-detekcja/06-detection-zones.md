@@ -119,6 +119,70 @@ Implementacja systemu definiowania stref detekcji dla każdej kamery, umożliwia
 - **OpenCV**: Mask generation
 - **PostgreSQL+PostGIS**: Spatial data
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/zone-manager.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/zone-manager.md#deploy](docs/deployment/services/zone-manager.md#deploy)
+
+2. **[ ] Konfiguracja PostGIS na Nebuli**
+   - **Metryka**: PostgreSQL with PostGIS extension
+   - **Walidacja**: `SELECT PostGIS_Version()`
+   - **Procedura**: [docs/deployment/services/zone-manager.md#postgis-setup](docs/deployment/services/zone-manager.md#postgis-setup)
+
+3. **[ ] Zone editor UI deployment**
+   - **Metryka**: Web UI accessible on Nebula
+   - **Walidacja**: Browse to http://nebula:8015
+   - **Procedura**: [docs/deployment/services/zone-manager.md#ui-deployment](docs/deployment/services/zone-manager.md#ui-deployment)
+
+4. **[ ] Integration z detection services**
+   - **Metryka**: Zones applied to all detectors
+   - **Walidacja**: Test zone filtering in detection
+   - **Procedura**: [docs/deployment/services/zone-manager.md#integration](docs/deployment/services/zone-manager.md#integration)
+
+5. **[ ] Performance test z zones**
+   - **Metryka**: <5ms zone check overhead
+   - **Walidacja**: Benchmark with/without zones
+   - **Procedura**: [docs/deployment/services/zone-manager.md#performance-testing](docs/deployment/services/zone-manager.md#performance-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula:8015/api/health
+
+# Open zone editor:
+open http://nebula:8015
+
+# Test zone API:
+curl http://nebula:8015/api/zones
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/zone-manager.md](docs/deployment/services/zone-manager.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ Zone manager API operational
+- ✅ Web UI for zone editing accessible
+- ✅ PostGIS spatial queries working
+- ✅ Zones integrated with all detectors
+- ✅ <5ms overhead per frame
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

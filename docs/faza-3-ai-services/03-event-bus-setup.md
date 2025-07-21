@@ -204,6 +204,70 @@ Wdrożyć skalowalny event bus do komunikacji między serwisami AI z gwarancją 
 
 3. **Czas rollback**: <20 min
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/event-bus.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/event-bus.md#deploy](docs/deployment/services/event-bus.md#deploy)
+
+2. **[ ] Konfiguracja Kafka/NATS cluster na Nebuli**
+   - **Metryka**: 3-node cluster operational
+   - **Walidacja**: `.env.sops` contains cluster configuration
+   - **Procedura**: [docs/deployment/services/event-bus.md#configuration](docs/deployment/services/event-bus.md#configuration)
+
+3. **[ ] Weryfikacja metryk w Prometheus**
+   - **Metryka**: Event bus metrics visible at http://nebula:9090
+   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=kafka_topic_partition_current_offset`
+   - **Procedura**: [docs/deployment/services/event-bus.md#monitoring](docs/deployment/services/event-bus.md#monitoring)
+
+4. **[ ] Grafana dashboard dla event bus**
+   - **Metryka**: Lag, throughput, partitions visible
+   - **Walidacja**: Dashboard shows all topics and consumer groups
+   - **Procedura**: [docs/deployment/services/event-bus.md#dashboard](docs/deployment/services/event-bus.md#dashboard)
+
+5. **[ ] Test event flow AI services**
+   - **Metryka**: Events flow between face/object detection
+   - **Walidacja**: End-to-end event processing test
+   - **Procedura**: [docs/deployment/services/event-bus.md#integration-testing](docs/deployment/services/event-bus.md#integration-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź Kafka cluster:
+ssh nebula "docker exec kafka-1 kafka-broker-api-versions --bootstrap-server localhost:9092"
+
+# List topics:
+ssh nebula "docker exec kafka-1 kafka-topics --bootstrap-server localhost:9092 --list"
+
+# Check consumer groups:
+ssh nebula "docker exec kafka-1 kafka-consumer-groups --bootstrap-server localhost:9092 --list"
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/event-bus.md](docs/deployment/services/event-bus.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ Kafka/NATS cluster healthy (3 nodes)
+- ✅ Event flow between AI services working
+- ✅ <10ms latency p99
+- ✅ Zero message loss
+- ✅ Monitoring dashboard operational
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:
