@@ -36,7 +36,7 @@ check_docker_access() {
         exit 1
     fi
 
-    if ! docker info &> /dev/null; then
+    if ! sudo docker info &> /dev/null; then
         error "Brak uprawnień do Docker"
         exit 1
     fi
@@ -92,15 +92,15 @@ start_infrastructure() {
     log "Uruchamianie infrastruktury..."
 
     # Utwórz network jeśli nie istnieje
-    docker network create detektor-network 2>/dev/null || true
+    sudo docker network create detektor-network 2>/dev/null || true
 
     # Uruchom storage (PostgreSQL, Redis)
     log "Uruchamianie storage services..."
-    docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" up -d
+    sudo docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" up -d
 
     # Uruchom observability (Prometheus, Jaeger, Grafana)
     log "Uruchamianie observability services..."
-    docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" up -d
+    sudo docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" up -d
 
     # Czekaj na gotowość infrastruktury
     log "Czekam na gotowość infrastruktury..."
@@ -134,7 +134,7 @@ start_services() {
     log "Uruchamianie serwisów aplikacji..."
 
     # Użyj głównego docker-compose.yml
-    docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d
+    sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d
 
     log "Serwisy aplikacji uruchomione ✓"
 }
@@ -170,4 +170,14 @@ main() {
         log "  - Frame Tracking: http://localhost:8006"
         log "  - Echo Service: http://localhost:8007"
         log "  - GPU Demo: http://localhost:8008"
-        log "  - Prometheus: http://localhost
+        log "  - Prometheus: http://localhost:9090"
+        log "  - Grafana: http://localhost:3000"
+        log "  - Jaeger: http://localhost:16686"
+    else
+        error "Health check nie powiódł się"
+        return 1
+    fi
+}
+
+# Uruchom główną funkcję
+main "$@"

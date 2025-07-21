@@ -40,7 +40,7 @@ for service in postgres redis prometheus grafana jaeger; do
 
     case $service in
         postgres)
-            if docker exec detektor-postgres-1 pg_isready -U detektor &>/dev/null; then
+            if sudo docker exec detektor-postgres-1 pg_isready -U detektor &>/dev/null; then
                 echo -e "${GREEN}✓${NC} $service - healthy"
             else
                 echo -e "${RED}✗${NC} $service - unhealthy (PostgreSQL not ready)"
@@ -48,7 +48,7 @@ for service in postgres redis prometheus grafana jaeger; do
             fi
             ;;
         redis)
-            if docker exec detektor-redis-1 redis-cli ping &>/dev/null; then
+            if sudo docker exec detektor-redis-1 redis-cli ping &>/dev/null; then
                 echo -e "${GREEN}✓${NC} $service - healthy"
             else
                 echo -e "${RED}✗${NC} $service - unhealthy (Redis not responding)"
@@ -74,8 +74,8 @@ for service in example-otel frame-tracking echo-service gpu-demo rtsp-capture; d
     url="${SERVICES[$service]}"
 
     # Wait a bit longer for services to start
-    local max_wait=10
-    local count=0
+    max_wait=10
+    count=0
 
     while [[ $count -lt $max_wait ]]; do
         if curl -sf "$url" > /dev/null 2>&1; then
@@ -88,13 +88,13 @@ for service in example-otel frame-tracking echo-service gpu-demo rtsp-capture; d
                 ALL_HEALTHY=false
 
                 # Show container status
-                local container_name="detektor-${service}-1"
-                local status=$(docker ps --filter "name=$container_name" --format "{{.Status}}" 2>/dev/null || echo "not found")
+                container_name="detektor-${service}-1"
+                status=$(sudo docker ps --filter "name=$container_name" --format "{{.Status}}" 2>/dev/null || echo "not found")
                 echo -e "${YELLOW}   Container status: $status${NC}"
 
                 # Show recent logs
                 echo -e "${YELLOW}   Recent logs:${NC}"
-                docker logs --tail 5 "$container_name" 2>/dev/null | sed 's/^/     /' || true
+                sudo docker logs --tail 5 "$container_name" 2>/dev/null | sed 's/^/     /' || true
             else
                 sleep 2
             fi
@@ -106,7 +106,7 @@ echo
 
 # Check Docker containers
 echo -e "${BLUE}=== Container Status ===${NC}"
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" | grep -E "(detektor|postgres|redis|prometheus|grafana|jaeger)" || true
+sudo docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}" | grep -E "(detektor|postgres|redis|prometheus|grafana|jaeger)" || true
 
 echo
 
@@ -123,7 +123,7 @@ fi
 
 # Resource usage
 echo -e "${BLUE}=== Resource Usage ===${NC}"
-docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" | grep -E "(detektor|postgres|redis)" || true
+sudo docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" | grep -E "(detektor|postgres|redis)" || true
 
 echo
 
