@@ -33,7 +33,7 @@ RUN useradd -m -u 1000 -s /bin/bash appuser
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
-    python -c "import opentelemetry.instrumentation.redis; print('Redis instrumentation verified')"
+    python -c "from opentelemetry.instrumentation.redis import RedisInstrumentor; print('Redis instrumentation verified')"
 
 # Set working directory
 WORKDIR /app
