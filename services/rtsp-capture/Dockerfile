@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /wheels
 
 # Copy requirements and build wheels
-COPY requirements.txt .
+COPY services/rtsp-capture/requirements.txt .
 RUN pip install --upgrade pip setuptools wheel && \
     pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN useradd -m -u 1000 -s /bin/bash appuser
 
 # Copy requirements and install
-COPY requirements.txt .
+COPY services/rtsp-capture/requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     python -c "from opentelemetry.instrumentation.redis import RedisInstrumentor; print('Redis instrumentation verified')"
