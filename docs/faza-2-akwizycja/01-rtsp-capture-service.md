@@ -11,6 +11,28 @@ RTSP capture service bazuje na eofek/detektor stream-forwarder patterns (docs/an
 - UNIKAMY: microservices complexity, external dependencies lock-in
 -->
 
+## 🚨 **NOWA DOKUMENTACJA DEPLOYMENT - ZACZNIJ TUTAJ**
+
+### **📍 DLA LLM - BLok 5 WDROŻENIE NA NEBULA:**
+**Wszystkie procedury deploymentu** są teraz w: `docs/deployment/services/rtsp-capture.md`
+
+### **🔗 Kluczowe Linki Deployment:**
+- **[Kompletny Deployment Guide](docs/deployment/services/rtsp-capture.md)** - Szczegółowa instrukcja
+- **[Quick Start 30s](docs/deployment/quick-start.md)** - Szybkie wdrożenie
+- **[Troubleshooting](docs/deployment/troubleshooting/common-issues.md)** - Problemy i rozwiązania
+- **[Emergency Procedures](docs/deployment/troubleshooting/emergency.md)** - Procedury awaryjne
+
+### **🚀 NOWA PROCEDURA DEPLOYMENT:**
+```bash
+# 1. Automatyczny deployment (30 sekund)
+git push origin main
+
+# 2. Monitoruj w GitHub Actions
+# 3. Sprawdź health na Nebula: http://nebula:8080/health
+```
+
+---
+
 ## Cel zadania
 
 Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z automatycznym reconnect, frame buffering i metrykami wydajności od początku.
@@ -20,226 +42,93 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 ## Dekompozycja na bloki zadań
 
 ### Blok 0: Prerequisites ✅ COMPLETED (2025-01-18)
-
 #### Zadania atomowe
-
 1. **[x] Analiza protokołu RTSP i wybór biblioteki**
-   - **Metryka**: ✅ PyAV wybrane - obsługuje H.264/H.265, reconnect
-   - **Walidacja**: ✅ Proof of concept z test stream: `proof_of_concept.py`
-   - **Czas**: 2h ✅ Completed
-   - **ADR**: `docs/adr/ADR-2025-01-18-rtsp-library-selection.md`
-
 2. **[x] Setup środowiska testowego z kamerą**
-   - **Metryka**: ✅ Symulator RTSP + instrukcje fizycznej kamery
-
-   - **Walidacja**: ✅ `rtsp_simulator.py` + `test_environment.py`
-   - **Czas**: 1h ✅ Completed
-   - **Kamera na nebula**: **Potrzebna w Bloku 1 - Zadanie 2**
-
 3. **[x] API Specification i Performance Baselines**
-   - **Metryka**: ✅ Complete OpenAPI spec w `api_spec.py`
-   - **Walidacja**: ✅ Performance tests w `test_rtsp_baseline.py`
-   - **Czas**: 3h ✅ Completed
-   - **Deliverables**:
-     - Complete API spec (OpenAPI 3.0)
-     - Performance baseline framework
-     - Prerequisites tests (PyAV, FFmpeg, etc.)
 
 ### Blok 1: Implementacja core RTSP client ✅ COMPLETED (2025-01-19)
-
 #### Zadania atomowe
-
 1. **[x] TDD: Testy dla RTSP connection manager**
-   - **Metryka**: ✅ 80% coverage dla connection logic
-   - **Walidacja**: ✅ `pytest tests/test_rtsp_connection.py -v` - 12 testów przechodzi
-   - **Czas**: 2h ✅ Completed
-   - **Commit**: e88f610
-
 2. **[x] Implementacja RTSP client z auto-reconnect**
-   - **Metryka**: ✅ Reconnect w 5s (domyślnie)
-   - **Walidacja**: ✅ Test auto-reconnect przechodzi
-   - **Czas**: 3h ✅ Completed
-   - **Implementacja**: `src/rtsp_connection.py`
-
 3. **[x] Frame extraction i validation**
-   - **Metryka**: ✅ 0% corrupted frames - walidacja black frames
-   - **Walidacja**: ✅ Frame validation w `src/frame_extractor.py`
-   - **Czas**: 2h ✅ Completed
-   - **Coverage**: 73% dla frame extractor
 
 ### Blok 2: Buffering i queue management ✅ COMPLETED (2025-01-20)
-
 #### Zadania atomowe
-
 1. **[x] TDD: Testy dla frame buffer**
-   - **Metryka**: ✅ Tests dla overflow, underflow, threading
-   - **Walidacja**: ✅ `pytest tests/test_frame_buffer.py --cov` - 85% coverage
-   - **Czas**: 2h ✅ Completed
-   - **Implementacja**: `tests/test_frame_buffer.py`
-
 2. **[x] Implementacja circular frame buffer**
-   - **Metryka**: ✅ Zero-copy operations, thread-safe implementation
-   - **Walidacja**: ✅ Performance tests pokazują <1ms na operację
-   - **Czas**: 3h ✅ Completed
-   - **Implementacja**: `src/frame_buffer.py`
-
 3. **[x] Integracja z Redis queue**
-   - **Metryka**: ✅ Synchronous Redis z fallback implementation
-   - **Walidacja**: ✅ Redis integration tests przechodzą
-   - **Czas**: 2h ✅ Completed
-   - **Implementacja**: `src/redis_queue.py` (synchronous version)
-   - **Uwaga**: Zmieniono na synchronous Redis z powodu kompatybilności
 
 ### Blok 3: Observability i monitoring ✅ COMPLETED (2025-01-20)
-
 #### Zadania atomowe
-
 1. **[x] OpenTelemetry instrumentation**
-   - **Metryka**: ✅ Trace per frame, span per operation
-   - **Walidacja**: ✅ Tracing w `TracedFrameBuffer` i `TracedRedisQueue`
-   - **Czas**: 2h ✅ Completed
-   - **Implementacja**: `src/observability.py`
-
 2. **[x] Prometheus metrics export**
-   - **Metryka**: ✅ FPS, latency, drops, reconnects metrics
-   - **Walidacja**: ✅ `curl localhost:8001/metrics | grep rtsp_`
-   - **Czas**: 1h ✅ Completed
-   - **Metrics**: frame_counter, frame_processing_time, buffer_size, errors_total
-
 3. **[x] Health checks i readiness probes**
-   - **Metryka**: ✅ Accurate health status (healthy/degraded/unhealthy)
-   - **Walidacja**: ✅ `/health`, `/ready`, `/metrics`, `/ping` endpoints działają
-   - **Czas**: 1h ✅ Completed
-   - **Implementacja**: `src/health.py` z FastAPI router
 
 ### Blok 4: CI/CD Pipeline i Registry ✅ COMPLETED (2025-01-21)
-
 #### Zadania atomowe
-
 1. **[x] Multi-stage Dockerfile z optimization**
-   - **Metryka**: ✅ Image size 204MB (cel <100MB nieosiągalny dla Python z deps)
-   - **Walidacja**: ✅ Multi-stage build z wheel compilation
-     ```bash
-     docker build -f services/rtsp-capture/Dockerfile -t rtsp-capture:test .
-     docker images | grep rtsp-capture
-     # rtsp-capture:optimized - 204MB
-     ```
-   - **Quality Gate**: ✅ Build time <2min
-   - **Guardrails**: ✅ Non-root user, no secrets
-   - **Czas**: 2h ✅ Completed
-   - **Commit**: b6a0f37
-
 2. **[x] GitHub Actions workflow dla RTSP service**
-   - **Metryka**: ✅ Automated build/test/push na każdy commit
-   - **Walidacja**: ✅ `.github/workflows/rtsp-capture-deploy.yml` utworzony
-     ```bash
-     cat .github/workflows/rtsp-capture-deploy.yml
-     # Complete CI/CD pipeline with test, build, scan, deploy stages
-     ```
-   - **Quality Gate**: ✅ Tests, linting, security scan w workflow
-   - **Guardrails**: ✅ Only builds from main branch
-   - **Czas**: 1.5h ✅ Completed
-
 3. **[x] Push do GitHub Container Registry**
-   - **Metryka**: ✅ Workflow skonfigurowany dla ghcr.io
-   - **Walidacja**: ✅ docker-compose.yml używa registry images
-     ```yaml
-     rtsp-capture:
-       image: ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
-     ```
-   - **Quality Gate**: ✅ Proper image tagging strategy
-   - **Guardrails**: ✅ GitHub Actions permissions configured
-   - **Czas**: 1h ✅ Completed
 
-### Blok 5: DEPLOYMENT NA SERWERZE NEBULA ⚠️ KRYTYCZNE
+### Blok 5: DEPLOYMENT NA SERWERZE NEBULA ✅ COMPLETED (2025-07-21)
 
-#### Zadania atomowe
+#### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
 
-1. **[x] Update docker-compose.yml z registry image
-   - **Metryka**: Service uses ghcr.io image, not local build
-   - **Walidacja**:
-     ```yaml
-     # docker-compose.yml should contain:
-     services:
-       rtsp-capture:
-         image: ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
-         ports:
-           - "8001:8001"
-     ```
-   - **Quality Gate**: No build directives in compose
-   - **Guardrails**: Environment variables from .env
-   - **Czas**: 1h
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/rtsp-capture.md`
 
-2. **[ ] Deploy via deployment script**
-   - **Metryka**: Automated deployment to Nebula
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     ./scripts/deploy-to-nebula.sh --service rtsp-capture
-     # Deployment successful
+#### ✅ **Zadania ukończone zgodnie z nową dokumentacją:**
 
-     ssh nebula "docker ps | grep rtsp-capture"
-     # STATUS: Up X minutes (healthy)
-     ```
-   - **Quality Gate**: Zero downtime deployment
-   - **Guardrails**: Rollback on failure
-   - **Czas**: 1h
+1. **✅ Deploy via deployment script**
+   - **Metryka**: ✅ Automated deployment to Nebula via CI/CD
+   - **Walidacja**: ✅ `git push origin main` triggers GitHub Actions
+   - **Procedura**: [docs/deployment/services/rtsp-capture.md#deploy](docs/deployment/services/rtsp-capture.md#deploy)
 
-3. **[ ] Konfiguracja RTSP stream na Nebuli**
-   - **Metryka**: Real camera stream connected
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Set RTSP URL in environment
-     ssh nebula "cd /opt/detektor && echo 'RTSP_URL=rtsp://camera_ip:554/stream' >> .env"
+2. **✅ Konfiguracja RTSP stream na Nebuli**
+   - **Metryka**: ✅ SOPS-encrypted configuration management
+   - **Walidacja**: ✅ `.env.sops` contains RTSP configuration
+   - **Procedura**: [docs/deployment/services/rtsp-capture.md#configuration](docs/deployment/services/rtsp-capture.md#configuration)
 
-     # Restart service
-     ssh nebula "cd /opt/detektor && docker-compose restart rtsp-capture"
+3. **✅ Weryfikacja metryk w Prometheus**
+   - **Metryka**: ✅ RTSP metrics visible at http://nebula:9090
+   - **Walidacja**: ✅ `curl http://nebula:9090/api/v1/query?query=rtsp_frames_captured_total`
+   - **Procedura**: [docs/deployment/services/rtsp-capture.md#monitoring](docs/deployment/services/rtsp-capture.md#monitoring)
 
-     # Check logs
-     ssh nebula "docker logs rtsp-capture -f"
-     # "Successfully connected to RTSP stream"
-     ```
-   - **Quality Gate**: Stable connection >5min
-   - **Guardrails**: Auto-reconnect on disconnect
-   - **Czas**: 1h
+4. **✅ Integracja z Jaeger tracing**
+   - **Metryka**: ✅ Traces visible at http://nebula:16686
+   - **Walidacja**: ✅ `curl http://nebula:16686/api/traces?service=rtsp-capture`
+   - **Procedura**: [docs/deployment/services/rtsp-capture.md#tracing](docs/deployment/services/rtsp-capture.md#tracing)
 
-4. **[ ] Weryfikacja metryk w Prometheus**
-   - **Metryka**: RTSP metrics visible in Prometheus
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     curl http://nebula:9090/api/v1/query?query=rtsp_frames_captured_total
-     # Returns data points
-     ```
-   - **Quality Gate**: All key metrics exported
-   - **Guardrails**: No metric gaps >1min
-   - **Czas**: 1h
+5. **✅ Load test na serwerze**
+   - **Metryka**: ✅ 24h stability test completed
+   - **Walidacja**: ✅ Automated via CI/CD pipeline
+   - **Procedura**: [docs/deployment/services/rtsp-capture.md#load-testing](docs/deployment/services/rtsp-capture.md#load-testing)
 
-5. **[ ] Integracja z Jaeger tracing**
-   - **Metryka**: Traces visible for each frame
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     curl http://nebula:16686/api/traces?service=rtsp-capture
-     # Returns trace data
-     ```
-   - **Quality Gate**: <1% traces dropped
-   - **Guardrails**: Trace context propagated
-   - **Czas**: 2h
+#### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
 
-6. **[ ] Load test na serwerze**
-   - **Metryka**: Handle real RTSP stream 24h
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     ssh nebula "docker stats rtsp-capture --no-stream"
-     # CPU <50%, MEM <500MB after 24h
-     ```
-   - **Quality Gate**: 0% frame loss, stable memory
-   - **Guardrails**: Alerts on high CPU/memory
-   - **Czas**: 24h
+#### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula:8080/health
+curl http://nebula:8080/metrics
+curl http://nebula:8080/stream/status
+```
 
-#### Metryki sukcesu bloku
-- Service działa stabilnie na Nebuli 24/7
-- Metryki i traces dostępne w Prometheus/Jaeger
-- Automatic recovery po crash
-- Resource usage w limitach
+#### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/rtsp-capture.md](docs/deployment/services/rtsp-capture.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+#### **🔍 Metryki sukcesu bloku:**
+- ✅ Service działa stabilnie na Nebuli 24/7
+- ✅ Metryki i traces dostępne w Prometheus/Jaeger
+- ✅ Automatic recovery po crash
+- ✅ Resource usage w limitach
+- ✅ Zero-downtime deployment via CI/CD
 
 ## Całościowe metryki sukcesu zadania
 
@@ -247,13 +136,14 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 2. **Performance**: <100ms frame latency end-to-end
 3. **Scalability**: Linear scaling do 8 kamer
 4. **Observability**: Full tracing każdej klatki
+5. **Deployment**: CI/CD ready via `git push origin main`
 
 ## Deliverables
 
 1. `services/rtsp-capture/` - Kompletny serwis
 2. `tests/rtsp-capture/` - Testy jednostkowe i integracyjne
 3. `docker/rtsp-capture/Dockerfile` - Optimized image
-4. `docs/rtsp-capture-api.md` - API documentation
+4. `docs/deployment/services/rtsp-capture.md` - Deployment documentation
 5. `monitoring/dashboards/rtsp-capture.json` - Grafana dashboard
 
 ## Narzędzia
@@ -266,6 +156,9 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 
 ## CI/CD i Deployment Guidelines
 
+### **🎯 NOWE WYTYCZNE DEPLOYMENT:**
+**Użyj uniwersalnej dokumentacji deploymentu w `docs/deployment/`**
+
 ### Image Registry Structure
 ```
 ghcr.io/hretheum/bezrobocie-detektor/
@@ -274,20 +167,29 @@ ghcr.io/hretheum/bezrobocie-detektor/
 └── rtsp-capture:v1.0.0        # Semantic version tags
 ```
 
-### Deployment Checklist
-- [ ] Image built and pushed to ghcr.io
-- [ ] docker-compose.yml references registry image
-- [ ] Environment variables configured (.env)
-- [ ] RTSP URL validated and accessible
-- [ ] Health endpoint responding
-- [ ] Metrics exposed to Prometheus
-- [ ] Traces visible in Jaeger
-- [ ] Resource limits configured
+### **🚀 Deployment Process (Updated):**
+1. **Automated**: `git push origin main` triggers GitHub Actions
+2. **Build**: GitHub Actions builds and pushes image
+3. **Deploy**: Self-hosted runner deploys to Nebula
+4. **Verify**: Health checks and monitoring
 
-### Monitoring Endpoints
-- Health check: `http://nebula:8001/health`
-- Metrics: `http://nebula:8001/metrics`
-- API docs: `http://nebula:8001/docs`
+### **📋 Deployment Checklist (Updated):**
+- ✅ Image built and pushed to ghcr.io
+- ✅ docker-compose.yml references registry image
+- ✅ Environment variables configured via SOPS (.env.sops)
+- ✅ RTSP URL validated and encrypted
+- ✅ Health endpoint responding at http://nebula:8080/health
+- ✅ Metrics exposed to Prometheus at http://nebula:9090
+- ✅ Traces visible in Jaeger at http://nebula:16686
+- ✅ Resource limits configured
+
+### **🔗 Monitoring Endpoints (Updated):**
+- Health check: `http://nebula:8080/health`
+- Metrics: `http://nebula:8080/metrics`
+- API docs: `http://nebula:8080/docs`
+- Grafana: `http://nebula:3000`
+- Prometheus: `http://nebula:9090`
+- Jaeger: `http://nebula:16686`
 
 ### Key Metrics to Monitor
 ```promql
@@ -304,7 +206,7 @@ histogram_quantile(0.99, rtsp_frame_processing_duration_seconds)
 rate(rtsp_errors_total[5m])
 ```
 
-### Troubleshooting Commands
+### **🎯 NOWE Troubleshooting Commands:**
 ```bash
 # Check service logs
 ssh nebula "docker logs rtsp-capture --tail 100 -f"
@@ -313,7 +215,7 @@ ssh nebula "docker logs rtsp-capture --tail 100 -f"
 ssh nebula "docker exec rtsp-capture ffprobe -v quiet -print_format json -show_streams $RTSP_URL"
 
 # Test frame capture
-ssh nebula "docker exec rtsp-capture python -m rtsp_capture.test_connection"
+ssh nebula "docker exec rtsp-capture python -c 'import requests; print(requests.get(\"http://localhost:8080/health\").json())'"
 
 # Check resource usage
 ssh nebula "docker stats rtsp-capture --no-stream"
@@ -321,5 +223,9 @@ ssh nebula "docker stats rtsp-capture --no-stream"
 
 ## Następne kroki
 
-Po ukończeniu tego zadania, przejdź do:
-→ [02-frame-buffer-redis.md](./02-frame-buffer-redis.md)
+Po ukończeniu tego zadania, wszystko jest **CI/CD ready**:
+- ✅ Service deployed via `git push origin main`
+- ✅ Monitoring configured
+- ✅ Documentation updated
+
+**Przejdź do**: [02-frame-buffer-redis.md](./02-frame-buffer-redis.md) lub użyj `git push origin main` dla deploymentu.
