@@ -1,26 +1,17 @@
 #!/bin/bash
+# =============================================================================
+# Skrypt deployment dla GitHub Actions Runner (local deployment na Nebula)
+# Bez użycia SSH - używa lokalnego dockera na runnerze
+# =============================================================================
+
 set -euo pipefail
 
-# Deployment script for running LOCALLY on Nebula (from self-hosted runner)
-# This executes directly on the Nebula server, no SSH needed
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Configuration
-DEPLOY_DIR="/opt/detektor"
-REGISTRY="${REGISTRY:-ghcr.io}"
-IMAGE_PREFIX="${IMAGE_PREFIX:-hretheum/bezrobocie-detektor}"
-
-# Services to deploy
-SERVICES=(
-    "example-otel"
-    "frame-tracking"
-    "base-template"
-    "echo-service"
-    "rtsp-capture"
-)
-
-# Colors
-GREEN='\033[0;32m'
+# Kolory
 RED='\033[0;31m'
+GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
@@ -36,157 +27,147 @@ warning() {
     echo -e "${YELLOW}[WARNING]${NC} $*"
 }
 
-# Main deployment
-main() {
-    log "Starting LOCAL deployment on Nebula..."
+# Sprawdzenie czy mamy dostęp do dockera
+check_docker_access() {
+    log "Sprawdzanie dostępu do Docker..."
 
-    # Check if running on Nebula (self-hosted runner or actual server)
-    if [[ "${SKIP_HOSTNAME_CHECK:-0}" != "1" ]]; then
-        local hostname
-        hostname=$(hostname)
-        if [[ "$hostname" != "nebula" ]] && [[ ! "$hostname" =~ ^(nebula|runner-|github-) ]]; then
-            error "This script should only run on Nebula server or self-hosted runner!"
-            error "Current hostname: $hostname"
-            warning "Set SKIP_HOSTNAME_CHECK=1 to bypass this check in CI/CD environments"
-            exit 1
-        fi
-    else
-        warning "Skipping hostname check (SKIP_HOSTNAME_CHECK=1)"
-    fi
-
-    # Check deployment directory
-    if [[ ! -d "$DEPLOY_DIR" ]]; then
-        error "Deployment directory $DEPLOY_DIR does not exist"
+    if ! command -v docker &> /dev/null; then
+        error "Docker nie jest dostępny"
         exit 1
     fi
 
-    cd "$DEPLOY_DIR"
-    log "Working in $DEPLOY_DIR"
-
-    # Ensure Docker network exists
-    log "Creating Docker network..."
-    docker network create detektor-network 2>/dev/null || true
-
-    # Start infrastructure services
-    log "Starting infrastructure services..."
-    if [[ -f docker-compose.observability.yml ]]; then
-        docker compose -f docker-compose.observability.yml up -d
-    else
-        warning "docker-compose.observability.yml not found"
+    if ! docker info &> /dev/null; then
+        error "Brak uprawnień do Docker"
+        exit 1
     fi
 
-    if [[ -f docker-compose.storage.yml ]]; then
-        docker compose -f docker-compose.storage.yml up -d
-    else
-        warning "docker-compose.storage.yml not found"
-    fi
+    log "Dostęp do Docker potwierdzony ✓"
+}
 
-    # Wait for infrastructure
-    log "Waiting for infrastructure to be ready..."
-    sleep 10
+# Sprawdzenie wymaganych plików
+check_required_files() {
+    log "Sprawdzanie wymaganych plików..."
 
-    # Clean up orphaned containers and images
-    log "Cleaning up orphaned containers and images..."
-    docker container prune -f
-    docker image prune -f
-    docker network prune -f
-    docker volume prune -f
+    local required_files=(
+        "docker-compose.yml"
+        "docker-compose.observability.yml"
+        "docker-compose.storage.yml"
+    )
 
-    # Pull latest application images
-    log "Pulling application images..."
-    for service in "${SERVICES[@]}"; do
-        local image="${REGISTRY}/${IMAGE_PREFIX}/${service}:latest"
-        log "Pulling ${service}..."
-
-        if ! docker pull "$image"; then
-            error "Failed to pull $image"
+    for file in "${required_files[@]}"; do
+        if [[ ! -f "$PROJECT_ROOT/$file" ]]; then
+            error "Brakujący plik: $file"
             exit 1
         fi
     done
 
-    # Deploy application services
-    log "Starting application services..."
-    docker compose up -d
-
-    # Wait for services to start
-    log "Waiting for services to stabilize..."
-    sleep 10
-
-    # Wait for services to start
-    sleep 5
-
-    # Health check
-    log "Performing health checks..."
-    local failed=0
-
-    # Check example-otel
-    if curl -sf http://localhost:8005/health >/dev/null; then
-        log "✓ example-otel is healthy"
-    else
-        error "✗ example-otel health check failed"
-        ((failed++))
-    fi
-
-    # Check frame-tracking
-    if curl -sf http://localhost:8006/health >/dev/null; then
-        log "✓ frame-tracking is healthy"
-    else
-        error "✗ frame-tracking health check failed"
-        ((failed++))
-    fi
-
-    # Check echo-service
-    if curl -sf http://localhost:8007/health >/dev/null; then
-        log "✓ echo-service is healthy"
-    else
-        error "✗ echo-service health check failed"
-        ((failed++))
-    fi
-
-    # Check base-template
-    if curl -sf http://localhost:8010/health >/dev/null; then
-        log "✓ base-template is healthy"
-    else
-        error "✗ base-template health check failed"
-        ((failed++))
-    fi
-
-    # Check rtsp-capture
-    if curl -sf http://localhost:8001/health >/dev/null; then
-        log "✓ rtsp-capture is healthy"
-    else
-        error "✗ rtsp-capture health check failed"
-        ((failed++))
-    fi
-
-    # Check Redis
-    if docker exec detektor-redis-1 redis-cli ping >/dev/null 2>&1; then
-        log "✓ Redis is healthy"
-    else
-        error "✗ Redis health check failed"
-        ((failed++))
-    fi
-
-    # Check PostgreSQL
-    if docker exec detektor-postgres-1 pg_isready >/dev/null 2>&1; then
-        log "✓ PostgreSQL is healthy"
-    else
-        error "✗ PostgreSQL health check failed"
-        ((failed++))
-    fi
-
-    # Summary
-    if [[ $failed -eq 0 ]]; then
-        log "Deployment completed successfully! ✓"
-    else
-        error "Deployment completed with $failed failed health checks"
-        exit 1
-    fi
-
-    # Show running services
-    log "Currently running services:"
-    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep detektor
+    log "Wszystkie pliki są obecne ✓"
 }
 
-# Run main function
-main "$@"
+# Przygotowanie zmiennych środowiskowych
+prepare_environment() {
+    log "Przygotowywanie zmiennych środowiskowych..."
+
+    # Upewnij się że .env istnieje
+    if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
+        warning "Brak pliku .env, używam .env.example jako szablonu"
+        if [[ -f "$PROJECT_ROOT/.env.example" ]]; then
+            cp "$PROJECT_ROOT/.env.example" "$PROJECT_ROOT/.env"
+        else
+            error "Brak .env oraz .env.example"
+            exit 1
+        fi
+    fi
+
+    # Source .env
+    set -a
+    source "$PROJECT_ROOT/.env"
+    set +a
+
+    log "Zmienne środowiskowe przygotowane ✓"
+}
+
+# Uruchomienie infrastruktury
+start_infrastructure() {
+    log "Uruchamianie infrastruktury..."
+
+    # Utwórz network jeśli nie istnieje
+    docker network create detektor-network 2>/dev/null || true
+
+    # Uruchom storage (PostgreSQL, Redis)
+    log "Uruchamianie storage services..."
+    docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" up -d
+
+    # Uruchom observability (Prometheus, Jaeger, Grafana)
+    log "Uruchamianie observability services..."
+    docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" up -d
+
+    # Czekaj na gotowość infrastruktury
+    log "Czekam na gotowość infrastruktury..."
+    sleep 15
+
+    # Sprawdź health check
+    local max_attempts=30
+    local attempt=1
+
+    while [[ $attempt -le $max_attempts ]]; do
+        if curl -sf http://localhost:9090/-/healthy &>/dev/null && \
+           curl -sf http://localhost:16686/ &>/dev/null && \
+           curl -sf http://localhost:3000/api/health &>/dev/null; then
+            log "Infrastruktura gotowa ✓"
+            break
+        fi
+
+        log "Czekam... próba $attempt/$max_attempts"
+        sleep 5
+        ((attempt++))
+    done
+
+    if [[ $attempt -gt $max_attempts ]]; then
+        error "Infrastruktura nie jest gotowa po 150 sekundach"
+        return 1
+    fi
+}
+
+# Uruchomienie serwisów aplikacji
+start_services() {
+    log "Uruchamianie serwisów aplikacji..."
+
+    # Użyj głównego docker-compose.yml
+    docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d
+
+    log "Serwisy aplikacji uruchomione ✓"
+}
+
+# Sprawdzenie health check wszystkich serwisów
+health_check_all() {
+    log "Sprawdzanie health check wszystkich serwisów..."
+
+    "$PROJECT_ROOT/scripts/health-check-all.sh"
+}
+
+# Główna funkcja
+main() {
+    log "Rozpoczynam deployment na GitHub Actions Runner..."
+
+    check_docker_access
+    check_required_files
+    prepare_environment
+
+    start_infrastructure
+    start_services
+
+    # Czekaj na stabilizację
+    log "Czekam na stabilizację serwisów..."
+    sleep 30
+
+    # Health check
+    if health_check_all; then
+        log "Deployment zakończony sukcesem! 🎉"
+        log "Dostęp do serwisów:"
+        log "  - RTSP Capture: http://localhost:8001"
+        log "  - Example OTEL: http://localhost:8005"
+        log "  - Frame Tracking: http://localhost:8006"
+        log "  - Echo Service: http://localhost:8007"
+        log "  - GPU Demo: http://localhost:8008"
+        log "  - Prometheus: http://localhost
