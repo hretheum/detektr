@@ -15,6 +15,7 @@ SERVICES=(
     "frame-tracking"
     "base-template"
     "echo-service"
+    "rtsp-capture"
 )
 
 # Colors
@@ -147,6 +148,14 @@ main() {
         log "✓ base-template is healthy"
     else
         error "✗ base-template health check failed"
+        ((failed++))
+    fi
+
+    # Check rtsp-capture
+    if curl -sf http://localhost:8001/health >/dev/null; then
+        log "✓ rtsp-capture is healthy"
+    else
+        error "✗ rtsp-capture health check failed"
         ((failed++))
     fi
 
