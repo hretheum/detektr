@@ -4,9 +4,10 @@
 
 RTSP Capture Service is responsible for capturing video streams from IP cameras via RTSP protocol, buffering frames, and publishing them to the processing pipeline.
 
-**Base URL**: `http://localhost:8001`
+**Base URL**: `http://localhost:8001` (local) / `http://nebula:8001` (production)
 **Version**: 1.0.0
 **OpenAPI**: Available at `/docs` and `/redoc`
+**Status**: ✅ Deployed to production (Nebula server)
 
 ## Service Architecture
 
@@ -136,6 +137,7 @@ Service configuration via environment variables:
 |----------|-------------|---------|
 | `PORT` | Service port | `8001` |
 | `RTSP_URL` | Camera RTSP URL | `rtsp://localhost:8554/stream` |
+| | **Production (Reolink)**: | `rtsp://admin:****@192.168.1.195:554/Preview_01_main` |
 | `FRAME_BUFFER_SIZE` | Max frames in buffer | `100` |
 | `REDIS_HOST` | Redis hostname | `redis` |
 | `REDIS_PORT` | Redis port | `6379` |
@@ -212,14 +214,31 @@ docker run -d \
   ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
 ```
 
+### Production Deployment
+
+Service is automatically deployed via CI/CD pipeline:
+
+```bash
+# Trigger deployment
+git push origin main
+
+# Check status on Nebula
+ssh nebula "curl http://localhost:8001/health | jq"
+```
+
 ## Integration Example
 
 ```python
 import requests
 
-# Check service health
+# Check service health (local)
 health = requests.get("http://localhost:8001/health").json()
 print(f"Service status: {health['status']}")
+
+# Check service health (production)
+health = requests.get("http://nebula:8001/health").json()
+print(f"Service status: {health['status']}")
+# Note: Current status is "degraded" (Redis not initialized - expected)
 
 # Get metrics
 metrics = requests.get("http://localhost:8001/metrics").text

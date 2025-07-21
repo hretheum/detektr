@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **RTSP Capture Service** (Phase 2, Blocks 0-4)
+- **RTSP Capture Service** (Phase 2, Blocks 0-5 ✅ COMPLETED)
   - Core RTSP client with PyAV library
   - Auto-reconnect mechanism (5s default)
   - Circular frame buffer with zero-copy operations
@@ -19,14 +19,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Multi-stage Dockerfile (204MB optimized image)
   - GitHub Actions CI/CD workflow
   - API documentation
+  - **Block 5: Successful deployment to Nebula server**
+    - Service running at http://nebula:8001
+    - Reolink camera properly configured with /Preview_01_main endpoint
+    - RTSP URL: rtsp://192.168.1.195:554/Preview_01_main
+    - Service status: "degraded" (Redis not initialized - expected at this stage)
 - **Documentation Updates**
   - Updated Phase 2 task completion status
   - Added RTSP Capture API documentation
   - Updated README with current service status
+  - Synchronized all deployment documentation
 
 ### Changed
 - Docker Compose now uses GHCR images for all services
 - RTSP service configured on port 8001
+- Fixed Python import paths (relative to absolute) for containerized deployment
+- Fixed GitHub Actions build context (from services/rtsp-capture to root)
+- Updated RTSP path from /stream to /Preview_01_main for Reolink cameras
+
+### Fixed
+- "Could not import module 'src.main'" error in production deployment
+- ImportError with relative imports in containerized environment
+- Dockerfile COPY paths to use absolute paths from project root
+- CMD in Dockerfile changed from "src.main:app" to "main:app"
+- CI/CD pipeline missing dependencies (opentelemetry-instrumentation-redis==0.43b0)
+- Test imports failing due to src.shared module (added mocks)
 
 ## [0.2.0] - 2025-07-20
 

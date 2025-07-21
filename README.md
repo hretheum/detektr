@@ -67,7 +67,10 @@ Faza 1: Fundament z observability          ✅ [UKOŃCZONA + CI/CD]
   ✅ GPU demo service (YOLO v8)
 Faza 2: Akwizycja i storage                🚧 [W TRAKCIE]
   ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
-  ✅ RTSP Capture Service (Bloki 0-5 ukończone, CI/CD gotowe)
+  ✅ RTSP Capture Service (Bloki 0-5 ukończone, deployed on Nebula)
+    - Service running: http://nebula:8001
+    - Reolink camera configured with /Preview_01_main
+    - Status: "degraded" (Redis not initialized - expected)
   ⏳ PostgreSQL/TimescaleDB
   ⏳ Frame tracking implementation
 Faza 3: AI services podstawy               ⏳ [ZAPLANOWANA]
@@ -113,7 +116,7 @@ git push origin main
 ssh nebula "cd /opt/detektor && docker compose ps"
 
 # Health check wszystkich serwisów
-ssh nebula "curl -s http://localhost:8001/health | jq"  # rtsp-capture
+ssh nebula "curl -s http://localhost:8001/health | jq"  # rtsp-capture (✅ deployed)
 ssh nebula "curl -s http://localhost:8005/health | jq"  # example-otel
 ssh nebula "curl -s http://localhost:8006/health | jq"  # frame-tracking
 ssh nebula "curl -s http://localhost:8007/health | jq"  # echo-service
@@ -183,7 +186,7 @@ git commit    # Zapisz zmiany
 
 ## Porty Serwisów
 
-- **8001**: rtsp-capture ✅ (CI/CD ready)
+- **8001**: rtsp-capture ✅ (deployed on Nebula, status: degraded)
 - **8002**: face-recognition
 - **8003**: object-detection
 - **8004**: ha-bridge
@@ -211,7 +214,10 @@ git commit    # Zapisz zmiany
 
 **Faza 2 - W trakcie**:
 - ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
-- ✅ RTSP Capture Service (Bloki 0-5 ukończone, CI/CD gotowe)
+- ✅ RTSP Capture Service (Bloki 0-5 ukończone, deployed on Nebula)
+  - Deployment successful via CI/CD pipeline
+  - Reolink camera properly configured (rtsp://192.168.1.195:554/Preview_01_main)
+  - Service health: "degraded" (Redis not initialized - expected at this stage)
 - ✅ **NOWA DOKUMENTACJA**: Hybrydowa struktura deploymentu
 
 ## Kontrybuowanie

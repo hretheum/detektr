@@ -82,11 +82,14 @@ Zaimplementować wydajny serwis przechwytywania strumieni RTSP z kamer IP, z aut
 1. **✅ Deploy via deployment script**
    - **Metryka**: ✅ Automated deployment to Nebula via CI/CD
    - **Walidacja**: ✅ `git push origin main` triggers GitHub Actions
+   - **Status produkcyjny**: Service running on Nebula at port 8001
    - **Procedura**: [docs/deployment/services/rtsp-capture.md#deploy](docs/deployment/services/rtsp-capture.md#deploy)
 
 2. **✅ Konfiguracja RTSP stream na Nebuli**
    - **Metryka**: ✅ SOPS-encrypted configuration management
    - **Walidacja**: ✅ `.env.sops` contains RTSP configuration
+   - **RTSP URL**: `rtsp://admin:****@192.168.1.195:554/Preview_01_main` (Reolink camera)
+   - **Status**: Camera responds with RTSP/1.0 200 OK
    - **Procedura**: [docs/deployment/services/rtsp-capture.md#configuration](docs/deployment/services/rtsp-capture.md#configuration)
 
 3. **✅ Weryfikacja metryk w Prometheus**
@@ -113,9 +116,9 @@ git push origin main
 #### **📋 Walidacja sukcesu:**
 ```bash
 # Sprawdź deployment:
-curl http://nebula:8080/health
-curl http://nebula:8080/metrics
-curl http://nebula:8080/stream/status
+curl http://nebula:8001/health
+curl http://nebula:8001/metrics
+curl http://nebula:8001/stream/status
 ```
 
 #### **🔗 Linki do procedur:**
@@ -129,6 +132,8 @@ curl http://nebula:8080/stream/status
 - ✅ Automatic recovery po crash
 - ✅ Resource usage w limitach
 - ✅ Zero-downtime deployment via CI/CD
+- ✅ Poprawna konfiguracja Reolink RTSP URL (/Preview_01_main)
+- ✅ Status: "degraded" (Redis not initialized - expected at this stage)
 
 ## Całościowe metryki sukcesu zadania
 
