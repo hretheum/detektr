@@ -77,7 +77,7 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v5
       with:
-        context: services/rtsp-capture
+        context: .
         file: services/rtsp-capture/Dockerfile
         push: true
         tags: |
@@ -85,6 +85,8 @@ jobs:
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        build-args: |
+          SERVICE_PATH=services/rtsp-capture
 
     - name: Security scan (print only)
       uses: aquasecurity/trivy-action@master
