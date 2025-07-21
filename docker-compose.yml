@@ -148,6 +148,32 @@ services:
     depends_on:
       - redis
 
+  frame-buffer:
+    image: ghcr.io/hretheum/bezrobocie-detektor/frame-buffer:latest
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      SERVICE_NAME: frame-buffer
+      PORT: 8002
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      FRAME_QUEUE_NAME: frame_queue
+      DLQ_NAME: frame_dlq
+      MAX_BUFFER_SIZE: ${MAX_BUFFER_SIZE:-1000}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+
 volumes:
   redis-data:
   postgres-data:
