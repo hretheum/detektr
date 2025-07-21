@@ -39,10 +39,17 @@ warning() {
 main() {
     log "Starting LOCAL deployment on Nebula..."
 
-    # Check if running on Nebula
-    if [[ $(hostname) != "nebula" ]]; then
-        error "This script should only run on Nebula server!"
-        exit 1
+    # Check if running on Nebula (self-hosted runner or actual server)
+    if [[ "${SKIP_HOSTNAME_CHECK:-0}" != "1" ]]; then
+        local hostname=$(hostname)
+        if [[ "$hostname" != "nebula" ]] && [[ ! "$hostname" =~ ^(nebula|runner-|github-) ]]; then
+            error "This script should only run on Nebula server or self-hosted runner!"
+            error "Current hostname: $hostname"
+            warning "Set SKIP_HOSTNAME_CHECK=1 to bypass this check in CI/CD environments"
+            exit 1
+        fi
+    else
+        warning "Skipping hostname check (SKIP_HOSTNAME_CHECK=1)"
     fi
 
     # Check deployment directory
