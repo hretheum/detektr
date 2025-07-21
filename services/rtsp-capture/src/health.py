@@ -189,10 +189,9 @@ async def prometheus_metrics():
     Exposes all service metrics in Prometheus format.
     """
     # Ensure metrics are initialized
+    from observability import _init_metrics_once
+    from observability import active_connections_gauge as acg
     from prometheus_client import REGISTRY
-
-    from .observability import _init_metrics_once
-    from .observability import active_connections_gauge as acg
 
     # Initialize metrics if needed
     _init_metrics_once()
