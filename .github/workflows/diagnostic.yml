@@ -1,0 +1,114 @@
+name: Diagnostic - Check Skip Conditions
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  diagnose-skips:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Debug event information
+      run: |
+        echo "=== Event Debug Information ==="
+        echo "Event name: ${{ github.event_name }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "Base ref: ${{ github.base_ref }}"
+        echo "Head ref: ${{ github.head_ref }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "Actor: ${{ github.actor }}"
+
+    - name: Check branch conditions
+      run: |
+        echo "=== Branch Condition Check ==="
+        echo "Is main branch: ${{ github.ref == 'refs/heads/main' }}"
+        echo "Is develop branch: ${{ github.ref == 'refs/heads/develop' }}"
+        echo "Is PR: ${{ github.event_name == 'pull_request' }}"
+        echo "Is workflow dispatch: ${{ github.event_name == 'workflow_dispatch' }}"
+
+    - name: Check secrets availability
+      run: |
+        echo "=== Secrets Availability Check ==="
+        if [ -n "${{ secrets.KUBECONFIG }}" ]; then
+          echo "✅ KUBECONFIG secret is available"
+        else
+          echo "❌ KUBECONFIG secret is missing"
+        fi
+
+        if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+          echo "✅ SLACK_WEBHOOK_URL secret is available"
+        else
+          echo "❌ SLACK_WEBHOOK_URL secret is missing"
+        fi
+
+        if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
+          echo "✅ GITHUB_TOKEN is available"
+        else
+          echo "❌ GITHUB_TOKEN is missing"
+        fi
+
+    - name: Check path filters
+      run: |
+        echo "=== Path Filter Analysis ==="
+        echo "Checking if changes are in monitored paths..."
+
+        # Get changed files
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          git fetch origin ${{ github.base_ref }} --depth=1
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+        else
+          git fetch origin ${{ github.event.before }} --depth=1
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }}...HEAD)
+        fi
+
+        echo "Changed files:"
+        echo "$CHANGED_FILES"
+
+        # Check for RTSP-related changes
+        if echo "$CHANGED_FILES" | grep -q "^services/rtsp-capture/"; then
+          echo "✅ Changes include rtsp-capture service"
+        else
+          echo "❌ No changes to rtsp-capture service"
+        fi
+
+        # Check for workflow changes
+        if echo "$CHANGED_FILES" | grep -q "^\.github/workflows/"; then
+          echo "✅ Changes include workflow files"
+        else
+          echo "❌ No changes to workflow files"
+        fi
+
+    - name: Simulate job conditions
+      run: |
+        echo "=== Job Condition Simulation ==="
+
+        # performance-test condition
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "✅ performance-test would run (workflow_dispatch event)"
+        else
+          echo "❌ performance-test would be skipped (not workflow_dispatch)"
+        fi
+
+        # integration-test condition
+        if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          echo "✅ integration-test would run (PR or main branch)"
+        else
+          echo "❌ integration-test would be skipped (not PR and not main branch)"
+        fi
+
+        # deploy-staging condition
+        if [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+          echo "✅ deploy-staging would run (develop branch)"
+        else
+          echo "❌ deploy-staging would be skipped (not develop branch)"
+        fi
+
+        # deploy-production condition
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          echo "✅ deploy-production would run (main branch)"
+        else
+          echo "❌ deploy-production would be skipped (not main branch)"
+        fi
