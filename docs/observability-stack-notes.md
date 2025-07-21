@@ -59,7 +59,7 @@
 
 ## Deliverables
 
-✅ `/opt/detektor/docker-compose.observability-complete.yml` - Stack configuration (HOST NETWORKING)  
+✅ `/opt/detektor/docker-compose.observability-complete.yml` - Stack configuration (HOST NETWORKING)
 ✅ `/opt/detektor/docker-compose.observability-final.yml` - Stack configuration (BRIDGE - problemy z portami)
 ✅ `/opt/detektor/prometheus/prometheus.yml` - Prometheus config
 ✅ `/opt/detektor/grafana/provisioning/` - Dashboards i datasources
@@ -73,7 +73,7 @@
 ```bash
 # Observability stack (HOST NETWORK)
 prometheus (host network) - localhost:9090
-grafana (host network) - localhost:3000  
+grafana (host network) - localhost:3000
 jaeger (host network) - localhost:16686
 loki (host network) - localhost:3100
 promtail (host network)

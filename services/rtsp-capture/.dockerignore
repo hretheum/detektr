@@ -8,28 +8,23 @@ venv/
 env/
 ENV/
 .venv
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
+.cache
+nosetests.xml
+coverage.xml
 *.cover
-*.log
-
-# Development
-.git/
-.gitignore
-*.md
-docs/
-tests/
-.env
-.env.*
-!.env.example
+.hypothesis/
 
 # IDE
-.idea/
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
@@ -38,12 +33,42 @@ tests/
 .DS_Store
 Thumbs.db
 
-# Build artifacts
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Build
 build/
 dist/
 *.egg-info/
-.eggs/
 
-# Benchmarks and profiling
-*.prof
-.benchmark/
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Kubernetes
+k8s/
+helm/
+
+# Scripts
+scripts/

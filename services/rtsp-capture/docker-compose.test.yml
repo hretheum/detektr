@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rtsp-capture:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - PYTHONPATH=/app
+      - ENVIRONMENT=test
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./tests:/app/tests
+      - ./src:/app/src
+    command: pytest tests/ -v --cov=src --cov-report=term-missing
+
+  rtsp-simulator:
+    image: aler9/rtsp-simple-server:latest
+    ports:
+      - "8554:8554"
+    environment:
+      - RTSP_PROTOCOLS=tcp
+    volumes:
+      - ./test-videos:/videos:ro
+    command: >
+      sh -c "echo 'paths:' > /rtsp-simple-server.yml &&
+             echo '  test:' >> /rtsp-simple-server.yml &&
+             echo '    source: /videos/test.mp4' >> /rtsp-simple-server.yml &&
+             echo '    sourceOnDemand: no' >> /rtsp-simple-server.yml &&
+             rtsp-simple-server /rtsp-simple-server.yml"

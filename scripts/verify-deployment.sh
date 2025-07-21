@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail
+shopt -s expand_aliases
 
 # Deployment verification script for Nebula
 # This script verifies all services are running and healthy

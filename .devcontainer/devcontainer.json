@@ -41,16 +41,7 @@
     }
   },
 
-  "forwardPorts": [
-    8001,
-    8002,
-    8003,
-    8004,
-    8005,
-    9090,
-    16686,
-    3000
-  ],
+  "forwardPorts": [8001, 8002, 8003, 8004, 8005, 9090, 16686, 3000],
 
   "postCreateCommand": "pip install -e . && pre-commit install",
 

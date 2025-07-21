@@ -13,7 +13,7 @@ The auto-deployment system uses **self-hosted GitHub Runner** on Nebula, elimina
 ### 2. **Service Discovery**
 - **Source**: `docker-compose.yml` used as central service registry
 - **Discovery**: GitHub Actions workflow parses `docker-compose.yml` to identify deployable services
-- **Services**: 
+- **Services**:
   - `rtsp-capture`
   - `frame-tracking`
   - `base-template`
