@@ -119,6 +119,66 @@ Zaprojektować i zaimplementować wydajny system przechowywania metadanych klate
 - **pgbouncer**: Connection pooling
 - **pg_stat_statements**: Query analysis
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/metadata-storage.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/metadata-storage.md#deploy](docs/deployment/services/metadata-storage.md#deploy)
+
+2. **[ ] Konfiguracja TimescaleDB na Nebuli**
+   - **Metryka**: TimescaleDB container running z persistence
+   - **Walidacja**: `.env.sops` contains database configuration
+   - **Procedura**: [docs/deployment/services/metadata-storage.md#configuration](docs/deployment/services/metadata-storage.md#configuration)
+
+3. **[ ] Weryfikacja metryk w Prometheus**
+   - **Metryka**: Database metrics visible at http://nebula:9090
+   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=pg_up`
+   - **Procedura**: [docs/deployment/services/metadata-storage.md#monitoring](docs/deployment/services/metadata-storage.md#monitoring)
+
+4. **[ ] Migracje bazy danych**
+   - **Metryka**: All migrations applied successfully
+   - **Walidacja**: `alembic current` shows latest version
+   - **Procedura**: [docs/deployment/services/metadata-storage.md#migrations](docs/deployment/services/metadata-storage.md#migrations)
+
+5. **[ ] Performance test na serwerze**
+   - **Metryka**: 10k+ inserts/second verified
+   - **Walidacja**: Performance tests via CI/CD
+   - **Procedura**: [docs/deployment/services/metadata-storage.md#load-testing](docs/deployment/services/metadata-storage.md#load-testing)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+ssh nebula "docker ps | grep timescaledb"
+ssh nebula "docker exec timescaledb psql -U postgres -c '\\dx'"
+curl http://nebula:9187/metrics  # postgres_exporter
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/metadata-storage.md](docs/deployment/services/metadata-storage.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ TimescaleDB działa stabilnie na Nebuli 24/7
+- ✅ Persistence i automated backups
+- ✅ Metryki dostępne w Prometheus/Grafana
+- ✅ Performance 10k+ inserts/second
+- ✅ Automatic failover <30s
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

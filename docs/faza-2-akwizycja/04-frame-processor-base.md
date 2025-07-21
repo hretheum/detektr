@@ -157,67 +157,65 @@ Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwis
    - **Guardrails**: Security scanning enabled
    - **Czas**: 1h
 
-### Blok 6: DEPLOYMENT NA NEBULA I WALIDACJA ⚠️
+### Blok 6: DEPLOYMENT NA SERWERZE NEBULA
+
+#### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/frame-processor-base.md`
 
 #### Zadania atomowe
 
-1. **[ ] Deploy example processor na Nebuli**
-   - **Metryka**: Example processor running
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Deploy example
-     ssh nebula "cd /opt/detektor && docker-compose -f docker-compose.yml -f docker-compose.example.yml up -d example-processor"
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/frame-processor-base.md#deploy](docs/deployment/services/frame-processor-base.md#deploy)
 
-     # Check health
-     curl -s http://nebula:8099/health | jq .
-     # {"status": "healthy", "processor": "example"}
-     ```
-   - **Quality Gate**: Service healthy
-   - **Guardrails**: Resource limits set
-   - **Czas**: 1h
+2. **[ ] Deploy example processor**
+   - **Metryka**: Example processor running on port 8099
+   - **Walidacja**: `curl http://nebula:8099/health` returns healthy
+   - **Procedura**: [docs/deployment/services/frame-processor-base.md#example](docs/deployment/services/frame-processor-base.md#example)
 
-2. **[ ] Trace validation na produkcji**
-   - **Metryka**: Complete traces visible
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Generate test load
-     ssh nebula "docker exec example-processor python -m base_processor.generate_load --duration 60"
+3. **[ ] Weryfikacja metryk w Prometheus**
+   - **Metryka**: Processor metrics visible at http://nebula:9090
+   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=processor_frames_processed_total`
+   - **Procedura**: [docs/deployment/services/frame-processor-base.md#monitoring](docs/deployment/services/frame-processor-base.md#monitoring)
 
-     # Check traces
-     curl -s "http://nebula:16686/api/traces?service=example-processor" | jq '.[0].spans | length'
-     # Multiple spans per trace
-     ```
-   - **Quality Gate**: All methods traced
-   - **Guardrails**: <1% trace drops
-   - **Czas**: 1h
+4. **[ ] Integracja z Jaeger tracing**
+   - **Metryka**: Traces visible at http://nebula:16686
+   - **Walidacja**: `curl http://nebula:16686/api/traces?service=example-processor`
+   - **Procedura**: [docs/deployment/services/frame-processor-base.md#tracing](docs/deployment/services/frame-processor-base.md#tracing)
 
-3. **[ ] Metrics validation**
-   - **Metryka**: All base metrics exported
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Check metrics
-     curl -s http://nebula:8099/metrics | grep -E "processor_frames_processed|processor_errors_total|processor_processing_time"
-     # All base metrics present
+5. **[ ] Performance baseline test**
+   - **Metryka**: <1ms overhead per frame verified
+   - **Walidacja**: Benchmark tests via CI/CD
+   - **Procedura**: [docs/deployment/services/frame-processor-base.md#benchmarks](docs/deployment/services/frame-processor-base.md#benchmarks)
 
-     # Verify in Prometheus
-     curl -s "http://nebula:9090/api/v1/query?query=processor_frames_processed_total" | jq .data.result
-     ```
-   - **Quality Gate**: Metrics updating
-   - **Guardrails**: No metric gaps
-   - **Czas**: 1h
+#### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 6 wykonuje się automatycznie:
+git push origin main
+```
 
-4. **[ ] Performance baseline na Nebuli**
-   - **Metryka**: Processing overhead measured
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Run benchmark
-     ssh nebula "docker exec example-processor python -m base_processor.benchmark --frames 10000"
-     # Overhead: <1ms per frame
-     # Throughput: >1000 fps
-     ```
-   - **Quality Gate**: Meets performance targets
-   - **Guardrails**: No memory leaks
-   - **Czas**: 2h
+#### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź deployment:
+curl http://nebula:8099/health
+curl http://nebula:8099/metrics
+curl http://nebula:8099/ready
+```
+
+#### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/frame-processor-base.md](docs/deployment/services/frame-processor-base.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+#### **🔍 Metryki sukcesu bloku:**
+- ✅ Base processor package published to GitHub Packages
+- ✅ Example processor running on Nebula
+- ✅ All base metrics exported to Prometheus
+- ✅ Complete traces in Jaeger
+- ✅ Performance baseline established
+- ✅ Zero-downtime deployment via CI/CD
 
 ## Całościowe metryki sukcesu zadania
 

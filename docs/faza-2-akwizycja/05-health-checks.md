@@ -120,88 +120,69 @@ Zaimplementować kompleksowy system health checks dla wszystkich serwisów, z in
    - **Guardrails**: No alert storms
    - **Czas**: 1h
 
-### Blok 5: DEPLOYMENT NA NEBULA ⚠️
+### Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+#### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/health-monitoring.md`
 
 #### Zadania atomowe
 
-1. **[ ] Deploy Consul na Nebuli (jeśli wybrane)**
-   - **Metryka**: Consul cluster operational
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # If using Consul
-     ssh nebula "docker-compose -f docker-compose.consul.yml up -d"
-     ssh nebula "docker exec consul consul members"
-     # Shows cluster members
-     ```
-   - **Quality Gate**: Cluster healthy
-   - **Guardrails**: Data persistence configured
-   - **Czas**: 2h
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/health-monitoring.md#deploy](docs/deployment/services/health-monitoring.md#deploy)
 
-2. **[ ] Integracja health checks we wszystkich serwisach**
-   - **Metryka**: All services report health
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Check each service health endpoint
-     for port in 8001 8002 8003 8004 8005 8006; do
-       echo "Checking port $port:"
-       curl -s http://nebula:$port/health | jq .
-     done
-     # All return healthy status
-     ```
-   - **Quality Gate**: 100% services have health
-   - **Guardrails**: Standardized format
-   - **Czas**: 2h
+2. **[ ] Konfiguracja health checks dla wszystkich serwisów**
+   - **Metryka**: All services report health status
+   - **Walidacja**: `/health` endpoints return proper JSON
+   - **Procedura**: [docs/deployment/services/health-monitoring.md#configuration](docs/deployment/services/health-monitoring.md#configuration)
 
-3. **[ ] Configure Docker health checks**
-   - **Metryka**: Docker-native health monitoring
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     ssh nebula "docker ps --format 'table {{.Names}}\t{{.Status}}'"
-     # All show (healthy) in status
+3. **[ ] Weryfikacja w Prometheus**
+   - **Metryka**: `up` metric shows 1 for all services
+   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=up`
+   - **Procedura**: [docs/deployment/services/health-monitoring.md#monitoring](docs/deployment/services/health-monitoring.md#monitoring)
 
-     # Check docker-compose.yml includes:
-     # healthcheck:
-     #   test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-     #   interval: 30s
-     #   timeout: 10s
-     #   retries: 3
-     ```
-   - **Quality Gate**: All containers monitored
-   - **Guardrails**: Proper intervals set
-   - **Czas**: 1h
+4. **[ ] Grafana dashboard dla health**
+   - **Metryka**: Service health dashboard operational
+   - **Walidacja**: Dashboard shows all services status
+   - **Procedura**: [docs/deployment/services/health-monitoring.md#dashboard](docs/deployment/services/health-monitoring.md#dashboard)
 
-4. **[ ] Prometheus health monitoring**
-   - **Metryka**: Health metrics in Prometheus
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Query health metrics
-     curl -s "http://nebula:9090/api/v1/query?query=up" | jq '.data.result[] | {job: .metric.job, value: .value[1]}'
-     # All services show value: "1"
+5. **[ ] Test automated recovery**
+   - **Metryka**: Services auto-restart on failure
+   - **Walidacja**: Kill service and verify restart <30s
+   - **Procedura**: [docs/deployment/services/health-monitoring.md#recovery](docs/deployment/services/health-monitoring.md#recovery)
 
-     # Check health dashboard
-     open http://nebula:3000/d/health/service-health
-     ```
-   - **Quality Gate**: All services scraped
-   - **Guardrails**: No scrape failures
-   - **Czas**: 1h
+#### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
 
-5. **[ ] End-to-end health validation**
-   - **Metryka**: Full system health check
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Run system health check script
-     ssh nebula "/opt/detektor/scripts/system-health-check.sh"
-     # All checks: PASS
+#### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź health wszystkich serwisów:
+./scripts/health-check-all.sh
 
-     # Simulate service failure
-     ssh nebula "docker pause rtsp-capture"
-     sleep 35
-     ssh nebula "docker ps | grep rtsp-capture"
-     # Should be restarted by Docker
-     ```
-   - **Quality Gate**: Recovery works
-   - **Guardrails**: No cascading failures
-   - **Czas**: 2h
+# Sprawdź w Prometheus:
+curl http://nebula:9090/api/v1/query?query=up | jq
+
+# Sprawdź Docker health:
+ssh nebula "docker ps --format 'table {{.Names}}\\t{{.Status}}'"
+```
+
+#### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/health-monitoring.md](docs/deployment/services/health-monitoring.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+#### **🔍 Metryki sukcesu bloku:**
+- ✅ All services implement /health endpoints
+- ✅ Docker health checks configured
+- ✅ Prometheus scraping all services
+- ✅ Grafana dashboard shows system health
+- ✅ Automated recovery working (<30s)
+- ✅ Zero-downtime deployment via CI/CD
 
 ## Całościowe metryki sukcesu zadania
 

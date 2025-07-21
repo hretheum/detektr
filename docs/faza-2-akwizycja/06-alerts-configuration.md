@@ -199,6 +199,70 @@ Skonfigurować system alertów dla krytycznych metryk pipeline'u z automatyczną
 
 3. **Czas rollback**: <5 min
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+
+**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/alerts-configuration.md`
+
+### Zadania atomowe
+
+1. **[ ] Deploy via CI/CD pipeline**
+   - **Metryka**: Automated deployment to Nebula via GitHub Actions
+   - **Walidacja**: `git push origin main` triggers deployment
+   - **Procedura**: [docs/deployment/services/alerts-configuration.md#deploy](docs/deployment/services/alerts-configuration.md#deploy)
+
+2. **[ ] Konfiguracja Alertmanager na Nebuli**
+   - **Metryka**: Alertmanager running with routing rules
+   - **Walidacja**: `curl http://nebula:9093/api/v2/status`
+   - **Procedura**: [docs/deployment/services/alerts-configuration.md#configuration](docs/deployment/services/alerts-configuration.md#configuration)
+
+3. **[ ] Upload alert rules do Prometheus**
+   - **Metryka**: All alert rules loaded and active
+   - **Walidacja**: `curl http://nebula:9090/api/v1/rules`
+   - **Procedura**: [docs/deployment/services/alerts-configuration.md#rules](docs/deployment/services/alerts-configuration.md#rules)
+
+4. **[ ] Test alerting pipeline**
+   - **Metryka**: Test alert fires and is received
+   - **Walidacja**: Trigger test alert and verify notification
+   - **Procedura**: [docs/deployment/services/alerts-configuration.md#testing](docs/deployment/services/alerts-configuration.md#testing)
+
+5. **[ ] Grafana alert dashboard**
+   - **Metryka**: Alert status visible in Grafana
+   - **Walidacja**: Dashboard shows firing/pending alerts
+   - **Procedura**: [docs/deployment/services/alerts-configuration.md#dashboard](docs/deployment/services/alerts-configuration.md#dashboard)
+
+### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+```bash
+# Cały Blok 5 wykonuje się automatycznie:
+git push origin main
+```
+
+### **📋 Walidacja sukcesu:**
+```bash
+# Sprawdź status Alertmanager:
+curl http://nebula:9093/api/v2/status | jq
+
+# Sprawdź załadowane reguły:
+curl http://nebula:9090/api/v1/rules | jq '.data.groups[].rules[] | {alert: .name, state: .state}'
+
+# Test alert:
+amtool --alertmanager.url=http://nebula:9093 alert add test
+```
+
+### **🔗 Linki do procedur:**
+- **Deployment Guide**: [docs/deployment/services/alerts-configuration.md](docs/deployment/services/alerts-configuration.md)
+- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ Alertmanager operational na Nebuli
+- ✅ All frame pipeline alerts configured
+- ✅ Notification channels working
+- ✅ Alert dashboard in Grafana
+- ✅ <1min alert response time
+- ✅ Zero-downtime deployment via CI/CD
+
 ## Następne kroki
 
 Po ukończeniu tej fazy, przejdź do:
