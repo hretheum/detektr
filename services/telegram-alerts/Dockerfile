@@ -9,8 +9,9 @@ RUN pip install --no-cache-dir \
     redis==5.0.1 \
     psutil==5.9.6
 
-# Copy monitoring script
-COPY telegram-monitor.py /app/
+# Copy monitoring script and dependencies
+COPY services/telegram-alerts/telegram-monitor.py /app/
+COPY services/telegram-alerts/redis_sentinel.py /app/
 
 # Make executable
 RUN chmod +x /app/telegram-monitor.py
