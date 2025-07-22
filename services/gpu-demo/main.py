@@ -11,18 +11,19 @@ This service demonstrates:
 import io
 import os
 import time
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import structlog
 import torch
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
 from pydantic import BaseModel, Field
 from telemetry import (
-    ObservabilityMiddleware,
+    correlation_id_context,
     get_or_create_correlation_id,
     gpu_inference_duration,
     gpu_inference_total,
@@ -300,8 +301,31 @@ app = FastAPI(
 )
 
 # Add middleware
-app.add_middleware(ObservabilityMiddleware)
 app.middleware("http")(track_metrics_middleware)
+
+
+# Add observability middleware
+@app.middleware("http")
+async def observability_middleware(request: Request, call_next):
+    """Middleware for correlation ID propagation and logging."""
+    # Extract or create correlation ID
+    correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
+    correlation_id_context.set(correlation_id)
+
+    # Add to structlog context
+    structlog.contextvars.bind_contextvars(
+        correlation_id=correlation_id,
+        path=request.url.path,
+        method=request.method,
+    )
+
+    # Process request
+    response = await call_next(request)
+
+    # Add correlation ID to response
+    response.headers["X-Correlation-ID"] = correlation_id
+
+    return response
 
 
 # API Endpoints
