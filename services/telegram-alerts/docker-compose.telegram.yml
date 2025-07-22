@@ -3,7 +3,7 @@ services:
     build:
       context: services/telegram-alerts
       dockerfile: Dockerfile
-    image: ghcr.io/hretheum/bezrobocie-detektor/telegram-alerts:latest
+    image: telegram-alerts:latest
     container_name: detektor-telegram-alerts
     restart: unless-stopped
     environment:

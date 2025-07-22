@@ -31,7 +31,14 @@ class TelegramMonitor:
         )
 
         # Services
-        self.docker_client = docker.from_env()
+        # Fix for Docker socket connection in container
+        try:
+            # Try different connection methods
+            self.docker_client = docker.DockerClient(base_url='unix:///var/run/docker.sock')
+        except Exception as e:
+            print(f"[WARNING] Failed to connect to Docker daemon: {e}")
+            print("[WARNING] Container monitoring will be disabled")
+            self.docker_client = None
         self.redis_client = redis.Redis(
             host=os.getenv("REDIS_HOST", "redis"),
             port=int(os.getenv("REDIS_PORT", "6379")),
@@ -125,6 +132,9 @@ class TelegramMonitor:
     async def check_containers(self):
         """Monitor container health and restarts."""
         alerts = []
+
+        if not self.docker_client:
+            return alerts
 
         try:
             containers = self.docker_client.containers.list(all=True)
