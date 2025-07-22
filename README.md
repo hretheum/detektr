@@ -75,7 +75,11 @@ Faza 2: Akwizycja i storage                🚧 [W TRAKCIE]
     - Redis Streams backend with persistence
     - Full observability (Prometheus + OpenTelemetry)
     - DLQ support, 80k fps, 0.01ms latency
-  ⏳ Redis/RabbitMQ Configuration
+  ✅ Redis/RabbitMQ Configuration (Blok 0 ukończony)
+    - Disk space optimized (cleaned 22GB, extended by 100GB)
+    - LVM volumes created for data persistence
+    - Docker networks unified (fixed multi-network issue)
+    - Telegram monitoring deployed (disk, Redis alerts)
   ⏳ PostgreSQL/TimescaleDB
   ⏳ Frame tracking implementation
 Faza 3: AI services podstawy               ⏳ [ZAPLANOWANA]

@@ -370,7 +370,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 
 #### Zadania i Metryki
 
-1. **Implementacja RTSP capture service z OpenTelemetry** *(IN PROGRESS - Block 0 completed)*
+1. **Implementacja RTSP capture service z OpenTelemetry** ✅ **COMPLETED**
    - **Metryki**:
      - FPS capture rate: 10-30 fps
      - Frame loss: <0.1%
@@ -383,6 +383,10 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      ```
 
    - **Sukces**: Stable 10+ FPS, traces pokazują każdą klatkę
+   - **Status produkcyjny**:
+     - Service running: http://nebula:8001 ✅
+     - Reolink camera configured ✅
+     - Status: "degraded" (waiting for Redis) ✅
    - **[Szczegóły →](docs/faza-2-akwizycja/01-rtsp-capture-service.md)**
    - **Completed blocks**:
      - [x] Block 0: Prerequisites (ADR, API spec, tests, environment setup)
@@ -410,7 +414,26 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - CI/CD pipeline: frame-buffer-deploy.yml ✅
    - **[Szczegóły →](docs/faza-2-akwizycja/02-frame-buffer-redis.md)**
 
-3. **Setup PostgreSQL/TimescaleDB z monitoringiem**
+3. **Redis/RabbitMQ Configuration** ✅ **COMPLETED**
+   - **Metryki**:
+     - Disk space: +100GB extended, 22GB cleaned
+     - Redis memory limit: 4GB configured
+     - Monitoring: Telegram alerts active
+   - **Walidacja**:
+     ```bash
+     ssh nebula "df -h /"  # 154GB free
+     ssh nebula "docker exec detektor-redis-1 redis-cli INFO memory"
+     curl -s http://nebula:9090/metrics | grep redis
+     ```
+   - **Sukces**: All services in single network, monitoring active
+   - **Status produkcyjny**:
+     - LVM volumes created: /data/redis (50GB), /data/postgres (100GB), /data/frames (50GB)
+     - Docker networks unified (fixed multi-network issue)
+     - Telegram alerts deployed (disk >80%, Redis >3.5GB)
+     - SOPS encryption configured
+   - **[Szczegóły →](docs/faza-2-akwizycja/02-redis-rabbitmq-config.md)**
+
+4. **Setup PostgreSQL/TimescaleDB z monitoringiem**
    - **Metryki**:
      - Connection pool: <80% utilized
      - Query latency p99: <100ms
@@ -425,7 +448,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Hypertable utworzona, continuous aggregates działają
    - **[Szczegóły →](docs/faza-2-akwizycja/03-postgresql-timescale.md)**
 
-4. **Frame tracking z distributed tracing od wejścia**
+5. **Frame tracking z distributed tracing od wejścia**
    - **Metryka**: Każda klatka ma trace_id i span przez cały pipeline
    - **Walidacja**:
 
@@ -438,7 +461,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: 100% klatek ma kompletny trace
    - **[Szczegóły →](docs/faza-2-akwizycja/04-frame-tracking.md)**
 
-5. **Dashboard: Frame Pipeline Overview**
+6. **Dashboard: Frame Pipeline Overview**
    - **Metryki na dashboardzie**:
      - Frames per second (live)
      - Processing latency histogram
@@ -448,7 +471,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
    - **Sukces**: Wszystkie panele pokazują dane real-time
    - **[Szczegóły →](docs/faza-2-akwizycja/05-dashboard-frame-pipeline.md)**
 
-6. **Alerty: frame drop, latency, queue size**
+7. **Alerty: frame drop, latency, queue size**
    - **Alerty**:
      - Frame drop rate > 1%
      - Processing latency p95 > 200ms

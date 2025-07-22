@@ -38,16 +38,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Service running at http://nebula:8002
     - Redis backend on port 6379 with persistence
     - All health checks passing
+- **Redis/RabbitMQ Configuration** (Phase 2, Block 0 ✅ COMPLETED)
+  - Disk space optimization (cleaned 22GB Docker cache)
+  - System partition extended by 100GB
+  - Created LVM volumes for data persistence:
+    - /data/redis (50GB) - Redis data
+    - /data/postgres (100GB) - PostgreSQL data
+    - /data/frames (50GB) - Frame storage
+  - Docker compose override for log rotation
+  - Redis memory limit set to 4GB
+  - Telegram monitoring service deployed:
+    - Disk space alerts (threshold: 80%)
+    - Redis memory alerts (threshold: 3.5GB)
+    - Container health monitoring (disabled due to Docker socket issue)
+  - Fixed Docker network issue - all containers now in single network
+  - SOPS encryption configured for secrets
 - **Documentation Updates**
   - Updated Phase 2 task completion status
   - Added RTSP Capture API documentation
   - Added Frame Buffer deployment documentation
+  - Added Telegram alerts setup documentation
+  - Added disk expansion guide for Nebula
   - Updated README with current service status
   - Synchronized all deployment documentation
 
 ### Changed
 - Docker Compose now uses GHCR images for all services
 - RTSP service configured on port 8001
+- Docker network configuration changed to external: true to prevent duplicate networks
 - Fixed Python import paths (relative to absolute) for containerized deployment
 - Fixed GitHub Actions build context (from services/rtsp-capture to root)
 - Updated RTSP path from /stream to /Preview_01_main for Reolink cameras
