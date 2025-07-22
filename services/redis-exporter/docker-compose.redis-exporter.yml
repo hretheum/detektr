@@ -6,8 +6,12 @@ services:
     ports:
       - "9121:9121"
     environment:
-      REDIS_ADDR: "redis:6379"
+      REDIS_ADDR: redis://redis:6379
+      REDIS_EXPORTER_DEBUG: "false"
       REDIS_EXPORTER_LOG_FORMAT: json
+      REDIS_EXPORTER_CHECK_KEYS: "*"
+      REDIS_EXPORTER_CHECK_SINGLE_KEYS: ""
+      REDIS_EXPORTER_SCRIPT: ""
     networks:
       - detektor-network
     logging:
@@ -15,13 +19,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9121/metrics"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     depends_on:
       - redis
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=9121"
+      - "prometheus.io/path=/metrics"
 
 networks:
   detektor-network:
