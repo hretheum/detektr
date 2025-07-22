@@ -369,6 +369,10 @@ main() {
     log "Czekam na stabilizację serwisów..."
     sleep 30
 
+    # Dodatkowy czas dla Frame Tracking (potrzebuje połączenia z DB)
+    log "Dodatkowy czas dla serwisów wymagających bazy danych..."
+    sleep 30
+
     # Health check
     if health_check_all; then
         log "Deployment zakończony sukcesem! 🎉"

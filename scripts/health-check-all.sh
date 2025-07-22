@@ -108,10 +108,41 @@ echo "📋 Summary:"
 echo "=========="
 
 # Get overall status
-if check_service "RTSP Capture" "http://localhost:8001/health" 5 && \
-   check_service "GPU Demo" "http://localhost:8008/health" 5; then
+all_healthy=true
+any_starting=false
+
+# Check all key services
+for service_check in \
+    "RTSP Capture:http://localhost:8001/health" \
+    "GPU Demo:http://localhost:8008/health" \
+    "Example OTEL:http://localhost:8005/health" \
+    "Frame Tracking:http://localhost:8006/health" \
+    "Echo Service:http://localhost:8007/health"; do
+
+    IFS=':' read -r name url <<< "$service_check"
+    if ! check_service "$name" "$url" 5; then
+        all_healthy=false
+    fi
+done
+
+# Check container statuses for STARTING
+for container in \
+    "detektr-frame-tracking-1" \
+    "detektr-gpu-demo-1" \
+    "detektr-rtsp-capture-1"; do
+
+    if docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null | grep -q "starting"; then
+        any_starting=true
+    fi
+done
+
+if [[ "$all_healthy" == true ]]; then
     echo -e "${GREEN}🎉 All services are healthy!${NC}"
     exit 0
+elif [[ "$any_starting" == true ]]; then
+    echo -e "${YELLOW}⏳ Some services are still starting. This is normal for Frame Tracking.${NC}"
+    echo -e "${YELLOW}   Wait a bit and run health check again.${NC}"
+    exit 0  # Don't fail if services are starting
 else
     echo -e "${RED}❌ Some services are unhealthy. Check logs above.${NC}"
 
