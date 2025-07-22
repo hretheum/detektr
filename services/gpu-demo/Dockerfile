@@ -1,7 +1,19 @@
-# Multi-stage build for GPU demo service
-# Optimized for faster builds - models downloaded at runtime
+# Multi-stage optimized build for GPU demo service
+# Optimized for faster builds with wheel caching
 
-# Use slim Python image for faster builds
+# Stage 1: Download wheels separately for better caching
+FROM python:3.11-slim AS wheel-downloader
+
+WORKDIR /wheels
+
+# Copy only requirements to maximize cache hit
+COPY services/gpu-demo/requirements.txt .
+
+# Download wheels without installing - this can be cached
+RUN pip download --only-binary :all: -d /wheels -r requirements.txt || \
+    pip download -d /wheels -r requirements.txt
+
+# Stage 2: Builder with pre-downloaded wheels
 FROM python:3.11-slim AS builder
 
 # Install build dependencies
@@ -15,47 +27,28 @@ WORKDIR /app
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy requirements first for better caching - context is project root
+# Copy wheels from previous stage
+COPY --from=wheel-downloader /wheels /wheels
+
+# Copy requirements
 COPY services/gpu-demo/requirements.txt .
 
-# Install dependencies
+# Install from pre-downloaded wheels (much faster)
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir --find-links /wheels -r requirements.txt
 
 # Production stage - using slim image for fast builds
 # Note: This won't have CUDA support out of the box
 # For GPU support, use nvidia/cuda base image
 FROM python:3.11-slim
 
-# Install runtime dependencies for OpenCV and GUI libraries
+# Install only essential runtime dependencies
 RUN apt-get update && apt-get install -y \
+    # OpenCV minimal dependencies
     libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
     libgl1-mesa-glx \
-    libglu1-mesa \
-    libglib2.0-0 \
-    libnss3 \
-    libnspr4 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libdbus-1-3 \
-    libxkbcommon0 \
-    libatspi2.0-0 \
-    libx11-6 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
-    libgbm1 \
-    libxcb1 \
-    libxss1 \
-    libgtk-3-0 \
-    libasound2 \
+    libgomp1 \
+    # System monitoring
     curl \
     && rm -rf /var/lib/apt/lists/*
 

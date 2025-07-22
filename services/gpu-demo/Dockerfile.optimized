@@ -1,31 +1,25 @@
-# Optimized multi-stage build for GPU demo service
-# Strategy: Separate base dependencies from ML dependencies for better caching
+# Multi-stage optimized build for GPU demo service
+# Strategy: Use pre-built wheels, minimize layers, optimize caching
 
-# Base image with CUDA support
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04 AS cuda-base
+# Stage 1: Download wheels separately for better caching
+FROM python:3.11-slim AS wheel-downloader
 
-# Install Python and system dependencies once
+WORKDIR /wheels
+
+# Copy only requirements to maximize cache hit
+COPY services/gpu-demo/requirements.txt .
+
+# Download wheels without installing - this can be cached
+RUN pip download --only-binary :all: -d /wheels -r requirements.txt || \
+    pip download -d /wheels -r requirements.txt
+
+# Stage 2: Builder with pre-downloaded wheels
+FROM python:3.11-slim AS builder
+
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
-    python3.11 \
-    python3.11-venv \
-    python3-pip \
-    curl \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
-    libglu1-mesa \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
-
-# Set Python 3.11 as default
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-
-# Create non-root user
-RUN useradd -m -u 1000 appuser
-
-# Stage 1: Base dependencies (FastAPI, observability, etc.)
-FROM cuda-base AS base-deps
 
 WORKDIR /app
 
@@ -33,55 +27,61 @@ WORKDIR /app
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy and install base requirements first (these rarely change)
-COPY services/gpu-demo/requirements-base.txt .
+# Copy wheels from previous stage
+COPY --from=wheel-downloader /wheels /wheels
+
+# Copy requirements
+COPY services/gpu-demo/requirements.txt .
+
+# Install from pre-downloaded wheels (much faster)
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements-base.txt
+    pip install --no-cache-dir --find-links /wheels -r requirements.txt
 
-# Stage 2: ML dependencies (PyTorch, etc.)
-FROM base-deps AS ml-deps
+# Stage 3: Minimal runtime image
+FROM python:3.11-slim
 
-# Copy and install ML requirements (these are heavy)
-COPY services/gpu-demo/requirements-ml.txt .
-RUN pip install --no-cache-dir -r requirements-ml.txt
+# Install only essential runtime dependencies
+RUN apt-get update && apt-get install -y \
+    # OpenCV dependencies (minimal set)
+    libglib2.0-0 \
+    libgl1-mesa-glx \
+    libgomp1 \
+    # System monitoring
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Optional: Pre-download the YOLO model
-RUN python3 -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
-
-# Stage 3: Production image
-FROM cuda-base AS production
+# Create non-root user
+RUN useradd -m -u 1000 appuser
 
 WORKDIR /app
 
-# Copy virtual environment with all dependencies
-COPY --from=ml-deps /opt/venv /opt/venv
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-
-# Copy pre-downloaded models
-COPY --from=ml-deps /root/.cache/torch /home/appuser/.cache/torch
-COPY --from=ml-deps /root/.cache/ultralytics /home/appuser/.cache/ultralytics
 
 # Copy application code
 COPY --chown=appuser:appuser services/gpu-demo/ .
 
-# Fix permissions
-RUN chown -R appuser:appuser /home/appuser /app
+# Create model cache directory
+RUN mkdir -p /app/.cache && chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser
 
+# Environment variables
+ENV PYTHONUNBUFFERED=1 \
+    SERVICE_NAME=gpu-demo \
+    SERVICE_VERSION=0.1.0 \
+    # Optimize PyTorch for CPU if no GPU
+    OMP_NUM_THREADS=4 \
+    MKL_NUM_THREADS=4
+
 # Expose port
 EXPOSE 8008
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV SERVICE_NAME=gpu-demo
-ENV SERVICE_VERSION=0.1.0
-ENV YOLO_VERBOSE=False
-
-# Health check with curl from venv
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8008/health')" || exit 1
+    CMD curl -f http://localhost:8008/health || exit 1
 
 # Run the application
 CMD ["python3", "-u", "main.py"]
