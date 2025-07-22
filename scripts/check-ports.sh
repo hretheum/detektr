@@ -23,18 +23,29 @@ warning() {
     echo -e "${YELLOW}[WARNING]${NC} $*"
 }
 
-# Porty używane przez Detektor
+# Porty używane przez Detektor - WSZYSTKIE z docker-compose
 DETEKTOR_PORTS=(
     "5432:PostgreSQL"
-    "6379:Redis"
+    "5050:pgAdmin"
+    "6379:Redis-Master"
+    "6380:Redis-Slave"
+    "26379:Redis-Sentinel-1"
+    "26380:Redis-Sentinel-2"
+    "26381:Redis-Sentinel-3"
     "8001:RTSP-Capture"
     "8005:Example-OTEL"
     "8006:Frame-Tracking"
     "8007:Echo-Service"
     "8008:GPU-Demo"
     "9090:Prometheus"
+    "9121:Redis-Exporter"
+    "9400:DCGM-Exporter"
     "3000:Grafana"
-    "16686:Jaeger"
+    "3100:Loki"
+    "16686:Jaeger-UI"
+    "14268:Jaeger-Thrift"
+    "4317:OTLP-gRPC"
+    "4318:OTLP-HTTP"
 )
 
 check_port() {

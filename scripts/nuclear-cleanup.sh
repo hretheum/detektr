@@ -24,8 +24,30 @@ warning() {
     echo -e "${YELLOW}[WARNING]${NC} $*"
 }
 
-# Porty używane przez Detektor
-DETEKTOR_PORTS=(5432 6379 8001 8005 8006 8007 8008 9090 3000 16686)
+# Porty używane przez Detektor - WSZYSTKIE z docker-compose
+DETEKTOR_PORTS=(
+    5432    # PostgreSQL
+    5050    # pgAdmin
+    6379    # Redis
+    6380    # Redis slave
+    26379   # Redis Sentinel 1
+    26380   # Redis Sentinel 2
+    26381   # Redis Sentinel 3
+    8001    # RTSP Capture
+    8005    # Example OTEL
+    8006    # Frame Tracking
+    8007    # Echo Service
+    8008    # GPU Demo
+    9090    # Prometheus
+    9121    # Redis Exporter
+    9400    # DCGM Exporter
+    3000    # Grafana
+    3100    # Loki
+    16686   # Jaeger UI
+    14268   # Jaeger Thrift
+    4317    # OTLP gRPC
+    4318    # OTLP HTTP
+)
 
 main() {
     warning "=== NUCLEAR CLEANUP ==="

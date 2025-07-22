@@ -209,7 +209,7 @@ start_services() {
 
         # Dodatkowo usuń kontenery które mogą mieć stare nazwy
         log "Usuwanie starych kontenerów..."
-        sudo docker rm -f gpu-demo detektr-redis-1 detektr-postgres-1 2>/dev/null || true
+        sudo docker rm -f gpu-demo detektr-redis-1 detektr-postgres-1 detektr-loki-1 detektr-prometheus-1 detektr-grafana-1 detektr-jaeger-1 2>/dev/null || true
 
         # Zatrzymaj wszystkie kontenery przez docker-compose
         log "Zatrzymywanie kontenerów przez docker-compose..."
@@ -238,8 +238,30 @@ health_check_all() {
 check_ports() {
     log "Sprawdzanie dostępności portów..."
 
-    # Sprawdź kluczowe porty
-    local ports_to_check=(6379 5432 8001 8005 8006 8007 8008 9090 3000 16686)
+    # Sprawdź kluczowe porty - WSZYSTKIE z docker-compose
+    local ports_to_check=(
+        5432    # PostgreSQL
+        5050    # pgAdmin
+        6379    # Redis
+        6380    # Redis slave
+        26379   # Redis Sentinel 1
+        26380   # Redis Sentinel 2
+        26381   # Redis Sentinel 3
+        8001    # RTSP Capture
+        8005    # Example OTEL
+        8006    # Frame Tracking
+        8007    # Echo Service
+        8008    # GPU Demo
+        9090    # Prometheus
+        9121    # Redis Exporter
+        9400    # DCGM Exporter
+        3000    # Grafana
+        3100    # Loki
+        16686   # Jaeger UI
+        14268   # Jaeger Thrift
+        4317    # OTLP gRPC
+        4318    # OTLP HTTP
+    )
     local has_conflicts=false
 
     for port in "${ports_to_check[@]}"; do
@@ -278,17 +300,19 @@ check_ports() {
     done
 
     if [[ "$has_conflicts" == true ]]; then
-        warning "Porty były zajęte, próbuję bardziej agresywne czyszczenie..."
+        warning "Porty były zajęte, próbuję inteligentne czyszczenie..."
 
-        # Nuclear option - zatrzymaj WSZYSTKIE kontenery Docker
-        warning "Zatrzymuję WSZYSTKIE kontenery Docker..."
+        # Najpierw zatrzymaj tylko kontenery projektu detektor
+        warning "Zatrzymuję kontenery projektu detektor..."
         # shellcheck disable=SC2046
-        sudo docker stop $(sudo docker ps -q) 2>/dev/null || true
+        sudo docker stop $(sudo docker ps -q --filter "label=com.docker.compose.project=detektor") 2>/dev/null || true
+        # shellcheck disable=SC2046
+        sudo docker rm -f $(sudo docker ps -aq --filter "label=com.docker.compose.project=detektor") 2>/dev/null || true
 
-        # Usuń wszystkie zatrzymane kontenery
-        warning "Usuwam wszystkie zatrzymane kontenery..."
-        # shellcheck disable=SC2046
-        sudo docker rm $(sudo docker ps -aq) 2>/dev/null || true
+        # Usuń też kontenery które mogą być z innych plików compose
+        warning "Usuwam stare kontenery Redis HA i inne..."
+        sudo docker rm -f sentinel-1 sentinel-2 sentinel-3 redis-slave redis-master 2>/dev/null || true
+        sudo docker rm -f detektor-telegram-alerts detektor-loki-1 2>/dev/null || true
 
         # Daj czas na zwolnienie portów
         sleep 5

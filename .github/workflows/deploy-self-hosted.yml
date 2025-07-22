@@ -303,10 +303,14 @@ jobs:
 
           # Zatrzymaj kontenery które mogą blokować porty
           echo "Usuwam stare kontenery..."
+          # Stare kontenery z różnych plików compose
+          sudo docker rm -f sentinel-1 sentinel-2 sentinel-3 redis-slave redis-master 2>/dev/null || true
+          sudo docker rm -f detektor-telegram-alerts detektor-loki-1 2>/dev/null || true
+          # Kontenery które mogły być ręcznie uruchomione
           sudo docker rm -f gpu-demo detektr-redis-1 detektr-postgres-1 postgres redis 2>/dev/null || true
 
-          # Sprawdź zajęte porty
-          for port in 5432 6379 8001 8005 8006 8007 8008 9090 3000 16686; do
+          # Sprawdź zajęte porty - WSZYSTKIE z docker-compose
+          for port in 5432 5050 6379 6380 26379 26380 26381 8001 8005 8006 8007 8008 9090 9121 9400 3000 3100 16686 14268 4317 4318; do
             if sudo lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
               echo "⚠️ Port $port jest zajęty, próbuję zwolnić..."
 
