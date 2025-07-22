@@ -202,13 +202,18 @@ start_services() {
         # Pełny deployment - zatrzymaj, usuń i uruchom wszystko
         log "Pełny restart wszystkich serwisów..."
 
-        # Najpierw usuń stare kontenery o konfliktowych nazwach
-        log "Usuwanie starych kontenerów..."
-        sudo docker rm -f gpu-demo 2>/dev/null || true
+        # Najpierw zatrzymaj WSZYSTKIE kontenery projektu aby zwolnić porty
+        log "Zatrzymywanie wszystkich kontenerów projektu detektor..."
+        sudo docker ps -q --filter "label=com.docker.compose.project=detektr" | xargs -r sudo docker stop || true
+        sudo docker ps -aq --filter "label=com.docker.compose.project=detektr" | xargs -r sudo docker rm -f || true
 
-        # Zatrzymaj wszystkie kontenery
-        log "Zatrzymywanie kontenerów..."
-        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" down --remove-orphans || true
+        # Dodatkowo usuń kontenery które mogą mieć stare nazwy
+        log "Usuwanie starych kontenerów..."
+        sudo docker rm -f gpu-demo detektr-redis-1 detektr-postgres-1 2>/dev/null || true
+
+        # Zatrzymaj wszystkie kontenery przez docker-compose
+        log "Zatrzymywanie kontenerów przez docker-compose..."
+        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" down --remove-orphans --volumes || true
 
         # Pull wszystkich obrazów
         log "Pobieranie najnowszych obrazów..."
@@ -230,12 +235,32 @@ health_check_all() {
 }
 
 # Główna funkcja
+check_ports() {
+    log "Sprawdzanie dostępności portów..."
+
+    # Sprawdź kluczowe porty
+    local ports_to_check=(6379 5432 8001 8005 8006 8007 8008 9090 3000 16686)
+    local has_conflicts=false
+
+    for port in "${ports_to_check[@]}"; do
+        if sudo lsof -Pi :"$port" -sTCP:LISTEN -t >/dev/null 2>&1; then
+            warning "Port $port jest zajęty!"
+            has_conflicts=true
+        fi
+    done
+
+    if [[ "$has_conflicts" == true ]]; then
+        warning "Niektóre porty są zajęte, będę próbował je zwolnić..."
+    fi
+}
+
 main() {
     log "Rozpoczynam deployment na GitHub Actions Runner..."
 
     check_docker_access
     check_required_files
     prepare_environment
+    check_ports
 
     # Jeśli deployujemy tylko konkretne serwisy, sprawdź czy infrastruktura działa
     if [[ -n "${SERVICES_TO_RESTART:-}" ]]; then
