@@ -152,7 +152,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
 
 #### Zadania atomowe
 
-1. **[ ] Przygotowanie środowiska Nebula**
+1. **[x] Przygotowanie środowiska Nebula**
    - **Metryka**: Pliki konfiguracyjne skopiowane na Nebulę
    - **Walidacja**:
      ```bash
@@ -163,7 +163,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: Verify file permissions and syntax
    - **Czas**: 0.5h
 
-2. **[ ] Graceful shutdown obecnego Redis**
+2. **[x] Graceful shutdown obecnego Redis**
    - **Metryka**: Kontrolowany shutdown z zapisem danych
    - **Walidacja**:
      ```bash
@@ -176,7 +176,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: Services stopped in correct order
    - **Czas**: 0.5h
 
-3. **[ ] Deployment Redis HA cluster**
+3. **[x] Deployment Redis HA cluster**
    - **Metryka**: Redis HA cluster operational na Nebuli
    - **Walidacja**:
      ```bash
@@ -189,7 +189,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: All containers healthy, no port conflicts
    - **Czas**: 1h
 
-4. **[ ] Restart application services**
+4. **[x] Restart application services**
    - **Metryka**: Wszystkie serwisy działają z nową konfiguracją Sentinel
    - **Walidacja**:
      ```bash

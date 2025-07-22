@@ -1,0 +1,23 @@
+# Override file to disable old Redis container when using Redis HA
+services:
+  redis:
+    entrypoint: ["/bin/true"]
+    command: ["true"]
+    deploy:
+      replicas: 0
+
+  frame-buffer:
+    env_file:
+      - .env.sentinel
+    environment:
+      - REDIS_SENTINEL_HOSTS=sentinel-1:26379,sentinel-2:26379,sentinel-3:26379
+      - REDIS_MASTER_NAME=mymaster
+      - REDIS_HOST=redis-master
+
+  telegram-alerts:
+    env_file:
+      - .env.sentinel
+    environment:
+      - REDIS_SENTINEL_HOSTS=sentinel-1:26379,sentinel-2:26379,sentinel-3:26379
+      - REDIS_MASTER_NAME=mymaster
+      - REDIS_HOST=redis-master

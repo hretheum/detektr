@@ -50,9 +50,9 @@ services:
     ports:
       - "26379:26379"
     volumes:
-      - ./config/sentinel.conf:/usr/local/etc/redis/sentinel.conf:ro
-      - sentinel-1-data:/tmp
-    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+      - ./config/sentinel.conf:/sentinel-config/sentinel.conf:ro
+      - sentinel-1-data:/data
+    command: sh -c "cp /sentinel-config/sentinel.conf /data/sentinel.conf && redis-sentinel /data/sentinel.conf"
     networks:
       - detektor-network
     depends_on:
@@ -74,9 +74,9 @@ services:
     ports:
       - "26380:26379"
     volumes:
-      - ./config/sentinel.conf:/usr/local/etc/redis/sentinel.conf:ro
-      - sentinel-2-data:/tmp
-    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+      - ./config/sentinel.conf:/sentinel-config/sentinel.conf:ro
+      - sentinel-2-data:/data
+    command: sh -c "cp /sentinel-config/sentinel.conf /data/sentinel.conf && redis-sentinel /data/sentinel.conf"
     networks:
       - detektor-network
     depends_on:
@@ -98,9 +98,9 @@ services:
     ports:
       - "26381:26379"
     volumes:
-      - ./config/sentinel.conf:/usr/local/etc/redis/sentinel.conf:ro
-      - sentinel-3-data:/tmp
-    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+      - ./config/sentinel.conf:/sentinel-config/sentinel.conf:ro
+      - sentinel-3-data:/data
+    command: sh -c "cp /sentinel-config/sentinel.conf /data/sentinel.conf && redis-sentinel /data/sentinel.conf"
     networks:
       - detektor-network
     depends_on:
