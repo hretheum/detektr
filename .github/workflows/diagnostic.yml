@@ -50,6 +50,11 @@ jobs:
           echo "❌ GITHUB_TOKEN is missing"
         fi
 
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
     - name: Check path filters
       run: |
         echo "=== Path Filter Analysis ==="
@@ -59,9 +64,11 @@ jobs:
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           git fetch origin ${{ github.base_ref }} --depth=1
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-        else
-          git fetch origin ${{ github.event.before }} --depth=1
+        elif [ "${{ github.event_name }}" = "push" ] && [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
           CHANGED_FILES=$(git diff --name-only ${{ github.event.before }}...HEAD)
+        else
+          echo "Cannot determine changed files for this event type"
+          CHANGED_FILES=""
         fi
 
         echo "Changed files:"
