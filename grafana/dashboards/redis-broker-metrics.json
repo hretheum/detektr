@@ -173,7 +173,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "redis_used_memory_bytes{job=\"redis\"} / redis_maxmemory_bytes{job=\"redis\"}",
+          "expr": "redis_memory_used_bytes{job=\"redis\"} / redis_config_maxmemory{job=\"redis\"}",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
@@ -444,7 +444,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "redis_used_memory_bytes{job=\"redis\"}",
+          "expr": "redis_memory_used_bytes{job=\"redis\"}",
           "instant": false,
           "legendFormat": "Used Memory",
           "range": true,
@@ -456,7 +456,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "redis_maxmemory_bytes{job=\"redis\"}",
+          "expr": "redis_config_maxmemory{job=\"redis\"}",
           "instant": false,
           "legendFormat": "Max Memory",
           "range": true,
