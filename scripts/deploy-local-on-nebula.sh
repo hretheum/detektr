@@ -52,6 +52,7 @@ check_required_files() {
         "docker-compose.yml"
         "docker-compose.observability.yml"
         "docker-compose.storage.yml"
+        "prometheus.yml"
     )
 
     for file in "${required_files[@]}"; do
@@ -60,6 +61,19 @@ check_required_files() {
             exit 1
         fi
     done
+
+    # Specjalne sprawdzenie dla prometheus.yml - musi być plikiem, nie katalogiem
+    if [[ -d "$PROJECT_ROOT/prometheus.yml" ]]; then
+        warning "prometheus.yml jest katalogiem zamiast pliku! Naprawiam..."
+        sudo rm -rf "$PROJECT_ROOT/prometheus.yml"
+        # Skopiuj prawidłowy plik jeśli istnieje
+        if [[ -f "$PROJECT_ROOT/config/prometheus/prometheus.yml" ]]; then
+            cp "$PROJECT_ROOT/config/prometheus/prometheus.yml" "$PROJECT_ROOT/prometheus.yml"
+        else
+            error "Brak źródłowego pliku prometheus.yml"
+            exit 1
+        fi
+    fi
 
     log "Wszystkie pliki są obecne ✓"
 }
@@ -115,13 +129,13 @@ start_infrastructure() {
 
     # Uruchom storage (PostgreSQL, Redis)
     log "Uruchamianie storage services..."
-    sudo docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" up -d || {
+    sudo docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" up -d --remove-orphans || {
         warning "Niektóre kontenery storage mogą już działać, kontynuuję..."
     }
 
     # Uruchom observability (Prometheus, Jaeger, Grafana)
     log "Uruchamianie observability services..."
-    sudo docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" up -d || {
+    sudo docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" up -d --remove-orphans || {
         warning "Niektóre kontenery observability mogą już działać, kontynuuję..."
     }
 
@@ -163,16 +177,38 @@ start_services() {
         # Konwertuj przecinki na spacje
         SERVICES_LIST=$(echo "$SERVICES_TO_RESTART" | tr ',' ' ')
 
-        # Pull najnowszych obrazów dla wybranych serwisów
+        # Dla każdego serwisu: stop, remove, pull, start
         for service in $SERVICES_LIST; do
-            log "Pobieranie najnowszego obrazu dla $service..."
-            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" pull "$service" || true
-        done
+            log "Przetwarzanie serwisu: $service"
 
-        # Restart tylko wybranych serwisów
-        # shellcheck disable=SC2086
-        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d --no-deps $SERVICES_LIST
+            # Zatrzymaj stary kontener
+            log "  → Zatrzymywanie starego kontenera..."
+            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" stop "$service" 2>/dev/null || true
+
+            # Usuń stary kontener
+            log "  → Usuwanie starego kontenera..."
+            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" rm -f "$service" 2>/dev/null || true
+
+            # Pobierz najnowszy obraz
+            log "  → Pobieranie najnowszego obrazu..."
+            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" pull "$service"
+
+            # Uruchom nowy kontener
+            log "  → Uruchamianie nowego kontenera..."
+            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d --no-deps "$service"
+        done
     else
+        # Pełny deployment - zatrzymaj, usuń i uruchom wszystko
+        log "Pełny restart wszystkich serwisów..."
+
+        # Zatrzymaj wszystkie kontenery
+        log "Zatrzymywanie kontenerów..."
+        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" down --remove-orphans || true
+
+        # Pull wszystkich obrazów
+        log "Pobieranie najnowszych obrazów..."
+        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" pull
+
         # Uruchom wszystkie serwisy
         log "Uruchamianie wszystkich serwisów..."
         sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d
