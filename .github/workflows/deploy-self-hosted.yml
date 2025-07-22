@@ -42,6 +42,8 @@ jobs:
       - name: Detect changed services
         uses: dorny/paths-filter@v2
         id: filter
+        # Skip on manual trigger to avoid warning
+        if: github.event_name != 'workflow_dispatch'
         with:
           list-files: shell
           filters: |
@@ -88,18 +90,25 @@ jobs:
             echo "services=$SERVICES_JSON" >> $GITHUB_OUTPUT
             echo "any_changed=true" >> $GITHUB_OUTPUT
           else
-            # Get changed services from filter
-            CHANGED_SERVICES='${{ steps.filter.outputs.changes }}'
-
-            # Check if we have any changes
-            if [ "$CHANGED_SERVICES" = "[]" ] || [ -z "$CHANGED_SERVICES" ]; then
-              echo "No services changed"
+            # Check if this is manual trigger without filter
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "Manual trigger without services specified"
               echo "services=[]" >> $GITHUB_OUTPUT
               echo "any_changed=false" >> $GITHUB_OUTPUT
             else
-              echo "Changed services: $CHANGED_SERVICES"
-              echo "services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
-              echo "any_changed=true" >> $GITHUB_OUTPUT
+              # Get changed services from filter
+              CHANGED_SERVICES='${{ steps.filter.outputs.changes }}'
+
+              # Check if we have any changes
+              if [ "$CHANGED_SERVICES" = "[]" ] || [ -z "$CHANGED_SERVICES" ]; then
+                echo "No services changed"
+                echo "services=[]" >> $GITHUB_OUTPUT
+                echo "any_changed=false" >> $GITHUB_OUTPUT
+              else
+                echo "Changed services: $CHANGED_SERVICES"
+                echo "services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
+                echo "any_changed=true" >> $GITHUB_OUTPUT
+              fi
             fi
           fi
 
