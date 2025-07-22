@@ -239,6 +239,7 @@ check_ports() {
     log "Sprawdzanie dostępności portów..."
 
     # Sprawdź kluczowe porty - WSZYSTKIE z docker-compose
+    # UWAGA: Port 9400 (DCGM Exporter) jest częścią infrastruktury i pozostaje uruchomiony
     local ports_to_check=(
         5432    # PostgreSQL
         5050    # pgAdmin
@@ -254,7 +255,7 @@ check_ports() {
         8008    # GPU Demo
         9090    # Prometheus
         9121    # Redis Exporter
-        9400    # DCGM Exporter
+        # 9400  # DCGM Exporter - SKIP (infrastruktura)
         3000    # Grafana
         3100    # Loki
         16686   # Jaeger UI
@@ -313,6 +314,10 @@ check_ports() {
         warning "Usuwam stare kontenery Redis HA i inne..."
         sudo docker rm -f sentinel-1 sentinel-2 sentinel-3 redis-slave redis-master 2>/dev/null || true
         sudo docker rm -f detektor-telegram-alerts detektor-loki-1 2>/dev/null || true
+
+        # NIE usuwamy kontenerów infrastruktury monitoring - są częścią observability z Fazy 1
+        warning "UWAGA: Kontenery infrastruktury (dcgm_exporter, alertmanager, etc.) pozostają uruchomione"
+        warning "Są częścią observability stack z Fazy 1 i używają host networking"
 
         # Daj czas na zwolnienie portów
         sleep 5

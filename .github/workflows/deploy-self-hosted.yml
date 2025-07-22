@@ -283,6 +283,7 @@ jobs:
         with:
           sparse-checkout: |
             scripts/deploy-local-on-nebula.sh
+            scripts/health-check-all.sh
             docker-compose.yml
             docker-compose.*.yml
             docker-compose.prod.yml
