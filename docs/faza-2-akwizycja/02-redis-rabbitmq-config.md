@@ -201,7 +201,7 @@ RTSP Capture → Redis Streams → Frame Buffer → AI Services
 - Queues configured correctly
 - Monitoring operational
 
-### Blok 3: Integration testing i dashboards ✅ COMPLETED
+### Blok 3: Integration testing i dashboards ✅ COMPLETED (2025-07-22)
 
 #### Zadania atomowe
 
