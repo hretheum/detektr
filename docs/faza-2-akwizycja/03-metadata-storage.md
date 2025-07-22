@@ -27,19 +27,23 @@ Zaprojektować i zaimplementować wydajny system przechowywania metadanych klate
 
 #### Zadania atomowe
 
-1. **[ ] TDD: Domain models dla metadata**
-   - **Metryka**: Pydantic models z validation
-   - **Walidacja**: `pytest tests/test_metadata_models.py`
+1. **[x] TDD: Domain models dla metadata**
+   - **Metryka**: Pydantic models z validation ✅
+   - **Walidacja**: `pytest tests/test_metadata_models.py` ✅
+   - **Wynik**: 14 tests passed, wszystkie modele domenowe zaimplementowane
    - **Czas**: 2h
 
-2. **[ ] Implementacja TimescaleDB schema**
-   - **Metryka**: Hypertables z chunk_time_interval
-   - **Walidacja**: `\d+ frame_metadata` shows partitioning
+2. **[x] Implementacja TimescaleDB schema**
+   - **Metryka**: Hypertables z chunk_time_interval ✅
+   - **Walidacja**: `\d+ frame_metadata` shows partitioning ✅
+   - **Wynik**: Hypertable z 1-day chunks, continuous aggregates (1min, hourly, daily)
    - **Czas**: 2h
 
-3. **[ ] Indeksy i constraints**
-   - **Metryka**: Query time <1ms dla lookup
-   - **Walidacja**: EXPLAIN ANALYZE dla queries
+3. **[x] Indeksy i constraints**
+   - **Metryka**: Query time <1ms dla lookup ✅
+   - **Walidacja**: EXPLAIN ANALYZE dla queries ✅
+   - **Wynik**: Execution time 0.012ms dla point query, 0.057ms dla range query
+   - **Indeksy**: PRIMARY KEY, camera_time, GIN na metadata, partial na motion_score
    - **Czas**: 2h
 
 ### Blok 2: Repository pattern implementation
