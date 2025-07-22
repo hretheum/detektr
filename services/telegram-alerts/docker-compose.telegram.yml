@@ -1,0 +1,39 @@
+services:
+  telegram-alerts:
+    build:
+      context: services/telegram-alerts
+      dockerfile: Dockerfile
+    image: ghcr.io/hretheum/bezrobocie-detektor/telegram-alerts:latest
+    container_name: detektor-telegram-alerts
+    restart: unless-stopped
+    environment:
+      # Telegram credentials - SET IN .env FILE
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+
+      # Alert thresholds
+      DISK_ALERT_THRESHOLD: 80
+      REDIS_MEMORY_THRESHOLD_GB: 3.5
+      POSTGRES_DISK_THRESHOLD_GB: 80
+
+      # Redis connection
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro
+    networks:
+      - detektor-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      - redis
+
+networks:
+  detektor-network:
+    external: true
