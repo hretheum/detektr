@@ -274,6 +274,7 @@ jobs:
             scripts/deploy-local-on-nebula.sh
             docker-compose.yml
             docker-compose.*.yml
+            docker-compose.prod.yml
             .env
             .env.*
             config/

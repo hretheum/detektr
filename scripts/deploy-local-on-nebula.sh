@@ -52,6 +52,7 @@ check_required_files() {
         "docker-compose.yml"
         "docker-compose.observability.yml"
         "docker-compose.storage.yml"
+        "docker-compose.prod.yml"
         "prometheus.yml"
     )
 
@@ -129,13 +130,13 @@ start_infrastructure() {
 
     # Uruchom storage (PostgreSQL, Redis)
     log "Uruchamianie storage services..."
-    sudo docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" up -d --remove-orphans || {
+    sudo docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" up -d --remove-orphans || {
         warning "Niektóre kontenery storage mogą już działać, kontynuuję..."
     }
 
     # Uruchom observability (Prometheus, Jaeger, Grafana)
     log "Uruchamianie observability services..."
-    sudo docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" up -d --remove-orphans || {
+    sudo docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" up -d --remove-orphans || {
         warning "Niektóre kontenery observability mogą już działać, kontynuuję..."
     }
 
@@ -183,19 +184,19 @@ start_services() {
 
             # Zatrzymaj stary kontener
             log "  → Zatrzymywanie starego kontenera..."
-            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" stop "$service" 2>/dev/null || true
+            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" stop "$service" 2>/dev/null || true
 
             # Usuń stary kontener
             log "  → Usuwanie starego kontenera..."
-            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" rm -f "$service" 2>/dev/null || true
+            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" rm -f "$service" 2>/dev/null || true
 
             # Pobierz najnowszy obraz
             log "  → Pobieranie najnowszego obrazu..."
-            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" pull "$service"
+            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" pull "$service"
 
             # Uruchom nowy kontener
             log "  → Uruchamianie nowego kontenera..."
-            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d --no-deps "$service"
+            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" up -d --no-deps "$service"
         done
     else
         # Pełny deployment - zatrzymaj, usuń i uruchom wszystko
@@ -203,15 +204,15 @@ start_services() {
 
         # Zatrzymaj wszystkie kontenery
         log "Zatrzymywanie kontenerów..."
-        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" down --remove-orphans || true
+        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" down --remove-orphans || true
 
         # Pull wszystkich obrazów
         log "Pobieranie najnowszych obrazów..."
-        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" pull
+        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" pull
 
         # Uruchom wszystkie serwisy
         log "Uruchamianie wszystkich serwisów..."
-        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d
+        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" up -d
     fi
 
     log "Serwisy aplikacji uruchomione ✓"

@@ -1,64 +1,45 @@
-# Docker Compose Override - Production Settings
-# This file automatically extends docker-compose.yml
+# Override dla lokalnego developmentu
+# W produkcji używamy obrazów z registry
 
 services:
-  # Logging configuration for all services
-  redis:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    volumes:
-      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
-      - redis-data:/data
-    command: redis-server /usr/local/etc/redis/redis.conf
-
-  postgres:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
   example-otel:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    build:
+      context: .
+      dockerfile: ./services/example-otel/Dockerfile
+    image: example-otel:simple
 
   frame-tracking:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    build:
+      context: .
+      dockerfile: ./services/frame-tracking/Dockerfile
+    image: frame-tracking:latest
 
   echo-service:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  gpu-demo:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    build:
+      context: .
+      dockerfile: ./services/echo-service/Dockerfile
+    image: echo-service:latest
 
   rtsp-capture:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    build:
+      context: .
+      dockerfile: ./services/rtsp-capture/Dockerfile
+    image: rtsp-capture:latest
 
   frame-buffer:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    build:
+      context: .
+      dockerfile: ./services/frame-buffer/Dockerfile
+    image: frame-buffer:latest
+
+  telegram-alerts:
+    build:
+      context: .
+      dockerfile: ./services/telegram-alerts/Dockerfile
+    image: telegram-alerts:latest
+
+  gpu-demo:
+    build:
+      context: .
+      dockerfile: ./services/gpu-demo/Dockerfile
+    image: gpu-demo:latest

@@ -1,0 +1,24 @@
+# Production override - używa obrazów z GitHub Container Registry
+# Używane na Nebuli zamiast lokalnych obrazów
+
+services:
+  example-otel:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/bezrobocie-detektor}/example-otel:${TAG:-latest}
+
+  frame-tracking:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/bezrobocie-detektor}/frame-tracking:${TAG:-latest}
+
+  echo-service:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/bezrobocie-detektor}/echo-service:${TAG:-latest}
+
+  rtsp-capture:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/bezrobocie-detektor}/rtsp-capture:${TAG:-latest}
+
+  frame-buffer:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/bezrobocie-detektor}/frame-buffer:${TAG:-latest}
+
+  telegram-alerts:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/bezrobocie-detektor}/telegram-alerts:${TAG:-latest}
+
+  gpu-demo:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/bezrobocie-detektor}/gpu-demo:${TAG:-latest}
