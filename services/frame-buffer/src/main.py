@@ -1,11 +1,12 @@
 """
-Frame Buffer Service - High-performance frame buffering with Redis backend.
+Frame Buffer Service - High-performance frame buffering with Redis Sentinel HA.
 
 This service provides:
 - Circular frame buffer with Redis Streams
 - Backpressure handling
 - Dead Letter Queue (DLQ)
 - Full observability (metrics, tracing)
+- Redis Sentinel High Availability support
 """
 
 import json
@@ -24,10 +25,10 @@ from health import health_router, update_health_state
 from observability import init_telemetry
 from prometheus_client import Counter, Gauge, Histogram
 
+# Import Redis Sentinel client
+from redis_sentinel import RedisSentinelClient
+
 # Configuration
-REDIS_HOST = os.getenv("REDIS_HOST", "redis")
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 FRAME_QUEUE_NAME = os.getenv("FRAME_QUEUE_NAME", "frame_queue")
 DLQ_NAME = os.getenv("DLQ_NAME", "frame_dlq")
 MAX_BUFFER_SIZE = int(os.getenv("MAX_BUFFER_SIZE", "1000"))
@@ -44,14 +45,14 @@ frame_processing_time = Histogram(
 )
 dlq_counter = Counter("frame_buffer_dlq_total", "Frames sent to DLQ", ["reason"])
 
-# Global Redis client
-redis_client: Optional[redis.Redis] = None
+# Global Redis client with Sentinel support
+redis_sentinel: Optional[RedisSentinelClient] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    global redis_client
+    global redis_sentinel
 
     # Initialize telemetry
     init_telemetry(SERVICE_NAME)
@@ -59,14 +60,12 @@ async def lifespan(app: FastAPI):
     # Update health state
     update_health_state("start_time", time.time())
 
-    # Connect to Redis
+    # Connect to Redis via Sentinel
     try:
-        redis_client = redis.Redis(
-            host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True
-        )
-        await redis_client.ping()
+        redis_sentinel = RedisSentinelClient()
+        await redis_sentinel.connect()
         update_health_state("redis_connected", True)
-        print(f"✅ Connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
+        print("✅ Connected to Redis via Sentinel HA setup")
     except Exception as e:
         print(f"❌ Failed to connect to Redis: {e}")
         update_health_state("redis_connected", False)
@@ -74,14 +73,14 @@ async def lifespan(app: FastAPI):
     yield
 
     # Cleanup
-    if redis_client:
-        await redis_client.close()
+    if redis_sentinel:
+        await redis_sentinel.close()
 
 
 # Create FastAPI app
 app = FastAPI(
     title="Frame Buffer Service",
-    description="High-performance frame buffering with Redis backend",
+    description="High-performance frame buffering with Redis HA backend",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -90,37 +89,36 @@ app = FastAPI(
 app.include_router(health_router)
 
 
-def compress_frame(data: dict) -> bytes:
-    """Compress frame data (placeholder for LZ4)."""
-    import lz4.frame
-    json_data = json.dumps(data)
-    return lz4.frame.compress(json_data.encode())
+async def get_redis_client() -> redis.Redis:
+    """Get Redis client with HA support."""
+    if not redis_sentinel:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Redis Sentinel not initialized",
+        )
 
-
-def decompress_frame(data: bytes) -> dict:
-    """Decompress frame data (placeholder for LZ4)."""
-    import lz4.frame
-    json_data = lz4.frame.decompress(data).decode()
-    return json.loads(json_data)
+    try:
+        return await redis_sentinel.get_client()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Redis connection failed: {e}",
+        )
 
 
 @app.post("/frames/enqueue")
 async def enqueue_frame(frame_data: dict):
     """Add frame to buffer."""
-    if not redis_client:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Redis not connected",
-        )
+    client = await get_redis_client()
 
     with frame_processing_time.labels(operation="enqueue").time():
         try:
             # Check buffer size
-            current_size = await redis_client.xlen(FRAME_QUEUE_NAME)
+            current_size = await client.xlen(FRAME_QUEUE_NAME)
 
             if current_size >= MAX_BUFFER_SIZE:
                 # Send to DLQ
-                await redis_client.xadd(
+                await client.xadd(
                     DLQ_NAME, {"frame": str(frame_data), "reason": "buffer_full"}
                 )
                 dlq_counter.labels(reason="buffer_full").inc()
@@ -132,9 +130,8 @@ async def enqueue_frame(frame_data: dict):
                 )
 
             # Add to queue with JSON serialization
-            message_id = await redis_client.xadd(
-                FRAME_QUEUE_NAME,
-                {"frame_data": json.dumps(frame_data)}
+            message_id = await client.xadd(
+                FRAME_QUEUE_NAME, {"frame_data": json.dumps(frame_data)}
             )
 
             frame_counter.labels(operation="enqueue", status="success").inc()
@@ -144,7 +141,7 @@ async def enqueue_frame(frame_data: dict):
                 "status": "enqueued",
                 "frame_id": frame_data.get("frame_id", "unknown"),
                 "message_id": message_id,
-                "queue_size": current_size + 1
+                "queue_size": current_size + 1,
             }
 
         except Exception as e:
@@ -157,23 +154,19 @@ async def enqueue_frame(frame_data: dict):
 @app.get("/frames/dequeue")
 async def dequeue_frame(count: int = 1):
     """Retrieve frames from buffer."""
-    if not redis_client:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Redis not connected",
-        )
+    client = await get_redis_client()
 
     with frame_processing_time.labels(operation="dequeue").time():
         try:
             # Read frames
-            frames = await redis_client.xread(
+            frames = await client.xread(
                 {FRAME_QUEUE_NAME: "0"}, count=count, block=1000  # 1 second timeout
             )
 
             if not frames:
                 return {
                     "frames": [],
-                    "remaining": await redis_client.xlen(FRAME_QUEUE_NAME),
+                    "remaining": await client.xlen(FRAME_QUEUE_NAME),
                 }
 
             # Extract and parse frame data
@@ -190,24 +183,28 @@ async def dequeue_frame(count: int = 1):
                         message_ids.append(message_id)
                     except Exception as e:
                         # Send to DLQ if parsing fails
-                        await redis_client.xadd(
+                        await client.xadd(
                             DLQ_NAME,
-                            {"frame": str(data), "reason": f"parse_failed: {str(e)}"}
+                            {"frame": str(data), "reason": f"parse_failed: {str(e)}"},
                         )
                         dlq_counter.labels(reason="parse_failed").inc()
 
             # Acknowledge and remove frames
             if message_ids:
-                await redis_client.xdel(FRAME_QUEUE_NAME, *message_ids)
+                await client.xdel(FRAME_QUEUE_NAME, *message_ids)
                 frame_counter.labels(operation="dequeue", status="success").inc(
                     len(message_ids)
                 )
 
             # Update buffer size
-            remaining = await redis_client.xlen(FRAME_QUEUE_NAME)
+            remaining = await client.xlen(FRAME_QUEUE_NAME)
             buffer_size_gauge.set(remaining)
 
-            return {"frames": result_frames, "count": len(result_frames), "remaining": remaining}
+            return {
+                "frames": result_frames,
+                "count": len(result_frames),
+                "remaining": remaining,
+            }
 
         except Exception as e:
             frame_counter.labels(operation="dequeue", status="error").inc()
@@ -219,17 +216,10 @@ async def dequeue_frame(count: int = 1):
 @app.get("/frames/status")
 async def get_buffer_status():
     """Get current buffer status."""
-    if not redis_client:
-        return {
-            "connected": False,
-            "size": 0,
-            "max_size": MAX_BUFFER_SIZE,
-            "dlq_size": 0,
-        }
-
     try:
-        queue_size = await redis_client.xlen(FRAME_QUEUE_NAME)
-        dlq_size = await redis_client.xlen(DLQ_NAME)
+        client = await get_redis_client()
+        queue_size = await client.xlen(FRAME_QUEUE_NAME)
+        dlq_size = await client.xlen(DLQ_NAME)
 
         return {
             "connected": True,
@@ -245,18 +235,14 @@ async def get_buffer_status():
 @app.post("/buffer/clear")
 async def clear_buffer():
     """Clear all frames from buffer."""
-    if not redis_client:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Redis not connected",
-        )
+    client = await get_redis_client()
 
     try:
         # Get current size
-        size_before = await redis_client.xlen(FRAME_QUEUE_NAME)
+        size_before = await client.xlen(FRAME_QUEUE_NAME)
 
         # Clear the stream
-        await redis_client.delete(FRAME_QUEUE_NAME)
+        await client.delete(FRAME_QUEUE_NAME)
 
         # Update metrics
         buffer_size_gauge.set(0)
@@ -273,39 +259,36 @@ async def clear_buffer():
 @app.post("/frames/dlq/clear")
 async def clear_dlq():
     """Clear all frames from DLQ."""
-    if not redis_client:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Redis not connected",
-        )
-    
+    client = await get_redis_client()
+
     try:
         # Get current size
-        size_before = await redis_client.xlen(DLQ_NAME)
-        
+        size_before = await client.xlen(DLQ_NAME)
+
         # Clear the DLQ
-        await redis_client.delete(DLQ_NAME)
-        
-        return {"status": "cleared", "message": "DLQ cleared successfully", "cleared_count": size_before}
-        
+        await client.delete(DLQ_NAME)
+
+        return {
+            "status": "cleared",
+            "message": "DLQ cleared successfully",
+            "cleared_count": size_before,
+        }
+
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
 
 
 @app.get("/dlq/status")
 async def get_dlq_status():
     """Get Dead Letter Queue status."""
-    if not redis_client:
-        return {"size": 0, "connected": False}
-
     try:
-        dlq_size = await redis_client.xlen(DLQ_NAME)
+        client = await get_redis_client()
+        dlq_size = await client.xlen(DLQ_NAME)
 
         # Get sample of DLQ messages
-        samples = await redis_client.xrange(DLQ_NAME, count=5)
+        samples = await client.xrange(DLQ_NAME, count=5)
 
         return {
             "size": dlq_size,
@@ -326,15 +309,11 @@ async def get_dlq_status():
 @app.post("/dlq/reprocess")
 async def reprocess_dlq(max_items: int = 100):
     """Reprocess items from DLQ."""
-    if not redis_client:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Redis not connected",
-        )
+    client = await get_redis_client()
 
     try:
         # Read from DLQ
-        messages = await redis_client.xrange(DLQ_NAME, count=max_items)
+        messages = await client.xrange(DLQ_NAME, count=max_items)
 
         reprocessed = 0
         failed = 0
@@ -343,8 +322,8 @@ async def reprocess_dlq(max_items: int = 100):
             try:
                 # Try to add back to main queue
                 frame_data = eval(data.get("frame", "{}"))  # Careful with eval!
-                await redis_client.xadd(FRAME_QUEUE_NAME, frame_data)
-                await redis_client.xdel(DLQ_NAME, msg_id)
+                await client.xadd(FRAME_QUEUE_NAME, frame_data)
+                await client.xdel(DLQ_NAME, msg_id)
                 reprocessed += 1
             except Exception:
                 failed += 1
@@ -352,7 +331,7 @@ async def reprocess_dlq(max_items: int = 100):
         return {
             "reprocessed": reprocessed,
             "failed": failed,
-            "remaining": await redis_client.xlen(DLQ_NAME),
+            "remaining": await client.xlen(DLQ_NAME),
         }
 
     except Exception as e:

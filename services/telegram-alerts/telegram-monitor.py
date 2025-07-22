@@ -7,16 +7,18 @@ Monitors disk space, Redis memory, container health.
 import asyncio
 import os
 from datetime import datetime
-from typing import Dict, List
 
 import aiohttp
 import docker
 import psutil
-import redis
+from redis_sentinel import RedisSentinelClient
 
 
 class TelegramMonitor:
+    """Telegram monitoring alerts for Detektor system."""
+
     def __init__(self):
+        """Initialize Telegram monitor."""
         # Telegram configuration from environment
         self.bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
         self.chat_id = os.getenv("TELEGRAM_CHAT_ID")
@@ -34,15 +36,17 @@ class TelegramMonitor:
         # Fix for Docker socket connection in container
         try:
             # Try different connection methods
-            self.docker_client = docker.DockerClient(base_url='unix:///var/run/docker.sock')
+            self.docker_client = docker.DockerClient(
+                base_url="unix:///var/run/docker.sock"
+            )
         except Exception as e:
             print(f"[WARNING] Failed to connect to Docker daemon: {e}")
             print("[WARNING] Container monitoring will be disabled")
             self.docker_client = None
-        self.redis_client = redis.Redis(
-            host=os.getenv("REDIS_HOST", "redis"),
-            port=int(os.getenv("REDIS_PORT", "6379")),
-        )
+
+        # Initialize Redis client with Sentinel support
+        self.redis_sentinel = RedisSentinelClient()
+        self.redis_client = None
 
         # State tracking
         self.alerted_issues = set()
@@ -106,7 +110,12 @@ class TelegramMonitor:
     async def check_redis_memory(self):
         """Monitor Redis memory usage."""
         try:
-            info = self.redis_client.info("memory")
+            # Get Redis client with HA support
+            if not self.redis_client:
+                self.redis_client = self.redis_sentinel.connect()
+
+            client = self.redis_sentinel.get_client()
+            info = client.info("memory")
             used_memory_gb = info["used_memory"] / 1024 / 1024 / 1024
 
             if used_memory_gb > self.redis_memory_threshold:
@@ -172,7 +181,7 @@ class TelegramMonitor:
 
     async def monitor_loop(self):
         """Main monitoring loop."""
-        print(f"Starting Telegram monitoring...")
+        print("Starting Telegram monitoring...")
         print(f"Bot Token: {'✓' if self.bot_token else '✗'}")
         print(f"Chat ID: {'✓' if self.chat_id else '✗'}")
 

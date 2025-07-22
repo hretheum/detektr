@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import List
 
 import redis.asyncio as redis
+from redis_sentinel import RedisSentinelClient
 
 
 class LoadTestResults:
@@ -210,10 +211,16 @@ async def run_load_test(args):
     """Run the load test."""
     results = LoadTestResults()
 
-    # Redis connection
-    redis_client = redis.Redis(
-        host=args.redis_host, port=args.redis_port, decode_responses=True
-    )
+    # Redis connection with Sentinel support
+    if hasattr(args, "use_sentinel") and args.use_sentinel:
+        print("Using Redis Sentinel for HA connection...")
+        sentinel_client = RedisSentinelClient()
+        redis_client = await sentinel_client.connect()
+    else:
+        print(f"Using direct Redis connection: {args.redis_host}:{args.redis_port}")
+        redis_client = redis.Redis(
+            host=args.redis_host, port=args.redis_port, decode_responses=True
+        )
 
     # Test connection
     try:
@@ -294,6 +301,11 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--consumers", type=int, default=3, help="Number of consumer threads"
+    )
+    parser.add_argument(
+        "--use-sentinel",
+        action="store_true",
+        help="Use Redis Sentinel for HA connection",
     )
 
     args = parser.parse_args()

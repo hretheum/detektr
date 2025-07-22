@@ -100,7 +100,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
 
 #### Zadania atomowe
 
-1. **[ ] Aktualizacja frame-buffer service**
+1. **[x] Aktualizacja frame-buffer service**
    - **Metryka**: Frame-buffer używa Sentinel connection
    - **Walidacja**:
      ```bash
@@ -113,7 +113,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: Fallback mechanism if Sentinel unavailable
    - **Czas**: 1h
 
-2. **[ ] Aktualizacja telegram-alerts service**
+2. **[x] Aktualizacja telegram-alerts service**
    - **Metryka**: Telegram alerts używa Sentinel connection
    - **Walidacja**:
      ```bash
@@ -124,7 +124,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: Alerts work regardless of which Redis instance is master
    - **Czas**: 0.5h
 
-3. **[ ] Aktualizacja load-tester**
+3. **[x] Aktualizacja load-tester**
    - **Metryka**: Load tester kompatybilny z Sentinel
    - **Walidacja**:
      ```bash
@@ -135,7 +135,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: Performance metrics unchanged
    - **Czas**: 0.5h
 
-4. **[ ] Lokalne testy integracyjne**
+4. **[x] Lokalne testy integracyjne**
    - **Metryka**: Wszystkie serwisy działają z Redis HA lokalnie
    - **Walidacja**:
      ```bash
