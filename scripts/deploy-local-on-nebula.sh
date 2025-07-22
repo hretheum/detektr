@@ -202,6 +202,10 @@ start_services() {
         # Pełny deployment - zatrzymaj, usuń i uruchom wszystko
         log "Pełny restart wszystkich serwisów..."
 
+        # Najpierw usuń stare kontenery o konfliktowych nazwach
+        log "Usuwanie starych kontenerów..."
+        sudo docker rm -f gpu-demo 2>/dev/null || true
+
         # Zatrzymaj wszystkie kontenery
         log "Zatrzymywanie kontenerów..."
         sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" down --remove-orphans || true

@@ -109,7 +109,6 @@ services:
 
   gpu-demo:
     image: ghcr.io/hretheum/bezrobocie-detektor/gpu-demo:latest
-    container_name: gpu-demo
     restart: unless-stopped
     ports:
       - "8008:8008"
