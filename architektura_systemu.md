@@ -417,6 +417,8 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 3. **Redis/RabbitMQ Configuration** ✅ **COMPLETED**
    - **Metryki**:
      - Disk space: +100GB extended, 22GB cleaned
+     - Redis performance: >160k ops/sec, <0.23ms latency
+     - Load test: 714 msg/s sustained, 100% success rate
      - Redis memory limit: 4GB configured
      - Monitoring: Telegram alerts active
    - **Walidacja**:
@@ -431,6 +433,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Docker networks unified (fixed multi-network issue)
      - Telegram alerts deployed (disk >80%, Redis >3.5GB)
      - SOPS encryption configured
+     - Grafana dashboard: http://192.168.1.193:3000/d/broker-metrics/message-broker-metrics
    - **[Szczegóły →](docs/faza-2-akwizycja/02-redis-rabbitmq-config.md)**
 
 4. **Setup PostgreSQL/TimescaleDB z monitoringiem**

@@ -25,6 +25,16 @@ Hobbystyczny system przechwytywania obrazu z kamery IP z wykorzystaniem AI do ro
 3. **Deployment**: Tylko `git push origin main` (CI/CD)
 4. **Problemy**: `docs/deployment/troubleshooting/common-issues.md`
 
+## 📊 Dashboard Links
+
+| Dashboard | URL | Opis |
+|-----------|-----|------|
+| Grafana - Main | http://192.168.1.193:3000 | Dashboard główny Grafana |
+| Message Broker Metrics | http://192.168.1.193:3000/d/broker-metrics/message-broker-metrics | Metryki Redis (throughput, latency, memory) |
+| Prometheus | http://192.168.1.193:9090 | Prometheus metrics explorer |
+| Jaeger UI | http://192.168.1.193:16686 | Distributed tracing |
+| Redis Exporter | http://192.168.1.193:9121/metrics | Raw Redis metrics |
+
 ## Cel Projektu
 
 Stworzenie kompletnego systemu który:
