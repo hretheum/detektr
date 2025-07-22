@@ -21,6 +21,11 @@ on:
         required: false
         default: false
         type: boolean
+      skip_build:
+        description: 'Skip build (only deploy)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
@@ -115,7 +120,7 @@ jobs:
   build-and-push:
     name: Build and Push Changed Services
     needs: detect-changes
-    if: needs.detect-changes.outputs.any_changed == 'true'
+    if: needs.detect-changes.outputs.any_changed == 'true' && github.event.inputs.skip_build != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -182,7 +187,7 @@ jobs:
 
   build-all-forced:
     name: Build All Services (Forced)
-    if: github.event.inputs.force_all == 'true'
+    if: github.event.inputs.force_all == 'true' && github.event.inputs.skip_build != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -260,11 +265,17 @@ jobs:
     name: Deploy to Nebula
     needs: [detect-changes, build-and-push, build-all-forced]
     # Deploy gdy są zmiany lub force build (chyba że skip_deploy)
+    # Lub gdy skip_build jest włączony (tylko deploy)
     if: |
       always() &&
-      (needs.build-and-push.result == 'success' || needs.build-all-forced.result == 'success') &&
       github.ref == 'refs/heads/main' &&
-      github.event.inputs.skip_deploy != 'true'
+      github.event.inputs.skip_deploy != 'true' &&
+      (
+        github.event.inputs.skip_build == 'true' ||
+        needs.build-and-push.result == 'success' ||
+        needs.build-all-forced.result == 'success' ||
+        (needs.build-and-push.result == 'skipped' && needs.build-all-forced.result == 'skipped')
+      )
     runs-on: [self-hosted, nebula]
     steps:
       - name: Checkout deployment scripts

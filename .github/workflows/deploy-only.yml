@@ -1,0 +1,84 @@
+name: Deploy Only (No Build)
+
+on:
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to deploy (comma-separated, leave empty for all)'
+        required: false
+        default: ''
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'nebula'
+        type: choice
+        options:
+          - nebula
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: hretheum/bezrobocie-detektor
+
+jobs:
+  deploy-only:
+    name: Deploy to ${{ github.event.inputs.environment }}
+    runs-on: [self-hosted, nebula]
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/deploy-local-on-nebula.sh
+            scripts/health-check-all.sh
+            docker-compose.yml
+            docker-compose.*.yml
+            docker-compose.prod.yml
+            .env
+            .env.*
+            config/
+            prometheus.yml
+          sparse-checkout-cone-mode: false
+
+      - name: Deploy services
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
+          SKIP_HOSTNAME_CHECK: 1
+          SERVICES_TO_RESTART: ${{ github.event.inputs.services }}
+        run: |
+          echo "🚀 Deploy Only - No Build"
+          echo "========================"
+
+          if [ -n "$SERVICES_TO_RESTART" ]; then
+            echo "📦 Deploying specific services: $SERVICES_TO_RESTART"
+          else
+            echo "📦 Deploying all services"
+          fi
+
+          chmod +x scripts/deploy-local-on-nebula.sh
+          ./scripts/deploy-local-on-nebula.sh
+
+      - name: Health Check
+        if: always()
+        run: |
+          echo "🏥 Running health checks..."
+          chmod +x scripts/health-check-all.sh
+          ./scripts/health-check-all.sh || true
+
+      - name: Deployment Summary
+        if: always()
+        run: |
+          echo "### 🎯 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Services:** ${SERVICES_TO_RESTART:-all}" >> $GITHUB_STEP_SUMMARY
+          echo "**Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### 📊 Running Services" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(detektr|gpu-demo)" || true >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

@@ -7,16 +7,22 @@
 - Automatycznie buduje tylko zmienione serwisy
 - Wspiera ręczny wybór serwisów do budowania
 - Deploy na Nebula z self-hosted runner
+- **NOWE**: Opcja `skip_build` - tylko deploy bez budowania!
 
 ### 🔧 Workflow Pomocnicze
 
-1. **`manual-service-build.yml`** - Ręczne budowanie pojedynczego serwisu
+1. **`deploy-only.yml`** - Tylko deployment (bez budowania)
+   - Szybki deploy już zbudowanych obrazów
+   - Wybór konkretnych serwisów lub wszystkich
+   - Health check po deployment
+
+2. **`manual-service-build.yml`** - Ręczne budowanie pojedynczego serwisu
    - Wybór konkretnego serwisu z listy
    - Opcjonalny deploy po zbudowaniu
    - Custom tagi dla obrazów
 
-2. **`monitoring.yml`** - Monitoring infrastruktury (archiwum)
-3. **`rtsp-capture-ci.yml`** - CI dla RTSP capture (archiwum)
+3. **`cleanup-runner.yml`** - Czyszczenie przestrzeni dyskowej
+4. **`diagnostic.yml`** - Diagnostyka problemów z workflow
 
 ## Użycie
 
@@ -32,6 +38,18 @@ git add . && git commit -m "feat: nowa funkcja" && git push origin main
    - `force_all`: Buduj wszystkie serwisy
    - `services`: Lista serwisów (np. "frame-buffer,telegram-alerts")
    - `skip_deploy`: Tylko build bez deploy
+   - `skip_build`: **Tylko deploy bez budowania** (szybkie!)
+
+### Tylko Deploy (bez budowania) 🚀
+1. Idź do Actions → "Deploy Only (No Build)"
+2. Kliknij "Run workflow"
+3. Wybierz:
+   - `services`: Które serwisy (puste = wszystkie)
+   - `environment`: Środowisko docelowe
+
+**Przykład**: Deploy tylko rtsp-capture:
+- Services: `rtsp-capture`
+- Environment: `nebula`
 
 ### Budowanie Pojedynczego Serwisu
 1. Idź do Actions → "Manual Service Build"
