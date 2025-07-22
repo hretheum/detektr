@@ -25,6 +25,8 @@ jobs:
           - echo-service
           - gpu-demo
           - rtsp-capture
+          - frame-buffer
+          - telegram-alerts
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -77,6 +79,11 @@ jobs:
         with:
           sparse-checkout: |
             scripts/deploy-local-on-nebula.sh
+            docker-compose.yml
+            docker-compose.*.yml
+            .env
+            .env.*
+            config/
           sparse-checkout-cone-mode: false
 
       - name: Deploy to Nebula
@@ -101,3 +108,5 @@ jobs:
           echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/echo-service:latest"
           echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gpu-demo:latest"
           echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/rtsp-capture:latest"
+          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frame-buffer:latest"
+          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/telegram-alerts:latest"
