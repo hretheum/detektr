@@ -37,6 +37,9 @@ RUN pip install --upgrade pip && \
 # Set working directory
 WORKDIR /app
 
+# Copy shared code first
+COPY --chown=appuser:appuser src/shared /app/shared
+
 # Copy application code - copy entire src directory to /app
 COPY --chown=appuser:appuser services/rtsp-capture/src/ ./
 

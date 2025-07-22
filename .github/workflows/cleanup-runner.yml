@@ -1,0 +1,46 @@
+name: Cleanup Runner Space
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    name: Free Disk Space
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Display disk space
+        run: |
+          echo "### Disk space after cleanup ###"
+          df -h
+
+      - name: Clean Docker system
+        run: |
+          docker system prune -af --volumes || true
+          docker builder prune -af || true
+
+      - name: Remove unused packages
+        run: |
+          sudo apt-get autoremove -y || true
+          sudo apt-get clean || true
+
+      - name: Final disk space
+        run: |
+          echo "### Final disk space ###"
+          df -h
