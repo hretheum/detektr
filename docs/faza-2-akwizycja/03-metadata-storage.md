@@ -10,14 +10,17 @@ Zaprojektować i zaimplementować wydajny system przechowywania metadanych klate
 
 #### Zadania atomowe
 
-1. **[ ] Analiza wymagań dla time-series data**
-   - **Metryka**: Schema design dla 1M records/day
-   - **Walidacja**: Capacity planning document
+1. **[x] Analiza wymagań dla time-series data**
+   - **Metryka**: Schema design dla 1M records/day ✅
+   - **Walidacja**: Capacity planning document ✅
+   - **Wynik**: docs/design/metadata-storage-requirements.md
    - **Czas**: 2h
 
-2. **[ ] Setup TimescaleDB z Docker**
-   - **Metryka**: TimescaleDB 2.13+ z compression
-   - **Walidacja**: `\dx timescaledb` shows version
+2. **[x] Setup TimescaleDB z Docker**
+   - **Metryka**: TimescaleDB 2.13+ z compression ✅
+   - **Walidacja**: `\dx timescaledb` shows version ✅
+   - **Wynik**: TimescaleDB 2.21.1 działa na Nebuli
+   - **Performance**: 9.1k inserts/second (batch 1000)
    - **Czas**: 1h
 
 ### Blok 1: Database schema design
