@@ -181,7 +181,7 @@ class TelegramMonitor:
 
     async def monitor_loop(self):
         """Main monitoring loop."""
-        print("Starting Telegram monitoring...")
+        print("Starting Telegram monitoring with Redis Sentinel support...")
         print(f"Bot Token: {'✓' if self.bot_token else '✗'}")
         print(f"Chat ID: {'✓' if self.chat_id else '✗'}")
 
