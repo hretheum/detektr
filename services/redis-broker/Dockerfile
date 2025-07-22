@@ -9,3 +9,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 
 # Run Redis with custom config
 CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]
+# Force CI/CD trigger
