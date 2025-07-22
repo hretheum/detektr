@@ -50,9 +50,11 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
 #### 📊 **Wyniki Bloku 0:**
 - ✅ **Backup created**: 7.6MB dump.rdb file (timestamp: 1753192075)
 - ✅ **Resources sufficient**: 57GB RAM free, 154GB disk free
-- ✅ **Redis healthy**: detektor-redis-1 running normally
+- ✅ **Redis healthy**: detektr-redis-1 running normally
 - ✅ **Services inventory**: 3 primary services identified (frame-buffer, telegram-alerts, load-tester)
 - ✅ **Compose files**: 6 docker-compose files require updates
+
+**UWAGA**: Redis HA został przygotowany (kod i konfiguracja) ale nie został wdrożony na produkcję. System działa na pojedynczej instancji Redis, która jest wystarczająca dla obecnych potrzeb.
 
 ### Blok 1: Konfiguracja Redis Master-Slave z Sentinel
 
@@ -152,7 +154,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
 
 #### Zadania atomowe
 
-1. **[x] Przygotowanie środowiska Nebula**
+1. **[ ] Przygotowanie środowiska Nebula**
    - **Metryka**: Pliki konfiguracyjne skopiowane na Nebulę
    - **Walidacja**:
      ```bash
@@ -163,12 +165,12 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: Verify file permissions and syntax
    - **Czas**: 0.5h
 
-2. **[x] Graceful shutdown obecnego Redis**
+2. **[ ] Graceful shutdown obecnego Redis**
    - **Metryka**: Kontrolowany shutdown z zapisem danych
    - **Walidacja**:
      ```bash
      # Graceful shutdown sequence
-     ssh nebula "docker exec detektor-redis-1 redis-cli BGSAVE"
+     ssh nebula "docker exec detektr-redis-1 redis-cli BGSAVE"
      ssh nebula "docker-compose stop frame-buffer telegram-alerts"
      ssh nebula "docker-compose stop redis"
      ```
@@ -176,7 +178,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: Services stopped in correct order
    - **Czas**: 0.5h
 
-3. **[x] Deployment Redis HA cluster**
+3. **[ ] Deployment Redis HA cluster**
    - **Metryka**: Redis HA cluster operational na Nebuli
    - **Walidacja**:
      ```bash
@@ -189,7 +191,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: All containers healthy, no port conflicts
    - **Czas**: 1h
 
-4. **[x] Restart application services**
+4. **[ ] Restart application services**
    - **Metryka**: Wszystkie serwisy działają z nową konfiguracją Sentinel
    - **Walidacja**:
      ```bash
@@ -309,7 +311,28 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: Procedures tested and verified
    - **Czas**: 1h
 
-## Całościowe metryki sukcesu zadania
+## Status implementacji
+
+### ✅ Zrealizowane:
+1. **Kod aplikacji** - Wszystkie serwisy mają wsparcie dla Redis Sentinel (RedisSentinelClient)
+2. **Konfiguracja** - Pliki konfiguracyjne i docker-compose.redis-ha.yml przygotowane
+3. **Testy lokalne** - Redis HA przetestowany lokalnie
+
+### ❌ NIE zrealizowane:
+1. **Deployment produkcyjny** - Redis HA nie jest uruchomiony na Nebuli
+2. **Testy failover** - Nie przeprowadzono testów automatycznego przełączania
+3. **Monitoring HA** - Prometheus/Grafana nie monitorują topologii HA
+4. **Dokumentacja operacyjna** - Brak runbook dla operacji HA
+
+### 📋 Decyzja:
+Redis HA został **odłożony** jako future enhancement. Pojedyncza instancja Redis jest wystarczająca dla:
+- POC/MVP projektu
+- Obecnego obciążenia
+- Testów funkcjonalności
+
+Redis HA będzie wdrożony po zakończeniu Fazy 2, gdy wszystkie serwisy będą stabilne.
+
+## Całościowe metryki sukcesu zadania (planowane)
 
 1. **High Availability**: Automatic failover w <60s, 99.9% uptime
 2. **Performance**: Brak degradacji wydajności (>400 msg/s maintained)

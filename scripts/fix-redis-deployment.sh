@@ -1,4 +1,36 @@
 #!/bin/bash
+set -euo pipefail
+
+# Script to fix Redis deployment issues on Nebula
+# This implements the temporary solution: stick with single Redis
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+log() {
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $*"
+}
+
+error() {
+    echo -e "${RED}[ERROR]${NC} $*" >&2
+}
+
+warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $*"
+}
+
+# Step 1: Fix health-check script to remove sentinel checks
+fix_health_check() {
+    log "Fixing health-check-all.sh script..."
+
+    cat > "$PROJECT_ROOT/scripts/health-check-all.sh" << 'EOF'
+#!/bin/bash
 # Health check script for all services on Nebula server
 
 set -e
@@ -114,9 +146,9 @@ for container in \
     "detektr-frame-tracking-1" \
     "detektr-example-otel-1" \
     "detektr-echo-service-1" \
-    "detektor-prometheus-1" \
-    "detektor-jaeger-1" \
-    "detektor-grafana-1"; do
+    "detektr-prometheus-1" \
+    "detektr-jaeger-1" \
+    "detektr-grafana-1"; do
 
     check_container "$container"
 done
@@ -143,3 +175,112 @@ else
     echo "  - Restart service: docker restart detektr-<service>-1"
     exit 1
 fi
+EOF
+
+    chmod +x "$PROJECT_ROOT/scripts/health-check-all.sh"
+    log "Health check script fixed ✓"
+}
+
+# Step 2: Create documentation about Redis HA status
+create_redis_ha_docs() {
+    log "Creating Redis HA documentation..."
+
+    cat > "$PROJECT_ROOT/docs/infrastructure/REDIS_HA_STATUS.md" << 'EOF'
+# Redis High Availability - Status and Future Plans
+
+## Current Status (July 2025)
+
+We are using a **single Redis instance** for the following reasons:
+
+1. **Simplicity**: Single Redis is sufficient for current load and POC phase
+2. **Development Focus**: Priority is on core service functionality
+3. **Dependency**: Redis HA requires sentinel-aware clients in all services
+
+## Future Redis HA Implementation
+
+### When to implement
+- After core services are stable (post-Phase 2)
+- When reliability becomes critical
+- Before production deployment
+
+### Prerequisites
+1. All services must support Redis Sentinel
+2. Proper testing environment
+3. Zero-downtime migration plan
+
+### Files ready for Redis HA
+- `docker-compose.redis-ha.yml` - Complete HA setup
+- `config/redis-master.conf` - Master configuration
+- `config/redis-slave.conf` - Slave configuration
+- `config/sentinel.conf` - Sentinel configuration
+
+### Migration checklist
+- [ ] Update all services to use redis-sentinel library
+- [ ] Test failover scenarios
+- [ ] Create backup/restore procedures
+- [ ] Update monitoring for HA setup
+- [ ] Document operational procedures
+
+## Current Redis Configuration
+
+- **Type**: Single instance
+- **Image**: redis:7-alpine
+- **Port**: 6379
+- **Persistence**: Enabled (AOF + RDB)
+- **Memory**: 512MB limit
+- **Health check**: redis-cli ping
+
+## Monitoring
+
+Current Redis metrics available at:
+- Prometheus: http://nebula:9090 (search for "redis_")
+- Grafana: http://nebula:3000 (Redis dashboard)
+EOF
+
+    log "Redis HA documentation created ✓"
+}
+
+# Step 3: Deploy fixed health check to Nebula
+deploy_fixes() {
+    log "Deploying fixes to Nebula..."
+
+    # Copy fixed health check script
+    scp "$PROJECT_ROOT/scripts/health-check-all.sh" nebula:/opt/detektor/scripts/
+    ssh nebula "chmod +x /opt/detektor/scripts/health-check-all.sh"
+
+    log "Fixes deployed to Nebula ✓"
+}
+
+# Step 4: Test the fix
+test_health_check() {
+    log "Testing health check on Nebula..."
+
+    if ssh nebula "/opt/detektor/scripts/health-check-all.sh"; then
+        log "Health check working correctly ✓"
+    else
+        warning "Some services may be unhealthy, but health check script is working"
+    fi
+}
+
+# Main execution
+main() {
+    log "Starting Redis deployment fix..."
+
+    fix_health_check
+    create_redis_ha_docs
+    deploy_fixes
+    test_health_check
+
+    log "Redis deployment fix completed!"
+    log ""
+    log "Summary:"
+    log "- Health check script fixed (removed sentinel checks)"
+    log "- Redis HA documented as future enhancement"
+    log "- Single Redis instance continues to work"
+    log ""
+    log "Next steps:"
+    log "1. Continue with service development"
+    log "2. Implement Redis HA after Phase 2 completion"
+}
+
+main "$@"
