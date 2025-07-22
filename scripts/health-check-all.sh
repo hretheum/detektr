@@ -45,7 +45,7 @@ check_container() {
                 ;;
             "starting")
                 echo -e "${YELLOW}⚠ STARTING${NC}"
-                return 1
+                return 0  # Don't fail for starting containers
                 ;;
             "unhealthy")
                 echo -e "${RED}✗ UNHEALTHY${NC}"
