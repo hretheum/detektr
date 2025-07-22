@@ -1,0 +1,91 @@
+name: Build and Deploy Message Broker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/redis-broker/**'
+      - 'services/redis-exporter/**'
+      - 'config/redis.conf'
+      - '.github/workflows/broker-deploy.yml'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service:
+          - name: redis-broker
+            context: .
+            dockerfile: services/redis-broker/Dockerfile
+          - name: redis-exporter
+            context: .
+            dockerfile: services/redis-exporter/Dockerfile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=main-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Nebula
+        run: |
+          cd /opt/detektor
+
+          # Pull latest images
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/redis-broker:latest
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/redis-exporter:latest || true
+
+          # Restart services
+          docker compose -f docker-compose.yml -f docker-compose.override.yml up -d redis
+          docker compose -f docker-compose.redis-exporter.yml up -d redis-exporter || true
+
+          # Wait for health checks
+          sleep 10
+
+          # Verify deployment
+          docker exec redis redis-cli ping
+          curl -f http://localhost:9121/metrics | grep redis_up || true

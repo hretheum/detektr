@@ -249,7 +249,7 @@ RTSP Capture → Redis Streams → Frame Buffer → AI Services
 
 #### Zadania atomowe
 
-1. **[ ] Utworzenie Dockerfile dla Redis z custom config**
+1. **[x] Utworzenie Dockerfile dla Redis z custom config**
    - **Metryka**: Image builds w <2 min
    - **Walidacja**:
      ```bash
@@ -261,8 +261,9 @@ RTSP Capture → Redis Streams → Frame Buffer → AI Services
    - **Quality Gate**: Image size <100MB
    - **Guardrails**: No security vulnerabilities (trivy scan)
    - **Czas**: 1h
+   - **Wynik**: Image size 41.4MB (< 100MB target) ✅
 
-2. **[ ] GitHub Actions workflow dla broker images**
+2. **[x] GitHub Actions workflow dla broker images**
    - **Metryka**: Automated build on push to main
    - **Walidacja**:
      ```bash
@@ -275,8 +276,9 @@ RTSP Capture → Redis Streams → Frame Buffer → AI Services
    - **Quality Gate**: Build succeeds in <5 min
    - **Guardrails**: Only builds on main branch
    - **Czas**: 1.5h
+   - **Wynik**: Workflow broker-deploy.yml z matrix build dla redis-broker i redis-exporter ✅
 
-3. **[ ] Integration z docker-compose dla Nebula**
+3. **[x] Integration z docker-compose dla Nebula**
    - **Metryka**: docker-compose.broker.yml uses registry images
    - **Walidacja**:
      ```yaml
@@ -290,6 +292,21 @@ RTSP Capture → Redis Streams → Frame Buffer → AI Services
    - **Quality Gate**: No local build directives
    - **Guardrails**: Images pulled from registry only
    - **Czas**: 1h
+   - **Wynik**: docker-compose.broker.yml utworzony z obrazami z ghcr.io ✅
+
+#### Metryki sukcesu bloku
+
+- ✅ Redis broker Docker image: 41.4MB (Redis 7.4.5)
+- ✅ Redis exporter Docker image based on oliver006/redis_exporter:v1.55.0
+- ✅ GitHub Actions workflow z matrix strategy dla obu serwisów
+- ✅ docker-compose.broker.yml ready for production deployment
+- ✅ Automated CI/CD pipeline: build → push to ghcr.io → deploy to Nebula
+
+#### Utworzone komponenty:
+- `services/redis-broker/Dockerfile` - Custom Redis image z health check
+- `services/redis-exporter/Dockerfile` - Exporter image z health check
+- `.github/workflows/broker-deploy.yml` - CI/CD pipeline
+- `docker-compose.broker.yml` - Production deployment config
 
 ### Blok 5: DEPLOYMENT NA SERWERZE NEBULA
 

@@ -1,63 +1,45 @@
-version: "3.8"
+# Message Broker specific configuration
+# This file overrides the default Redis configuration with our custom image
 
 services:
   redis:
-    image: redis:7-alpine
-    container_name: redis
+    image: ghcr.io/hretheum/bezrobocie-detektor/redis-broker:latest
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
-      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
       - redis-data:/data
-    command: redis-server /usr/local/etc/redis/redis.conf
-    restart: unless-stopped
+    networks:
+      - detektor-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - detektor-network
 
   redis-exporter:
-    image: oliver006/redis_exporter:latest
-    container_name: redis-exporter
+    image: ghcr.io/hretheum/bezrobocie-detektor/redis-exporter:latest
+    restart: unless-stopped
     ports:
       - "9121:9121"
     environment:
-      REDIS_ADDR: "redis://redis:6379"
+      REDIS_ADDR: redis://redis:6379
+      REDIS_USER: ""
+      REDIS_PASSWORD: ""
+    networks:
+      - detektor-network
     depends_on:
       - redis
-    restart: unless-stopped
-    networks:
-      - detektor-network
-
-  rabbitmq:
-    image: rabbitmq:3.12-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672" # AMQP port
-      - "15672:15672" # Management UI
-      - "15692:15692" # Prometheus metrics
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
-    volumes:
-      - ./config/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
-      - ./config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
-      - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks:
-      - detektor-network
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9121/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   redis-data:
-  rabbitmq-data:
+    external: true
 
 networks:
   detektor-network:
