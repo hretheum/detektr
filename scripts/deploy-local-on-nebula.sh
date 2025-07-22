@@ -246,11 +246,68 @@ check_ports() {
         if sudo lsof -Pi :"$port" -sTCP:LISTEN -t >/dev/null 2>&1; then
             warning "Port $port jest zajęty!"
             has_conflicts=true
+
+            # Znajdź proces używający portu
+            local pid
+            pid=$(sudo lsof -Pi :"$port" -sTCP:LISTEN -t 2>/dev/null | head -1)
+
+            if [[ -n "$pid" ]]; then
+                local process_info
+                process_info=$(ps -p "$pid" -o comm= 2>/dev/null || echo "unknown")
+                warning "  → Proces: $process_info (PID: $pid)"
+
+                # Jeśli to docker-proxy, znajdź kontener
+                if [[ "$process_info" == "docker-proxy" ]] || [[ "$process_info" == "docker" ]]; then
+                    # Szukaj kontenera używającego tego portu
+                    local container
+                    container=$(sudo docker ps -a --format "{{.Names}}" | while read -r name; do
+                        if sudo docker port "$name" 2>/dev/null | grep -q ":$port"; then
+                            echo "$name"
+                            break
+                        fi
+                    done)
+
+                    if [[ -n "$container" ]]; then
+                        warning "  → Zatrzymuję kontener: $container"
+                        sudo docker stop "$container" 2>/dev/null || true
+                        sudo docker rm -f "$container" 2>/dev/null || true
+                    fi
+                fi
+            fi
         fi
     done
 
     if [[ "$has_conflicts" == true ]]; then
-        warning "Niektóre porty są zajęte, będę próbował je zwolnić..."
+        warning "Porty były zajęte, próbuję bardziej agresywne czyszczenie..."
+
+        # Nuclear option - zatrzymaj WSZYSTKIE kontenery Docker
+        warning "Zatrzymuję WSZYSTKIE kontenery Docker..."
+        # shellcheck disable=SC2046
+        sudo docker stop $(sudo docker ps -q) 2>/dev/null || true
+
+        # Usuń wszystkie zatrzymane kontenery
+        warning "Usuwam wszystkie zatrzymane kontenery..."
+        # shellcheck disable=SC2046
+        sudo docker rm $(sudo docker ps -aq) 2>/dev/null || true
+
+        # Daj czas na zwolnienie portów
+        sleep 5
+
+        # Sprawdź ponownie
+        local still_occupied=false
+        for port in "${ports_to_check[@]}"; do
+            if sudo lsof -Pi :"$port" -sTCP:LISTEN -t >/dev/null 2>&1; then
+                error "Port $port NADAL jest zajęty po czyszczeniu!"
+                still_occupied=true
+            fi
+        done
+
+        if [[ "$still_occupied" == true ]]; then
+            error "Niektóre porty nadal są zajęte. Możliwe, że działają procesy spoza Docker."
+            error "Sprawdź ręcznie: sudo lsof -i :6379 (i inne porty)"
+        fi
+    else
+        log "Wszystkie porty są wolne ✓"
     fi
 }
 

@@ -292,6 +292,43 @@ jobs:
             prometheus.yml
           sparse-checkout-cone-mode: false
 
+      - name: Pre-deployment cleanup
+        run: |
+          echo "🧹 Czyszczenie przed deploymentem..."
+
+          # Zatrzymaj wszystkie kontenery projektu detektr
+          echo "Zatrzymuję kontenery projektu detektr..."
+          sudo docker ps -q --filter "label=com.docker.compose.project=detektr" | xargs -r sudo docker stop || true
+          sudo docker ps -aq --filter "label=com.docker.compose.project=detektr" | xargs -r sudo docker rm -f || true
+
+          # Zatrzymaj kontenery które mogą blokować porty
+          echo "Usuwam stare kontenery..."
+          sudo docker rm -f gpu-demo detektr-redis-1 detektr-postgres-1 postgres redis 2>/dev/null || true
+
+          # Sprawdź zajęte porty
+          for port in 5432 6379 8001 8005 8006 8007 8008 9090 3000 16686; do
+            if sudo lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+              echo "⚠️ Port $port jest zajęty, próbuję zwolnić..."
+
+              # Znajdź kontener używający portu
+              container=$(sudo docker ps -a --format "{{.Names}}" | while read -r name; do
+                if sudo docker port "$name" 2>/dev/null | grep -q ":$port"; then
+                  echo "$name"
+                  break
+                fi
+              done)
+
+              if [ -n "$container" ]; then
+                echo "Zatrzymuję kontener: $container"
+                sudo docker stop "$container" 2>/dev/null || true
+                sudo docker rm -f "$container" 2>/dev/null || true
+              fi
+            fi
+          done
+
+          # Poczekaj na zwolnienie portów
+          sleep 3
+
       - name: Deploy to Nebula
         env:
           REGISTRY: ${{ env.REGISTRY }}

@@ -33,6 +33,7 @@ jobs:
           sparse-checkout: |
             scripts/deploy-local-on-nebula.sh
             scripts/health-check-all.sh
+            scripts/check-ports.sh
             docker-compose.yml
             docker-compose.*.yml
             docker-compose.prod.yml
@@ -41,6 +42,23 @@ jobs:
             config/
             prometheus.yml
           sparse-checkout-cone-mode: false
+
+      - name: Pre-deployment cleanup
+        run: |
+          echo "🧹 Czyszczenie przed deploymentem..."
+
+          # Zatrzymaj wszystkie kontenery projektu detektr
+          echo "Zatrzymuję kontenery projektu detektr..."
+          sudo docker ps -q --filter "label=com.docker.compose.project=detektr" | xargs -r sudo docker stop || true
+          sudo docker ps -aq --filter "label=com.docker.compose.project=detektr" | xargs -r sudo docker rm -f || true
+
+          # Zatrzymaj kontenery które mogą blokować porty
+          echo "Usuwam stare kontenery..."
+          sudo docker rm -f gpu-demo detektr-redis-1 detektr-postgres-1 postgres redis 2>/dev/null || true
+
+          # Sprawdź zajęte porty
+          chmod +x scripts/check-ports.sh 2>/dev/null || true
+          ./scripts/check-ports.sh || true
 
       - name: Deploy services
         env:
