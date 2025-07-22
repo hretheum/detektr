@@ -134,7 +134,31 @@ Skonfigurować wysokowydajny message broker (Redis/RabbitMQ) do kolejkowania kla
 - Redis Exporter: http://nebula:9121/metrics
 - Prometheus target: configured and scraping
 
-### Blok 2: RabbitMQ setup (alternatywa)
+### Blok 2: RabbitMQ setup (alternatywa) ⏭️ SKIPPED - REKOMENDACJA
+
+#### 🎯 Decyzja architektoniczna: Pozostajemy przy Redis Streams
+
+**Status**: SKIPPED - Redis w pełni spełnia wymagania systemu
+
+**Powody pominięcia RabbitMQ**:
+1. **Redis już przekracza wymagania**: 160k+ ops/sec vs wymagane 100 msg/s
+2. **Frame Buffer używa Redis Streams**: Integracja już zaimplementowana
+3. **Prostota > Złożoność**: Jeden system kolejkowania wystarczy
+4. **Oszczędność zasobów**: RabbitMQ = +500MB RAM niepotrzebnie
+5. **Redis Streams idealny dla video frames**: Natywne timestamps, consumer groups
+
+**Kiedy rozważyć RabbitMQ w przyszłości**:
+- Potrzeba zaawansowanego routingu (topic exchanges)
+- Federacja między data centers
+- Guaranteed exactly-once delivery
+- Kompleksowe workflow z wieloma konsumentami
+
+**Obecna architektura**:
+```
+RTSP Capture → Redis Streams → Frame Buffer → AI Services
+     ↓              ↓               ↓
+  Metrics      Persistence      Monitoring
+```
 
 #### Zadania atomowe
 
