@@ -10,7 +10,8 @@ exclude =
     dist,
     *.egg-info,
     .pytest_cache,
-    .mypy_cache
+    .mypy_cache,
+    services/*/src/shared
 per-file-ignores =
     __init__.py:F401
     src/shared/kernel/events/base.py:B024
