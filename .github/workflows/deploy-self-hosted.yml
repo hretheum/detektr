@@ -11,6 +11,16 @@ on:
         required: false
         default: false
         type: boolean
+      services:
+        description: 'Services to build (comma-separated, e.g. "frame-buffer,telegram-alerts")'
+        required: false
+        default: ''
+        type: string
+      skip_deploy:
+        description: 'Skip deployment (only build)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
@@ -59,18 +69,38 @@ jobs:
       - name: Set matrix output
         id: set-matrix
         run: |
-          # Get changed services from filter
-          CHANGED_SERVICES='${{ steps.filter.outputs.changes }}'
-
-          # Check if we have any changes
-          if [ "$CHANGED_SERVICES" = "[]" ] || [ -z "$CHANGED_SERVICES" ]; then
-            echo "No services changed"
+          # Check if force all is enabled
+          if [ "${{ github.event.inputs.force_all }}" = "true" ]; then
+            echo "Force all services enabled"
             echo "services=[]" >> $GITHUB_OUTPUT
             echo "any_changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "Changed services: $CHANGED_SERVICES"
-            echo "services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check if manual services specified
+          MANUAL_SERVICES='${{ github.event.inputs.services }}'
+
+          if [ -n "$MANUAL_SERVICES" ]; then
+            # Convert comma-separated to JSON array
+            # Handle spaces and ensure proper JSON format
+            SERVICES_JSON=$(echo "$MANUAL_SERVICES" | tr ',' '\n' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//' | sed 's/^/"/;s/$/"/' | paste -sd, | sed 's/^/[/;s/$/]/')
+            echo "Manual services selected: $SERVICES_JSON"
+            echo "services=$SERVICES_JSON" >> $GITHUB_OUTPUT
             echo "any_changed=true" >> $GITHUB_OUTPUT
+          else
+            # Get changed services from filter
+            CHANGED_SERVICES='${{ steps.filter.outputs.changes }}'
+
+            # Check if we have any changes
+            if [ "$CHANGED_SERVICES" = "[]" ] || [ -z "$CHANGED_SERVICES" ]; then
+              echo "No services changed"
+              echo "services=[]" >> $GITHUB_OUTPUT
+              echo "any_changed=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changed services: $CHANGED_SERVICES"
+              echo "services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
+              echo "any_changed=true" >> $GITHUB_OUTPUT
+            fi
           fi
 
   build-and-push:
@@ -188,12 +218,12 @@ jobs:
   deploy:
     name: Deploy to Nebula
     needs: [detect-changes, build-and-push, build-all-forced]
-    # Deploy gdy są zmiany lub force build
+    # Deploy gdy są zmiany lub force build (chyba że skip_deploy)
     if: |
       always() &&
-      (needs.build-and-push.result == 'success' || needs.build-all-forced.result == 'success' || needs.build-and-push.result == 'skipped') &&
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main'
+      (needs.build-and-push.result == 'success' || needs.build-all-forced.result == 'success') &&
+      github.ref == 'refs/heads/main' &&
+      github.event.inputs.skip_deploy != 'true'
     runs-on: [self-hosted, nebula]
     steps:
       - name: Checkout deployment scripts

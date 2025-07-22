@@ -81,6 +81,7 @@ prepare_environment() {
 
     # Source .env
     set -a
+    # shellcheck disable=SC1091
     source "$PROJECT_ROOT/.env"
     set +a
 
@@ -133,8 +134,27 @@ start_infrastructure() {
 start_services() {
     log "Uruchamianie serwisów aplikacji..."
 
-    # Użyj głównego docker-compose.yml
-    sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d
+    # Sprawdź czy mamy określone konkretne serwisy do restartu
+    if [[ -n "${SERVICES_TO_RESTART:-}" ]]; then
+        log "Restartowanie wybranych serwisów: $SERVICES_TO_RESTART"
+
+        # Konwertuj przecinki na spacje
+        SERVICES_LIST=$(echo "$SERVICES_TO_RESTART" | tr ',' ' ')
+
+        # Pull najnowszych obrazów dla wybranych serwisów
+        for service in $SERVICES_LIST; do
+            log "Pobieranie najnowszego obrazu dla $service..."
+            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" pull "$service" || true
+        done
+
+        # Restart tylko wybranych serwisów
+        # shellcheck disable=SC2086
+        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d --no-deps $SERVICES_LIST
+    else
+        # Uruchom wszystkie serwisy
+        log "Uruchamianie wszystkich serwisów..."
+        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d
+    fi
 
     log "Serwisy aplikacji uruchomione ✓"
 }
