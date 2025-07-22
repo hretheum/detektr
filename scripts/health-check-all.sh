@@ -69,21 +69,38 @@ echo "========================"
 
 # RTSP Capture Service
 check_service "RTSP Capture" "http://localhost:8001/health" || \
-    echo "  🔧 Debug: docker logs rtsp-capture-service"
+    echo "  🔧 Debug: docker logs detektr-rtsp-capture-1"
 
 # GPU Demo Service
 check_service "GPU Demo" "http://localhost:8008/health" || \
-    echo "  🔧 Debug: docker logs gpu-demo-service"
+    echo "  🔧 Debug: docker logs detektr-gpu-demo-1"
+
+# Example OTEL Service
+check_service "Example OTEL" "http://localhost:8005/health" || \
+    echo "  🔧 Debug: docker logs detektr-example-otel-1"
+
+# Frame Tracking Service
+check_service "Frame Tracking" "http://localhost:8006/health" || \
+    echo "  🔧 Debug: docker logs detektr-frame-tracking-1"
+
+# Echo Service
+check_service "Echo Service" "http://localhost:8007/health" || \
+    echo "  🔧 Debug: docker logs detektr-echo-service-1"
 
 echo ""
 echo "🐳 Container Status:"
 echo "===================="
 
-# Check all containers
-check_container "rtsp-capture-service"
-check_container "gpu-demo-service"
-check_container "redis"
-check_container "rabbitmq"
+# Check all containers - używamy rzeczywistych nazw z docker-compose
+check_container "detektr-rtsp-capture-1"
+check_container "detektr-gpu-demo-1"
+check_container "detektr-redis-1"
+check_container "detektr-postgres-1"
+check_container "detektr-frame-tracking-1"
+check_container "detektr-frame-buffer-1"
+check_container "detektr-example-otel-1"
+check_container "detektr-echo-service-1"
+check_container "detektr-telegram-alerts-1"
 
 # Summary
 echo ""
@@ -101,9 +118,10 @@ else
     echo ""
     echo "🔧 Quick debugging commands:"
     echo "  docker ps -a"
-    echo "  docker logs rtsp-capture-service"
-    echo "  docker logs gpu-demo-service"
+    echo "  docker logs detektr-rtsp-capture-1"
+    echo "  docker logs detektr-gpu-demo-1"
     echo "  docker-compose ps"
+    echo "  docker logs detektr-[service-name]-1"
 
     exit 1
 fi
