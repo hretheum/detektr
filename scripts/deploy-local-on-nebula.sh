@@ -90,18 +90,40 @@ prepare_environment() {
 
 # Uruchomienie infrastruktury
 start_infrastructure() {
-    log "Uruchamianie infrastruktury..."
+    log "Sprawdzanie stanu infrastruktury..."
 
     # Utwórz network jeśli nie istnieje
     sudo docker network create detektor-network 2>/dev/null || true
 
+    # Sprawdź czy infrastruktura już działa
+    local infra_running=true
+
+    # Sprawdź kontenery storage
+    if ! sudo docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" ps --format json | grep -q '"State":"running"'; then
+        infra_running=false
+    fi
+
+    # Sprawdź kontenery observability
+    if ! sudo docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" ps --format json | grep -q '"State":"running"'; then
+        infra_running=false
+    fi
+
+    if [ "$infra_running" = true ]; then
+        log "Infrastruktura już działa, pomijam uruchamianie ✓"
+        return 0
+    fi
+
     # Uruchom storage (PostgreSQL, Redis)
     log "Uruchamianie storage services..."
-    sudo docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" up -d
+    sudo docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" up -d || {
+        warning "Niektóre kontenery storage mogą już działać, kontynuuję..."
+    }
 
     # Uruchom observability (Prometheus, Jaeger, Grafana)
     log "Uruchamianie observability services..."
-    sudo docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" up -d
+    sudo docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" up -d || {
+        warning "Niektóre kontenery observability mogą już działać, kontynuuję..."
+    }
 
     # Czekaj na gotowość infrastruktury
     log "Czekam na gotowość infrastruktury..."
@@ -174,7 +196,21 @@ main() {
     check_required_files
     prepare_environment
 
-    start_infrastructure
+    # Jeśli deployujemy tylko konkretne serwisy, sprawdź czy infrastruktura działa
+    if [[ -n "${SERVICES_TO_RESTART:-}" ]]; then
+        log "Tryb selective deployment: $SERVICES_TO_RESTART"
+        # Dla selective deployment tylko sprawdzamy infrastrukturę
+        if ! curl -sf http://localhost:9090/-/healthy &>/dev/null; then
+            log "Infrastruktura nie działa, uruchamiam..."
+            start_infrastructure
+        else
+            log "Infrastruktura już działa ✓"
+        fi
+    else
+        # Pełny deployment - restart wszystkiego
+        start_infrastructure
+    fi
+
     start_services
 
     # Czekaj na stabilizację
