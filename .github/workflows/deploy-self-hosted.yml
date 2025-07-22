@@ -278,9 +278,14 @@ jobs:
       )
     runs-on: [self-hosted, nebula]
     steps:
-      - name: Fix workspace permissions
+      - name: Clean workspace
         run: |
-          echo "Fixing workspace permissions..."
+          echo "Cleaning workspace to avoid permission issues..."
+          # Remove directories that might have wrong permissions
+          sudo rm -rf ${{ github.workspace }}/init-scripts || true
+          sudo rm -rf ${{ github.workspace }}/grafana || true
+          sudo rm -rf ${{ github.workspace }}/config || true
+          # Ensure workspace is owned by runner
           sudo chown -R $USER:$USER ${{ github.workspace }} || true
 
       - name: Checkout deployment scripts
