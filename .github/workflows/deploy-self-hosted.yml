@@ -1,17 +1,116 @@
-name: Build and Deploy (Self-hosted)
+name: Build and Deploy (Self-hosted) - Optimized
+# This is an optimized version that only builds changed services
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      force_all:
+        description: 'Force build all services'
+        required: false
+        default: false
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: hretheum/bezrobocie-detektor
 
 jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+      any_changed: ${{ steps.filter.outputs.changes != '[]' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for proper change detection
+
+      - name: Detect changed services
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          list-files: shell
+          filters: |
+            example-otel:
+              - 'services/example-otel/**'
+              - 'services/base-template/**'
+            frame-tracking:
+              - 'services/frame-tracking/**'
+              - 'services/base-template/**'
+            base-template:
+              - 'services/base-template/**'
+            echo-service:
+              - 'services/echo-service/**'
+              - 'services/base-template/**'
+            gpu-demo:
+              - 'services/gpu-demo/**'
+            rtsp-capture:
+              - 'services/rtsp-capture/**'
+            frame-buffer:
+              - 'services/frame-buffer/**'
+              - 'services/base-template/**'
+            telegram-alerts:
+              - 'services/telegram-alerts/**'
+
   build-and-push:
-    name: Build and Push Docker Images
+    name: Build and Push Changed Services
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any_changed == 'true' || github.event.inputs.force_all == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./services/${{ matrix.service }}/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            SERVICE_NAME=${{ matrix.service }}
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            VCS_REF=${{ github.sha }}
+
+  build-all-forced:
+    name: Build All Services (Forced)
+    if: github.event.inputs.force_all == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,6 +127,7 @@ jobs:
           - frame-buffer
           - telegram-alerts
     steps:
+      # Same steps as build-and-push job
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -70,9 +170,14 @@ jobs:
 
   deploy:
     name: Deploy to Nebula
-    needs: build-and-push
+    needs: [detect-changes, build-and-push]
+    # Deploy gdy są zmiany lub force build
+    if: |
+      always() &&
+      (needs.build-and-push.result == 'success' || needs.build-all-forced.result == 'success') &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
     runs-on: [self-hosted, nebula]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout deployment scripts
         uses: actions/checkout@v4
@@ -91,22 +196,35 @@ jobs:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
           SKIP_HOSTNAME_CHECK: 1
+          CHANGED_SERVICES: ${{ needs.detect-changes.outputs.services }}
         run: |
           chmod +x scripts/deploy-local-on-nebula.sh
+
+          # Log what services were updated
+          if [ -n "$CHANGED_SERVICES" ]; then
+            echo "🔄 Deploying updated services: $CHANGED_SERVICES"
+          else
+            echo "📦 Deploying all services (forced)"
+          fi
+
           ./scripts/deploy-local-on-nebula.sh
 
       - name: Deployment Summary
         if: always()
+        env:
+          CHANGED_SERVICES: ${{ needs.detect-changes.outputs.services }}
         run: |
           echo "🚀 Deployment Summary"
           echo "===================="
-          echo "Target: ${{ secrets.NEBULA_USER }}@${{ secrets.NEBULA_HOST }}"
-          echo "Images deployed:"
-          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/example-otel:latest"
-          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frame-tracking:latest"
-          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/base-template:latest"
-          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/echo-service:latest"
-          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gpu-demo:latest"
-          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/rtsp-capture:latest"
-          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frame-buffer:latest"
-          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/telegram-alerts:latest"
+          echo "Target: Nebula (self-hosted runner)"
+          echo ""
+          if [ -n "$CHANGED_SERVICES" ]; then
+            echo "Updated services:"
+            echo "$CHANGED_SERVICES" | jq -r '.[]' | while read service; do
+              echo "  ✅ ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/$service:latest"
+            done
+          else
+            echo "All services deployed (forced build)"
+          fi
+          echo ""
+          echo "Deployment completed at: $(date)"

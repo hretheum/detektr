@@ -1,0 +1,204 @@
+name: Monitoring & Health Checks
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'services/rtsp-capture/**'
+      - '.github/workflows/monitoring.yml'
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [staging, production]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Configure kubeconfig
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+        chmod 600 $HOME/.kube/config
+
+    - name: Set namespace
+      id: set-namespace
+      run: |
+        if [[ "${{ matrix.environment }}" == "production" ]]; then
+          echo "namespace=detektor-prod" >> $GITHUB_OUTPUT
+        else
+          echo "namespace=detektor-staging" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Check service health
+      run: |
+        NAMESPACE="${{ steps.set-namespace.outputs.namespace }}"
+
+        # Check if pods are running
+        echo "Checking pod status in $NAMESPACE..."
+        kubectl get pods -n $NAMESPACE -l app=rtsp-capture
+
+        # Check if service is responding
+        echo "Checking service endpoints..."
+        kubectl get endpoints -n $NAMESPACE rtsp-capture
+
+        # Check deployment status
+        echo "Checking deployment status..."
+        kubectl get deployment -n $NAMESPACE rtsp-capture
+
+        # Check for recent restarts
+        RESTARTS=$(kubectl get pods -n $NAMESPACE -l app=rtsp-capture -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}')
+        echo "Recent restarts: $RESTARTS"
+
+        # Check if any pods have crashed
+        CRASHED_PODS=$(kubectl get pods -n $NAMESPACE -l app=rtsp-capture --field-selector=status.phase=Failed --no-headers | wc -l)
+        if [ $CRASHED_PODS -gt 0 ]; then
+          echo "WARNING: $CRASHED_PODS pods are in Failed state"
+          kubectl get pods -n $NAMESPACE -l app=rtsp-capture --field-selector=status.phase=Failed
+        fi
+
+    - name: Run health endpoint checks
+      run: |
+        NAMESPACE="${{ steps.set-namespace.outputs.namespace }}"
+
+        # Get service endpoint
+        SERVICE_IP=$(kubectl get service rtsp-capture -n $NAMESPACE -o jsonpath='{.spec.clusterIP}')
+
+        # Port forward to access service
+        kubectl port-forward service/rtsp-capture 8080:8000 -n $NAMESPACE &
+        PF_PID=$!
+
+        # Wait for port forward
+        sleep 5
+
+        # Check health endpoint
+        echo "Checking health endpoint..."
+        curl -f http://localhost:8080/health || {
+          echo "Health check failed"
+          exit 1
+        }
+
+        # Check metrics endpoint
+        echo "Checking metrics endpoint..."
+        curl -f http://localhost:8080/metrics || {
+          echo "Metrics endpoint check failed"
+          exit 1
+        }
+
+        # Kill port forward
+        kill $PF_PID
+
+    - name: Check resource usage
+      run: |
+        NAMESPACE="${{ steps.set-namespace.outputs.namespace }}"
+
+        echo "Current resource usage:"
+        kubectl top pods -n $NAMESPACE -l app=rtsp-capture
+
+        echo "Resource requests and limits:"
+        kubectl get pods -n $NAMESPACE -l app=rtsp-capture -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{range .spec.containers[*]}{"\t"}{.name}{": requests="}{.resources.requests}{", limits="}{.resources.limits}{"\n"}{end}{end}'
+
+    - name: Check logs for errors
+      run: |
+        NAMESPACE="${{ steps.set-namespace.outputs.namespace }}"
+
+        echo "Checking recent logs for errors..."
+        ERROR_COUNT=$(kubectl logs -n $NAMESPACE -l app=rtsp-capture --tail=100 | grep -i error | wc -l)
+        if [ $ERROR_COUNT -gt 0 ]; then
+          echo "Found $ERROR_COUNT error messages in logs:"
+          kubectl logs -n $NAMESPACE -l app=rtsp-capture --tail=100 | grep -i error
+        else
+          echo "No error messages found in recent logs"
+        fi
+
+    - name: Generate monitoring report
+      run: |
+        NAMESPACE="${{ steps.set-namespace.outputs.namespace }}"
+
+        cat > monitoring-report.md << EOF
+        # Monitoring Report - ${NAMESPACE}
+
+        Generated: $(date)
+
+        ## Service Status
+        \`\`\`
+        $(kubectl get pods -n $NAMESPACE -l app=rtsp-capture)
+        \`\`\`
+
+        ## Resource Usage
+        \`\`\`
+        $(kubectl top pods -n $NAMESPACE -l app=rtsp-capture)
+        \`\`\`
+
+        ## Deployment Status
+        \`\`\`
+        $(kubectl get deployment -n $NAMESPACE rtsp-capture -o wide)
+        \`\`\`
+
+        ## Service Endpoints
+        \`\`\`
+        $(kubectl get endpoints -n $NAMESPACE rtsp-capture)
+        \`\`\`
+        EOF
+
+        cat monitoring-report.md
+
+    - name: Upload monitoring report
+      uses: actions/upload-artifact@v4
+      with:
+        name: monitoring-report-${{ matrix.environment }}
+        path: monitoring-report.md
+        retention-days: 30
+
+    - name: Send alert if issues found
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: |
+          🚨 Health check failed for rtsp-capture in ${{ matrix.environment }}
+          Please check the monitoring report for details.
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  performance-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        cd services/rtsp-capture
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Run performance tests
+      run: |
+        cd services/rtsp-capture
+        pytest tests/ -v -m benchmark --benchmark-json=benchmark.json
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-benchmark
+        path: services/rtsp-capture/benchmark.json
+        retention-days: 90

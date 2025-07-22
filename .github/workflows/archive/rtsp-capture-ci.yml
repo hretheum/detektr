@@ -1,4 +1,4 @@
-name: RTSP Capture Service CI/CD (Fixed)
+name: RTSP Capture Service CI/CD
 
 on:
   push:
@@ -6,15 +6,11 @@ on:
     paths:
       - 'services/rtsp-capture/**'
       - '.github/workflows/rtsp-capture-ci.yml'
-      - '.github/workflows/rtsp-capture-ci-fixed.yml'
   pull_request:
     branches: [ main, develop ]
     paths:
       - 'services/rtsp-capture/**'
       - '.github/workflows/rtsp-capture-ci.yml'
-      - '.github/workflows/rtsp-capture-ci-fixed.yml'
-  # Add manual trigger for testing
-  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -26,8 +22,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
-    # Allow tests to run even if some fail
-    continue-on-error: true
 
     services:
       redis:
@@ -63,42 +57,36 @@ jobs:
         pip install -r requirements-dev.txt
 
     - name: Lint with flake8
-      continue-on-error: true
       run: |
         cd services/rtsp-capture
         flake8 src tests --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 src tests --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Check code formatting with black
-      continue-on-error: true
       run: |
         cd services/rtsp-capture
-        black --check src tests || echo "Code formatting issues found (non-critical)"
+        black --check src tests
 
     - name: Check import sorting with isort
-      continue-on-error: true
       run: |
         cd services/rtsp-capture
-        isort --check-only src tests || echo "Import sorting issues found (non-critical)"
+        isort --check-only src tests
 
     - name: Type check with mypy
-      continue-on-error: true
       run: |
         cd services/rtsp-capture
-        mypy src --ignore-missing-imports || echo "Type checking issues found (non-critical)"
+        mypy src --ignore-missing-imports
 
     - name: Run tests with pytest
-      continue-on-error: true
       run: |
         cd services/rtsp-capture
-        pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing || echo "Some tests failed (non-critical)"
+        pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing
       env:
         REDIS_URL: redis://localhost:6379
         PYTHONPATH: ${{ github.workspace }}/services/rtsp-capture
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
-      continue-on-error: true
       with:
         file: ./services/rtsp-capture/coverage.xml
         flags: rtsp-capture
@@ -107,13 +95,11 @@ jobs:
 
   security-scan:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
     - uses: actions/checkout@v4
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
-      continue-on-error: true
       with:
         scan-type: 'fs'
         scan-ref: 'services/rtsp-capture'
@@ -122,17 +108,15 @@ jobs:
 
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v2
-      continue-on-error: true
       with:
         sarif_file: 'trivy-results.sarif'
 
     - name: Run Bandit security check
-      continue-on-error: true
       run: |
         cd services/rtsp-capture
         pip install bandit
         bandit -r src -f json -o bandit-report.json || true
-        bandit -r src || echo "Security issues found (review recommended)"
+        bandit -r src
 
   build-and-push:
     needs: [test, security-scan]
@@ -140,9 +124,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    # Allow build even if tests fail
-    if: always()
-    continue-on-error: true
 
     steps:
     - name: Checkout repository
@@ -184,9 +165,7 @@ jobs:
   integration-test:
     needs: build-and-push
     runs-on: ubuntu-latest
-    # Modified: Allow integration tests more broadly
-    if: always() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch')
-    continue-on-error: true
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
 
     steps:
     - uses: actions/checkout@v4
@@ -195,20 +174,17 @@ jobs:
       uses: docker/setup-compose-action@v1
 
     - name: Run integration tests
-      continue-on-error: true
       run: |
         cd services/rtsp-capture
-        docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from rtsp-capture || echo "Integration tests failed (non-critical)"
+        docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from rtsp-capture
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy-staging:
     needs: [integration-test]
     runs-on: ubuntu-latest
-    # Modified: Allow staging deployment from feature branches for testing
-    if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/develop'
     environment: staging
-    continue-on-error: true
 
     steps:
     - uses: actions/checkout@v4
@@ -216,17 +192,14 @@ jobs:
     - name: Deploy to staging
       run: |
         echo "Deploying to staging environment..."
-        echo "This is a placeholder - add actual deployment commands"
-        echo "Current branch: ${{ github.ref }}"
-        echo "Event: ${{ github.event_name }}"
+        # Add your staging deployment script here
+        # Example: kubectl apply -f k8s/staging/rtsp-capture.yml
 
   deploy-production:
     needs: [integration-test]
     runs-on: ubuntu-latest
-    # Modified: Only allow production deployment from main
     if: github.ref == 'refs/heads/main'
     environment: production
-    continue-on-error: true
 
     steps:
     - uses: actions/checkout@v4
@@ -234,5 +207,5 @@ jobs:
     - name: Deploy to production
       run: |
         echo "Deploying to production environment..."
-        echo "This is a placeholder - add actual deployment commands"
-        echo "Current branch: ${{ github.ref }}"
+        # Add your production deployment script here
+        # Example: kubectl apply -f k8s/production/rtsp-capture.yml
