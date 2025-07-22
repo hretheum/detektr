@@ -10,7 +10,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
 
 #### Zadania atomowe
 
-1. **[ ] Backup obecnej konfiguracji Redis**
+1. **[x] Backup obecnej konfiguracji Redis**
    - **Metryka**: Backup plików zawierający všetkie dane Redis
    - **Walidacja**:
      ```bash
@@ -23,7 +23,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: Never proceed without confirmed backup
    - **Czas**: 0.5h
 
-2. **[ ] Weryfikacja dostępnych zasobów systemowych**
+2. **[x] Weryfikacja dostępnych zasobów systemowych**
    - **Metryka**: Wystarczające zasoby dla 4 dodatkowych kontenerów
    - **Walidacja**:
      ```bash
@@ -35,7 +35,7 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Guardrails**: Terminate if insufficient resources
    - **Czas**: 0.5h
 
-3. **[ ] Inwentaryzacja aplikacji używających Redis**
+3. **[x] Inwentaryzacja aplikacji używających Redis**
    - **Metryka**: Lista wszystkich serwisów z Redis connections
    - **Walidacja**:
      ```bash
@@ -46,6 +46,13 @@ Wdrożyć Redis Sentinel dla zapewnienia automatycznego failoveru message broker
    - **Quality Gate**: Pełna lista serwisów wymagających modyfikacji
    - **Guardrails**: No hidden Redis dependencies
    - **Czas**: 1h
+
+#### 📊 **Wyniki Bloku 0:**
+- ✅ **Backup created**: 7.6MB dump.rdb file (timestamp: 1753192075)
+- ✅ **Resources sufficient**: 57GB RAM free, 154GB disk free
+- ✅ **Redis healthy**: detektor-redis-1 running normally
+- ✅ **Services inventory**: 3 primary services identified (frame-buffer, telegram-alerts, load-tester)
+- ✅ **Compose files**: 6 docker-compose files require updates
 
 ### Blok 1: Konfiguracja Redis Master-Slave z Sentinel
 
