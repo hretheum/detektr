@@ -1,0 +1,17 @@
+# Docker Compose Volumes Configuration
+# This file configures services to use dedicated LVM volumes
+
+services:
+  redis:
+    volumes:
+      - /data/redis:/data
+
+  postgres:
+    volumes:
+      - /data/postgres:/var/lib/postgresql/data
+      - ./init-scripts/postgres:/docker-entrypoint-initdb.d:ro
+
+  # Future services that need persistent storage
+  # frame-storage:
+  #   volumes:
+  #     - /data/frames:/storage
