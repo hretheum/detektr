@@ -73,7 +73,7 @@ jobs:
       - name: Build RTSP capture image
         uses: docker/build-push-action@v5
         with:
-          context: services/rtsp-capture
+          context: .
           file: services/rtsp-capture/Dockerfile
           push: false
           tags: rtsp-capture:test
