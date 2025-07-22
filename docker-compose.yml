@@ -180,4 +180,4 @@ volumes:
 
 networks:
   detektor-network:
-    driver: bridge
+    external: true
