@@ -234,93 +234,111 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
    - **Guardrails**: Integration tests included
    - **Czas**: 1.5h
 
-### Blok 5: DEPLOYMENT NA NEBULA I WALIDACJA ⚠️
+### Blok 5: DEPLOYMENT NA NEBULA I WALIDACJA ✅
+
+> **📚 NEW**: Ten blok używa zunifikowanej procedury deployment. Zobacz [Deployment Guide](../../deployment/README.md)
 
 #### Zadania atomowe
 
-1. **[ ] Deploy frame-tracking service na Nebuli**
+1. **[ ] Przygotowanie deployment**
+   - **Metryka**: Service ready for deployment
+   - **Tasks**:
+     - [ ] Verify frame-tracking is in deploy-self-hosted.yml matrix
+     - [ ] Verify docker-compose.yml has frame-tracking service
+     - [ ] Create `docs/deployment/services/frame-tracking.md`
+   - **Template**: Use [New Service Guide](../../deployment/guides/new-service.md)
+   - **Quality Gate**: All deployment prerequisites met
+   - **Czas**: 30min
+
+2. **[ ] Deploy frame-tracking service**
    - **Metryka**: Service running with tracing enabled
-   - **Walidacja NA SERWERZE**:
+   - **SINGLE COMMAND**:
      ```bash
-     # Deploy service
-     ssh nebula "cd /opt/detektor && docker-compose -f docker-compose.yml -f docker-compose.tracking.yml pull"
-     ssh nebula "cd /opt/detektor && docker-compose -f docker-compose.yml -f docker-compose.tracking.yml up -d frame-tracking"
+     # Deploy
+     git add .
+     git commit -m "feat: deploy frame-tracking service with OpenTelemetry"
+     git push origin main
 
+     # Monitor deployment
+     gh run list --workflow=deploy-self-hosted.yml --limit=1
+     ```
+   - **Verification** (after ~5min):
+     ```bash
      # Health check
-     curl -s http://nebula:8006/health | jq .status
-     # "healthy"
-     ```
-   - **Quality Gate**: Service healthy
-   - **Guardrails**: Connected to Jaeger
-   - **Czas**: 1h
+     curl -s http://nebula:8006/health | jq .
 
-2. **[ ] E2E trace validation na produkcji**
-   - **Metryka**: Complete traces from capture to storage
-   - **Walidacja NA SERWERZE**:
+     # Metrics check
+     curl -s http://nebula:8006/metrics | grep frame_tracking
+
+     # Trace verification
+     curl -s "http://nebula:16686/api/services" | jq '. | map(select(. == "frame-tracking"))'
+     ```
+   - **Quality Gate**: Service healthy and connected to Jaeger
+   - **Czas**: 10min
+
+3. **[ ] E2E trace validation**
+   - **Metryka**: Complete traces visible in Jaeger
+   - **Test approach**:
      ```bash
-     # Generate test frames
-     ssh nebula "docker exec frame-tracking python -m frame_tracking.test_generator --count 100"
+     # Add test-generator to docker-compose.yml if needed
+     # Deploy it via git push
 
-     # Verify traces in Jaeger
-     curl -s "http://nebula:16686/api/traces?service=frame-tracking&limit=10" | jq '.[].spans | length'
-     # Multiple spans per trace
-
-     # Check frame IDs in traces
-     curl -s "http://nebula:16686/api/traces?service=frame-tracking&limit=1" | \
-       jq '.[0].spans[].tags[] | select(.key=="frame.id")'
+     # Verify traces (no SSH needed)
+     curl -s "http://nebula:16686/api/traces?service=frame-tracking&limit=10" | \
+       jq '.[].spans | length'
      ```
-   - **Quality Gate**: 100% traces have frame IDs
-   - **Guardrails**: No missing spans
-   - **Czas**: 1.5h
+   - **Quality Gate**: All traces have frame.id tags
+   - **Czas**: 30min
 
-3. **[ ] Performance impact assessment**
+4. **[ ] Performance validation**
    - **Metryka**: <1% overhead from tracing
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Baseline without tracing
-     ssh nebula "OTEL_SDK_DISABLED=true docker exec frame-tracking python -m frame_tracking.benchmark"
-     # Record throughput
-
-     # With tracing enabled
-     ssh nebula "docker exec frame-tracking python -m frame_tracking.benchmark"
-     # Compare throughput (should be within 1%)
-     ```
-   - **Quality Gate**: Performance degradation <1%
-   - **Guardrails**: CPU overhead <5%
-   - **Czas**: 2h
-
-4. **[ ] Grafana dashboard deployment**
-   - **Metryka**: Frame tracking visualizations live
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Import dashboard
-     ssh nebula "curl -X POST http://localhost:3000/api/dashboards/db \
-       -H 'Content-Type: application/json' \
-       -d @/opt/detektor/dashboards/frame-tracking.json"
-
-     # Verify data
-     open http://nebula:3000/d/frame-tracking/frame-journey
-     # Shows frame processing times and paths
-     ```
-   - **Quality Gate**: All panels populated
-   - **Guardrails**: Query performance <1s
+   - **Approach**: Deploy benchmark service via CI/CD
+   - **Monitor via Grafana**:
+     - CPU usage: http://nebula:3000/d/frame-tracking
+     - Processing latency with/without tracing
+   - **Quality Gate**: Performance within acceptable range
    - **Czas**: 1h
 
-5. **[ ] 24h trace retention test**
-   - **Metryka**: Traces searchable for 24h+
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Generate frames with known IDs
-     ssh nebula "docker exec frame-tracking python -m frame_tracking.generate_test_data"
+5. **[ ] Dashboard setup**
+   - **Metryka**: Frame tracking visualizations live
+   - **Tasks**:
+     - [ ] Create Grafana dashboard JSON
+     - [ ] Import via Grafana API
+     - [ ] Document dashboard ID in deployment guide
+   - **Verification**: http://nebula:3000/d/frame-tracking
+   - **Quality Gate**: All panels show data
+   - **Czas**: 30min
 
-     # After 24h, search for old frames
-     frame_id="test_$(date -d '24 hours ago' +%Y%m%d_%H%M%S)"
-     curl -s "http://nebula:16686/api/traces?tags=frame.id:$frame_id"
-     # Should return trace
-     ```
-   - **Quality Gate**: 24h retention working
-   - **Guardrails**: Storage growth sustainable
-   - **Czas**: 24h
+6. **[ ] Stability validation**
+   - **Metryka**: 24h stable operation
+   - **Monitor**:
+     - Service uptime in Grafana
+     - Trace retention in Jaeger
+     - No memory leaks or restarts
+   - **Quality Gate**: No issues for 24h
+   - **Czas**: 24h (passive)
+
+#### 🚀 Quick Reference
+
+```bash
+# Deploy
+git push origin main
+
+# Check deployment
+gh run list --workflow=deploy-self-hosted.yml --limit=1
+
+# Verify service
+curl http://nebula:8006/health
+curl http://nebula:16686/api/services
+
+# View traces
+open http://nebula:16686
+```
+
+#### 📚 Links
+- [Unified Deployment Guide](../../deployment/README.md)
+- [Service Deployment Docs](../../deployment/services/frame-tracking.md)
+- [Troubleshooting](../../deployment/troubleshooting/common-issues.md)
 
 ## Całościowe metryki sukcesu zadania
 

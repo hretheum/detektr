@@ -232,76 +232,109 @@ Wdrożyć TimescaleDB jako time-series database dla metadanych klatek z automaty
    - **Guardrails**: Volumes properly mapped
    - **Czas**: 1h
 
-### Blok 5: DEPLOYMENT NA NEBULA I WALIDACJA ⚠️
+### Blok 5: DEPLOYMENT NA NEBULA I WALIDACJA ✅
+
+> **📚 NEW**: Ten blok używa zunifikowanej procedury deployment. Zobacz [Deployment Guide](../../deployment/README.md)
 
 #### Zadania atomowe
 
-1. **[ ] Database deployment na Nebuli**
-   - **Metryka**: TimescaleDB running on production
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Deploy database stack
-     ssh nebula "cd /opt/detektor && docker-compose -f docker-compose.yml -f docker-compose.db.yml pull"
-     ssh nebula "cd /opt/detektor && docker-compose -f docker-compose.yml -f docker-compose.db.yml up -d"
+1. **[ ] Przygotowanie deployment**
+   - **Metryka**: Service ready for deployment
+   - **Dokumentacja**: Przygotuj `docs/deployment/services/postgresql-timescale.md`
+   - **Template**: Użyj [Service Template](../../deployment/templates/service-template.md)
+   - **Quality Gate**: Dockerfile, health check, metrics ready
+   - **Czas**: 30min
 
-     # Verify health
-     ssh nebula "docker exec postgres pg_isready -U postgres"
-     # accepting connections
+2. **[ ] Deployment via CI/CD**
+   - **Metryka**: Service deployed and healthy
+   - **SINGLE COMMAND**:
+     ```bash
+     # Commit and deploy
+     git add .
+     git commit -m "feat: deploy postgresql-timescale service"
+     git push origin main
+
+     # Monitor deployment
+     gh run list --workflow=deploy-self-hosted.yml --limit=1
      ```
-   - **Quality Gate**: Database healthy
-   - **Guardrails**: Backup configured
-   - **Czas**: 1h
-
-2. **[ ] Schema migration na produkcji**
-   - **Metryka**: All tables and hypertables created
-   - **Walidacja NA SERWERZE**:
+   - **Verification**:
      ```bash
-     # Run migrations
-     ssh nebula "docker exec postgres psql -U postgres -d detektor -f /docker-entrypoint-initdb.d/schema.sql"
-
-     # Verify schema
-     ssh nebula "docker exec postgres psql -U postgres -d detektor -c '\dt'"
-     ssh nebula "docker exec postgres psql -U postgres -d detektor -c 'SELECT * FROM timescaledb_information.hypertables'"
-     ```
-   - **Quality Gate**: All migrations successful
-   - **Guardrails**: Rollback script ready
-   - **Czas**: 1h
-
-3. **[ ] Performance testing na Nebuli**
-   - **Metryka**: Handles 1000 inserts/sec
-   - **Walidacja NA SERWERZE**:
-     ```bash
-     # Run benchmark
-     ssh nebula "docker run --rm --network detektor-network \
-       ghcr.io/hretheum/bezrobocie-detektor/db-benchmark:latest \
-       --host postgres --duration 300 --rate 1000"
+     # Check health (po ~5 min)
+     curl -s http://nebula:5432/pg_isready
 
      # Check metrics
-     curl -s http://nebula:9187/metrics | grep pg_stat_database_tup_inserted
+     curl -s http://nebula:9187/metrics | grep pg_
      ```
-   - **Quality Gate**: p99 latency <50ms
-   - **Guardrails**: CPU <70% during test
-   - **Czas**: 2h
+   - **Quality Gate**: Health check returns 200
+   - **Czas**: 10min
 
-4. **[ ] Monitoring integration na produkcji**
-   - **Metryka**: Grafana shows DB metrics
-   - **Walidacja NA SERWERZE**:
+3. **[ ] Schema migration**
+   - **Metryka**: All tables and hypertables created
+   - **Approach**: Use init container or migration service
+   - **Validation**:
      ```bash
-     # Import dashboard
-     ssh nebula "curl -X POST http://localhost:3000/api/dashboards/db \
-       -H 'Content-Type: application/json' \
-       -d @/opt/detektor/dashboards/timescaledb.json"
+     # Check migration status via API
+     curl http://nebula:8010/migrations/status
 
-     # Check data
+     # Verify in Grafana
      open http://nebula:3000/d/timescale/postgresql-timescaledb
      ```
-   - **Quality Gate**: All panels show data
-   - **Guardrails**: Alerts configured
+   - **Quality Gate**: All migrations successful
+   - **Czas**: 30min
+
+4. **[ ] Performance validation**
+   - **Metryka**: Handles 1000 inserts/sec
+   - **Deploy benchmark service**:
+     ```bash
+     # Add db-benchmark to docker-compose.yml
+     # Then deploy
+     git add docker-compose.yml
+     git commit -m "feat: add db-benchmark service"
+     git push origin main
+     ```
+   - **Monitor**: Check Grafana for performance metrics
+   - **Quality Gate**: p99 latency <50ms
    - **Czas**: 1h
 
-5. **[ ] 48h stability test**
-   - **Metryka**: No connection drops or performance degradation
-   - **Walidacja NA SERWERZE**:
+5. **[ ] Monitoring setup**
+   - **Metryka**: Full observability
+   - **Tasks**:
+     - [ ] Import Grafana dashboard
+     - [ ] Configure alerts
+     - [ ] Test alert delivery
+   - **Documentation**: Update deployment guide with dashboard ID
+   - **Quality Gate**: All panels show data
+   - **Czas**: 30min
+
+6. **[ ] Stability validation**
+   - **Metryka**: 24h uptime without issues
+   - **Monitor via**:
+     - Grafana: http://nebula:3000
+     - Prometheus: http://nebula:9090
+     - Health endpoint
+   - **Quality Gate**: No restarts, stable memory
+   - **Czas**: 24h (passive)
+
+#### 🚀 Quick Reference
+
+```bash
+# Deploy
+git push origin main
+
+# Check status
+gh run list --workflow=deploy-self-hosted.yml --limit=1
+
+# Verify health
+curl http://nebula:5432/pg_isready
+
+# View logs (if needed)
+ssh nebula "docker logs postgres --tail 50"
+```
+
+#### 📚 Links
+- [Unified Deployment Guide](../../deployment/README.md)
+- [New Service Guide](../../deployment/guides/new-service.md)
+- [Troubleshooting](../../deployment/troubleshooting/common-issues.md)
      ```bash
      # Start monitoring
      ssh nebula "/opt/detektor/scripts/db-monitor.sh start"
