@@ -1,10 +1,11 @@
-# System Detekcji i Automatyzacji Wizyjnej
+# Detektor - System Detekcji i Automatyzacji Wizyjnej
 
 [![CI](https://github.com/hretheum/detektr/actions/workflows/ci.yml/badge.svg)](https://github.com/hretheum/detektr/actions/workflows/ci.yml)
-[![Deploy](https://github.com/hretheum/detektr/actions/workflows/deploy.yml/badge.svg)](https://github.com/hretheum/detektr/actions/workflows/deploy.yml)
+[![Deploy](https://github.com/hretheum/detektr/actions/workflows/deploy-self-hosted.yml/badge.svg)](https://github.com/hretheum/detektr/actions/workflows/deploy-self-hosted.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Registry](https://img.shields.io/badge/registry-ghcr.io%2Fhretheum%2Fdetektr-blue)](https://github.com/hretheum/detektr/packages)
 
 Hobbystyczny system przechwytywania obrazu z kamery IP z wykorzystaniem AI do rozpoznawania i automatyzacji Home Assistant.
 
@@ -105,7 +106,7 @@ Faza 6: Optymalizacja i refinement         ⏳ [ZAPLANOWANA]
 ```bash
 # Klonowanie
 git clone git@github.com:hretheum/detektr.git
-cd detektor
+cd detektr
 
 # Setup environment
 make secrets-init

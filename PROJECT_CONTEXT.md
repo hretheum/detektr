@@ -8,7 +8,9 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 
 ## O projekcie
 
-**Nazwa**: System Detekcji i Automatyzacji Wizyjnej
+**Nazwa**: System Detekcji i Automatyzacji Wizyjnej (Detektor)
+**Repo**: github.com/hretheum/detektr
+**Registry**: ghcr.io/hretheum/detektr/
 **Typ**: Projekt hobbystyczny
 **Cel**: Przechwytywanie obrazu z kamery IP + AI rozpoznawanie + automatyzacja Home Assistant
 
@@ -157,6 +159,14 @@ git push origin main  # → Automatyczny build i deploy
 - ✅ CI/CD pipeline (GitHub Actions + GHCR)
 - ✅ Deployment automation (scripts/deploy-to-nebula.sh)
 - ✅ Example service z pełnym observability (example-otel)
+
+## Status unifikacji nazewnictwa (COMPLETED ✅)
+
+### Wykonane zmiany (2025-07-23):
+- ✅ Zmiana nazwy projektu: bezrobocie-detektor → detektr
+- ✅ Aktualizacja 42 plików (workflows, docker-compose, dokumentacja)
+- ✅ Nowy registry path: ghcr.io/hretheum/detektr/
+- ✅ Backup branch: naming-unification-backup-20250723-220210
 - ✅ Secrets management (SOPS z age)
 - ✅ Health monitoring (scripts/health-check-all.sh)
 

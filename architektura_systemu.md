@@ -1,8 +1,11 @@
-# System Detekcji i Automatyzacji Wizyjnej
+# Detektor - System Detekcji i Automatyzacji Wizyjnej
 
 <!--
 LLM CONTEXT PROMPT:
 To jest główny dokument architektury systemu detekcji wizyjnej.
+Nazwa: Detektor (wcześniej: bezrobocie-detektor)
+Repo: github.com/hretheum/detektr
+Registry: ghcr.io/hretheum/detektr/
 Projekt: Hobbystyczny system rozpoznawania obrazu z kamery IP + automatyzacja Home Assistant
 Stack: Docker, Python, GPU (GTX 4070 Super), observability-first approach
 Fazy: 0-6, każda z zadaniami zdekomponowanymi na bloki i zadania atomowe
@@ -14,6 +17,11 @@ INSPIRACJE: Bazujemy na proven patterns z eofek/detektor (docs/analysis/eofek-de
 - GPU monitoring patterns
 - Error handling (Circuit Breaker, Adaptive Backoff)
 - Ale UNIKAMY: over-engineering, microservices complexity, external lock-in
+
+STATUS (2025-07-23):
+✅ Faza 1 ukończona (infrastruktura, CI/CD)
+✅ Unifikacja nazewnictwa: bezrobocie-detektor → detektr
+⏳ W trakcie: Faza 2 (workflow consolidation)
 
 Gdy rozpoczynasz pracę w dowolnym punkcie projektu:
 1. Sprawdź w której fazie jesteśmy (zobacz sekcję 2)

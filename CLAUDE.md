@@ -5,9 +5,13 @@
 ### 📍 **You Are Here**
 This is a **production RTSP capture system** deployed on **Nebula server** using **GitHub Actions CI/CD** with **registry-based deployment**.
 
+**Project Name**: Detektor
+**Repository**: github.com/hretheum/detektr
+**Registry**: ghcr.io/hretheum/detektr/
+
 ### 🏗️ **Architecture Overview**
 ```
-Developer → GitHub → GitHub Actions → Container Registry → Nebula Server
+Developer → GitHub (detektr) → GitHub Actions → ghcr.io/hretheum/detektr → Nebula Server
 ```
 
 ### 🔗 **Critical Links for LLMs**
@@ -167,5 +171,11 @@ When working on this project, create entries like:
 - **Documentation time**: 5 minutes (template-based)
 - **Success rate**: 100% (health check verification)
 - **Maintenance**: Minimal (template updates)
+
+## 📝 **Recent Changes (2025-07-23)**
+- **Naming Unification**: bezrobocie-detektor → detektr
+- **Registry Path**: ghcr.io/hretheum/detektr/
+- **Updated**: 42 files (workflows, docker-compose, docs)
+- **Next Phase**: Workflow consolidation (14 → 5 files)
 
 **Remember**: This project is **production-ready** and uses **modern DevOps practices**. Always start with the documentation in `docs/deployment/` and follow the established patterns.
