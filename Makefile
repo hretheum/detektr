@@ -1,13 +1,17 @@
 # Makefile for Detektor project
 # Simplifies common operations, especially with SOPS encryption
 
-.PHONY: help up down logs test clean secrets-edit secrets-decrypt lint format pre-commit
+.PHONY: help up down logs test clean secrets-edit secrets-decrypt lint format pre-commit deploy deploy-local ps restart check-secrets
 
 # Default target
 help:
 	@echo "Detektor Project Commands:"
+	@echo "  make deploy          - Deploy to production (Nebula)"
+	@echo "  make deploy-local    - Deploy locally with all services"
 	@echo "  make up              - Start all services (decrypts secrets automatically)"
 	@echo "  make down            - Stop all services"
+	@echo "  make ps              - Show running containers"
+	@echo "  make restart [service=] - Restart service"
 	@echo "  make logs [service=] - Show logs (service optional)"
 	@echo "  make test            - Run all tests"
 	@echo "  make lint            - Run linters"
@@ -16,6 +20,7 @@ help:
 	@echo "  make clean           - Clean up temporary files"
 	@echo "  make secrets-edit    - Edit encrypted .env file"
 	@echo "  make secrets-decrypt - Decrypt .env to .env.decrypted (temporary)"
+	@echo "  make check-secrets   - Check for exposed secrets in code"
 
 # Start services with decrypted secrets
 up:
@@ -106,3 +111,38 @@ secrets-init:
 	@echo ""
 	@echo "📋 Add this public key to .sops.yaml to encrypt/decrypt secrets"
 	@echo "✅ SOPS initialized"
+
+# Deploy to production (Nebula)
+deploy:
+	@echo "🚀 Deploying to Nebula..."
+	git push origin main
+	@echo "✅ Deployment triggered. Check GitHub Actions for progress."
+
+# Deploy locally with all services
+deploy-local: secrets-decrypt
+	@echo "🚀 Starting local deployment..."
+	@docker compose -f docker-compose.yml -f docker-compose.storage.yml -f docker-compose.observability.yml up -d
+	@rm -f .env.decrypted
+	@echo "✅ Local deployment complete"
+
+# Show running containers
+ps:
+	@docker compose ps
+
+# Restart service
+restart:
+ifdef service
+	@docker compose restart $(service)
+else
+	@echo "❌ Please specify service=name"
+endif
+
+# Check for exposed secrets
+check-secrets:
+	@echo "🔐 Checking for exposed secrets..."
+	@if grep -r "password\|secret\|key" --include="*.yml" --include="*.yaml" --include="*.env" --exclude-dir=.git . 2>/dev/null | grep -v "SOPS\|ENC\[\|encrypted"; then \
+		echo "❌ Found potential secrets!"; \
+		exit 1; \
+	else \
+		echo "✅ No exposed secrets found"; \
+	fi
