@@ -127,9 +127,9 @@ When working on this project, create entries like:
 ## 🔗 **External Resources for LLMs**
 
 ### **GitHub Integration**
-- **Repository**: https://github.com/hretheum/bezrobocie-detektor
-- **Actions**: https://github.com/hretheum/bezrobocie-detektor/actions
-- **Registry**: https://github.com/hretheum/bezrobocie-detektor/packages
+- **Repository**: https://github.com/hretheum/detektr
+- **Actions**: https://github.com/hretheum/detektr/actions
+- **Registry**: https://github.com/hretheum/detektr/packages
 
 ### **Monitoring**
 - **Prometheus**: http://nebula:9090

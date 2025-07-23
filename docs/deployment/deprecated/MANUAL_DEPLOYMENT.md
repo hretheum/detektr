@@ -120,7 +120,7 @@ The `./scripts/manual-deploy.sh` script handles:
 docker login ghcr.io
 
 # Check if images exist
-docker pull ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest
+docker pull ghcr.io/hretheum/detektr/example-otel:latest
 ```
 
 ### Service Health Issues

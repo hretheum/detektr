@@ -202,7 +202,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: hretheum/bezrobocie-detektor
+  IMAGE_PREFIX: hretheum/detektr
 
 jobs:
   build-and-push:
@@ -233,10 +233,10 @@ jobs:
           NEBULA_USER: ${{ secrets.NEBULA_USER }}
         run: |
           # Pull images
-          docker pull ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest
-          docker pull ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest
-          docker pull ghcr.io/hretheum/bezrobocie-detektor/base-template:latest
-          docker pull ghcr.io/hretheum/bezrobocie-detektor/echo-service:latest
+          docker pull ghcr.io/hretheum/detektr/example-otel:latest
+          docker pull ghcr.io/hretheum/detektr/frame-tracking:latest
+          docker pull ghcr.io/hretheum/detektr/base-template:latest
+          docker pull ghcr.io/hretheum/detektr/echo-service:latest
 
           # Deploy via SSH (jeśli runner nie jest na Nebula)
           ssh ${NEBULA_USER}@${NEBULA_HOST} << 'EOF'
@@ -259,7 +259,7 @@ set -euo pipefail
 NEBULA_HOST="${NEBULA_HOST}"
 NEBULA_USER="${NEBULA_USER}"
 REGISTRY="ghcr.io"
-IMAGE_PREFIX="hretheum/bezrobocie-detektor"
+IMAGE_PREFIX="hretheum/detektr"
 
 # Services
 SERVICES=(

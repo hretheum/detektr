@@ -33,7 +33,7 @@ git commit -m "feat: deploy frame-buffer service with Redis"
 git push origin main
 
 # 3. Monitor deployment
-# Watch GitHub Actions at: https://github.com/hretheum/bezrobocie-detektor/actions
+# Watch GitHub Actions at: https://github.com/hretheum/detektr/actions
 ```
 
 ### 4. Verify Deployment
@@ -185,7 +185,7 @@ If deployment fails:
    # On Nebula
    cd /opt/detektor
    docker-compose stop frame-buffer
-   docker pull ghcr.io/hretheum/bezrobocie-detektor/frame-buffer:previous-tag
+   docker pull ghcr.io/hretheum/detektr/frame-buffer:previous-tag
    docker-compose up -d frame-buffer
    ```
 

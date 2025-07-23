@@ -11,7 +11,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Configuration
 REGISTRY="ghcr.io"
-IMAGE_PREFIX="hretheum/bezrobocie-detektor"
+IMAGE_PREFIX="hretheum/detektr"
 NEBULA_HOST="${NEBULA_HOST:-nebula}"
 NEBULA_USER="${NEBULA_USER:-hretheum}"
 NEBULA_PROJECT_DIR="/opt/detektor"

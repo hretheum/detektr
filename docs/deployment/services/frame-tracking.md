@@ -31,7 +31,7 @@ git commit -m "feat: deploy frame-tracking service"
 git push origin main
 
 # 3. Monitor deployment
-# Watch GitHub Actions at: https://github.com/hretheum/bezrobocie-detektor/actions
+# Watch GitHub Actions at: https://github.com/hretheum/detektr/actions
 ```
 
 ### 4. Verify Deployment
@@ -71,7 +71,7 @@ PROCESSING_INTERVAL=1s
 ```yaml
 services:
   frame-tracking:
-    image: ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest
+    image: ghcr.io/hretheum/detektr/frame-tracking:latest
     ports:
       - "8081:8081"
     environment:
@@ -269,7 +269,7 @@ git push origin main
 # Test model before deployment
 docker run -it --rm \
   -e MODEL_PATH=/app/models/test-model.pt \
-  ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest
+  ghcr.io/hretheum/detektr/frame-tracking:latest
 ```
 
 ### Batch Processing Optimization

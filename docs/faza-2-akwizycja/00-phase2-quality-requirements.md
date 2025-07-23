@@ -213,7 +213,7 @@ async def decode_frame(self, frame_data: bytes):
    # docker-compose.prod.yml
    services:
      rtsp-capture:
-       image: ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+       image: ghcr.io/hretheum/detektr/rtsp-capture:latest
        restart: unless-stopped
        healthcheck:
          test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
@@ -258,7 +258,7 @@ ssh nebula "docker stats rtsp-capture --no-stream"
    # scripts/rollback-service.sh
    SERVICE=$1
    VERSION=$2
-   ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/${SERVICE}:${VERSION}"
+   ssh nebula "docker pull ghcr.io/hretheum/detektr/${SERVICE}:${VERSION}"
    ssh nebula "docker stop ${SERVICE} && docker rm ${SERVICE}"
    ssh nebula "cd /opt/detektor && docker-compose up -d ${SERVICE}"
    ```

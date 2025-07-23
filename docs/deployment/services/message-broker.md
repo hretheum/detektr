@@ -8,8 +8,8 @@ Redis message broker service for frame buffering and inter-service communication
 - **Port**: 6379
 - **Exporter Port**: 9121
 - **Images**:
-  - `ghcr.io/hretheum/bezrobocie-detektor/redis-broker:latest`
-  - `ghcr.io/hretheum/bezrobocie-detektor/redis-exporter:latest`
+  - `ghcr.io/hretheum/detektr/redis-broker:latest`
+  - `ghcr.io/hretheum/detektr/redis-exporter:latest`
 
 ## Deployment
 
@@ -27,8 +27,8 @@ The GitHub Actions workflow will:
 ### Manual Deployment
 ```bash
 # Pull latest images
-docker pull ghcr.io/hretheum/bezrobocie-detektor/redis-broker:latest
-docker pull ghcr.io/hretheum/bezrobocie-detektor/redis-exporter:latest
+docker pull ghcr.io/hretheum/detektr/redis-broker:latest
+docker pull ghcr.io/hretheum/detektr/redis-exporter:latest
 
 # Deploy using broker-specific compose
 docker compose -f docker-compose.broker.yml up -d
@@ -135,6 +135,6 @@ docker exec redis redis-cli SLOWLOG GET 10
 docker compose -f docker-compose.broker.yml down
 
 # Restore previous version
-docker pull ghcr.io/hretheum/bezrobocie-detektor/redis-broker:main-<previous-sha>
+docker pull ghcr.io/hretheum/detektr/redis-broker:main-<previous-sha>
 docker compose -f docker-compose.broker.yml up -d
 ```

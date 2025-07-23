@@ -3,7 +3,7 @@
 ## EXECUTIVE SUMMARY
 
 System deployment projektu Detektor wymaga gruntownej reorganizacji. Główne problemy:
-- **3 różne nazwy** dla tego samego projektu (detektr, bezrobocie-detektor, consensus)
+- **3 różne nazwy** dla tego samego projektu (detektr, detektr, consensus)
 - **14 workflows** z duplikującą się logiką
 - **16 plików docker-compose** bez jasnej hierarchii
 - **Mieszane obrazy** w GHCR pod różnymi nazwami
@@ -21,14 +21,14 @@ System deployment projektu Detektor wymaga gruntownej reorganizacji. Główne pr
 #### 1.2 Kroki implementacji
 ```bash
 # 1. Ujednolicenie w workflows
-find .github/workflows -name "*.yml" -exec sed -i '' 's|hretheum/bezrobocie-detektor|hretheum/detektr|g' {} \;
+find .github/workflows -name "*.yml" -exec sed -i '' 's|hretheum/detektr|hretheum/detektr|g' {} \;
 find .github/workflows -name "*.yml" -exec sed -i '' 's|IMAGE_PREFIX: .*|IMAGE_PREFIX: ghcr.io/hretheum/detektr|g' {} \;
 
 # 2. Ujednolicenie w docker-compose
-find . -name "docker-compose*.yml" -exec sed -i '' 's|ghcr.io/hretheum/bezrobocie-detektor/|ghcr.io/hretheum/detektr/|g' {} \;
+find . -name "docker-compose*.yml" -exec sed -i '' 's|ghcr.io/hretheum/detektr/|ghcr.io/hretheum/detektr/|g' {} \;
 
 # 3. Aktualizacja dokumentacji
-find docs -name "*.md" -exec sed -i '' 's|bezrobocie-detektor|detektr|g' {} \;
+find docs -name "*.md" -exec sed -i '' 's|detektr|detektr|g' {} \;
 ```
 
 ### FAZA 2: KONSOLIDACJA WORKFLOWS (Priorytet: WYSOKI)

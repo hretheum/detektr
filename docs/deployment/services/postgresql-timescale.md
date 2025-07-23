@@ -6,7 +6,7 @@ TimescaleDB service providing time-series database for frame metadata and metric
 ## Service Details
 - **Name**: postgresql-timescale
 - **Port**: 5432 (PostgreSQL), 6432 (PgBouncer)
-- **Image**: `ghcr.io/hretheum/bezrobocie-detektor/timescaledb:latest`
+- **Image**: `ghcr.io/hretheum/detektr/timescaledb:latest`
 - **Dependencies**: None
 - **Health Check**: `pg_isready`
 

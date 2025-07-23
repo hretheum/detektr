@@ -17,9 +17,9 @@ GitHub Actions → Build → Test → Security Scan → Deploy → Health Check
 ```
 
 ### 2. **Registry Images**
-- **Latest**: `ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest`
-- **Tagged**: `ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:main-SHA`
-- **Versioned**: `ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:v1.0.0`
+- **Latest**: `ghcr.io/hretheum/detektr/rtsp-capture:latest`
+- **Tagged**: `ghcr.io/hretheum/detektr/rtsp-capture:main-SHA`
+- **Versioned**: `ghcr.io/hretheum/detektr/rtsp-capture:v1.0.0`
 
 ### 3. **Automated Deployment Process**
 
@@ -54,7 +54,7 @@ ssh nebula "cd /opt/detektor && systemctl status github-runner"
 curl -X POST \
   -H "Authorization: token YOUR_GITHUB_TOKEN" \
   -H "Accept: application/vnd.github.v3+json" \
-  https://api.github.com/repos/hretheum/bezrobocie-detektor/dispatches \
+  https://api.github.com/repos/hretheum/detektr/dispatches \
   -d '{"event_type": "deploy-rtsp"}'
 ```
 
@@ -85,7 +85,7 @@ ssh nebula "cd /opt/detektor && \
 ## Monitoring
 
 ### **GitHub Actions Monitoring:**
-- **URL**: https://github.com/hretheum/bezrobocie-detektor/actions
+- **URL**: https://github.com/hretheum/detektr/actions
 - **Workflow**: RTSP Capture Service CI/CD
 
 ### **Runner Status:**
@@ -107,7 +107,7 @@ ssh nebula "cd /opt/detektor && ./scripts/check-runner-status.sh"
 2. **Image Pull Issues**
    ```bash
    # Check registry access
-   ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest"
+   ssh nebula "docker pull ghcr.io/hretheum/detektr/rtsp-capture:latest"
    ```
 
 3. **Environment Issues**

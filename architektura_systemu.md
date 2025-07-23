@@ -333,7 +333,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 9. **[x] CI/CD Pipeline i Registry-based Deployment** ✅ **NOWE**
    - **Metryki**:
      - GitHub Actions buduje wszystkie obrazy automatycznie
-     - Obrazy publikowane do ghcr.io/hretheum/bezrobocie-detektor/
+     - Obrazy publikowane do ghcr.io/hretheum/detektr/
      - Deployment na Nebula bez budowania na produkcji
    - **Walidacja**:
      ```bash

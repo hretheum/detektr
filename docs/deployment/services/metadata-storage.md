@@ -72,7 +72,7 @@ CONNECTION_POOL_MAX=20
 ```yaml
 services:
   metadata-storage:
-    image: ghcr.io/hretheum/bezrobocie-detektor/metadata-storage:latest
+    image: ghcr.io/hretheum/detektr/metadata-storage:latest
     ports:
       - "8005:8005"
     environment:
@@ -159,7 +159,7 @@ docker-compose up -d metadata-storage
 docker stop metadata-storage
 
 # Rollback to last known good
-docker pull ghcr.io/hretheum/bezrobocie-detektor/metadata-storage:main-[previous-sha]
+docker pull ghcr.io/hretheum/detektr/metadata-storage:main-[previous-sha]
 docker-compose up -d metadata-storage
 
 # Verify rollback

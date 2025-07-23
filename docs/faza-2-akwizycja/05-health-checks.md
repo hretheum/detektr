@@ -240,7 +240,7 @@ All services MUST implement these endpoints:
 ```yaml
 services:
   rtsp-capture:
-    image: ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+    image: ghcr.io/hretheum/detektr/rtsp-capture:latest
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s

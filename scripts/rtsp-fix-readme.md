@@ -39,7 +39,7 @@ ssh nebula
 cd /opt/detektor
 
 # Pull latest image
-docker pull ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+docker pull ghcr.io/hretheum/detektr/rtsp-capture:latest
 
 # Force rebuild from source
 docker compose build --no-cache rtsp-capture

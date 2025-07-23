@@ -204,14 +204,14 @@ Structured JSON logs with correlation IDs:
 
 ```bash
 # Pull from GitHub Container Registry
-docker pull ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+docker pull ghcr.io/hretheum/detektr/rtsp-capture:latest
 
 # Run with environment
 docker run -d \
   -p 8001:8001 \
   -e RTSP_URL=rtsp://camera.local:554/stream \
   -e REDIS_HOST=redis \
-  ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+  ghcr.io/hretheum/detektr/rtsp-capture:latest
 ```
 
 ### Production Deployment

@@ -1,7 +1,7 @@
 # System Detekcji i Automatyzacji Wizyjnej
 
-[![CI](https://github.com/hretheum/bezrobocie-detektor/actions/workflows/ci.yml/badge.svg)](https://github.com/hretheum/bezrobocie-detektor/actions/workflows/ci.yml)
-[![Deploy](https://github.com/hretheum/bezrobocie-detektor/actions/workflows/deploy.yml/badge.svg)](https://github.com/hretheum/bezrobocie-detektor/actions/workflows/deploy.yml)
+[![CI](https://github.com/hretheum/detektr/actions/workflows/ci.yml/badge.svg)](https://github.com/hretheum/detektr/actions/workflows/ci.yml)
+[![Deploy](https://github.com/hretheum/detektr/actions/workflows/deploy.yml/badge.svg)](https://github.com/hretheum/detektr/actions/workflows/deploy.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -104,7 +104,7 @@ Faza 6: Optymalizacja i refinement         ⏳ [ZAPLANOWANA]
 
 ```bash
 # Klonowanie
-git clone git@github.com:hretheum/bezrobocie-detektor.git
+git clone git@github.com:hretheum/detektr.git
 cd detektor
 
 # Setup environment

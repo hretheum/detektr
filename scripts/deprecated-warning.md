@@ -12,6 +12,6 @@ The manual deployment scripts in this directory are **deprecated** and **should 
 
 ## Current Status:
 - ✅ GitHub Actions workflow: `.github/workflows/rtsp-capture-deploy.yml`
-- ✅ Registry images: `ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest`
+- ✅ Registry images: `ghcr.io/hretheum/detektr/rtsp-capture:latest`
 - ✅ Automated testing and security scanning
 - ✅ Zero-downtime deployment

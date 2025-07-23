@@ -11,7 +11,7 @@ The RTSP Capture Service has been successfully deployed to production (Nebula se
 - **Version**: 1.0.0
 - **Port**: 8001
 - **Status**: ✅ Running (degraded - Redis not initialized, expected)
-- **Container**: ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+- **Container**: ghcr.io/hretheum/detektr/rtsp-capture:latest
 
 ### Configuration
 - **RTSP URL**: `rtsp://admin:****@192.168.1.195:554/Preview_01_main`

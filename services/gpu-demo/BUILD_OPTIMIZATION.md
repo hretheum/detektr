@@ -45,13 +45,13 @@ RUN pip install torch torchvision ultralytics
 
 ```bash
 # Build i push do registry
-docker build -f base-pytorch.Dockerfile -t ghcr.io/hretheum/bezrobocie-detektor/base-pytorch:latest .
-docker push ghcr.io/hretheum/bezrobocie-detektor/base-pytorch:latest
+docker build -f base-pytorch.Dockerfile -t ghcr.io/hretheum/detektr/base-pytorch:latest .
+docker push ghcr.io/hretheum/detektr/base-pytorch:latest
 ```
 
 Potem w głównym Dockerfile:
 ```dockerfile
-FROM ghcr.io/hretheum/bezrobocie-detektor/base-pytorch:latest
+FROM ghcr.io/hretheum/detektr/base-pytorch:latest
 # Tylko aplikacja, bez PyTorch
 ```
 
@@ -84,8 +84,8 @@ W workflow dodaj cache dla Docker layers:
 - name: Build with cache
   uses: docker/build-push-action@v5
   with:
-    cache-from: type=registry,ref=ghcr.io/hretheum/bezrobocie-detektor/gpu-demo:buildcache
-    cache-to: type=registry,ref=ghcr.io/hretheum/bezrobocie-detektor/gpu-demo:buildcache,mode=max
+    cache-from: type=registry,ref=ghcr.io/hretheum/detektr/gpu-demo:buildcache
+    cache-to: type=registry,ref=ghcr.io/hretheum/detektr/gpu-demo:buildcache,mode=max
 ```
 
 ## Porównanie czasów budowania

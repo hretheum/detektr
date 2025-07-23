@@ -63,7 +63,7 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 
 ### CI/CD Flow (OBOWIĄZKOWY od Fazy 1)
 1. **Build**: Obrazy Docker budowane w GitHub Actions
-2. **Registry**: Publikacja do ghcr.io/hretheum/bezrobocie-detektor/
+2. **Registry**: Publikacja do ghcr.io/hretheum/detektr/
 3. **Deploy**: Pull z registry na serwer Nebula (NIGDY build na produkcji!)
 4. **Verify**: Health checks wszystkich serwisów
 
@@ -148,7 +148,7 @@ git push origin main  # → Automatyczny build i deploy
 4. API keys - NIGDY nie commituj do repo (używaj SOPS!)
 5. GPU memory - monitor użycie VRAM
 6. CI/CD - NIGDY nie buduj obrazów na produkcji
-7. Registry - wszystkie obrazy z ghcr.io/hretheum/bezrobocie-detektor/
+7. Registry - wszystkie obrazy z ghcr.io/hretheum/detektr/
 
 ## Status Fazy 1 (COMPLETED ✅)
 

@@ -45,7 +45,7 @@ Każdy future task musi używać tej strategii CI/CD.
 1. **Build w GitHub Actions** (automatyczny):
    - Trigger: push na branch `main`
    - Buduje wszystkie obrazy Docker dla serwisów
-   - Publikuje do `ghcr.io/hretheum/bezrobocie-detektor/[service]:latest`
+   - Publikuje do `ghcr.io/hretheum/detektr/[service]:latest`
    - Uruchamia się w `.github/workflows/deploy.yml`
 
 2. **Deploy na Nebula** (automatyczny lub ręczny):
@@ -87,7 +87,7 @@ ssh nebula "cd /opt/detektor && docker-compose logs [service-name]"
 
 - ✅ Commit kod → GitHub Actions buduje → deploy z registry
 - ✅ Używaj `./scripts/deploy-to-nebula.sh` do deployment
-- ✅ Pull images z `ghcr.io/hretheum/bezrobocie-detektor/`
+- ✅ Pull images z `ghcr.io/hretheum/detektr/`
 - ✅ Wszystkie deployment commands przez automation
 
 ## Blok 0: Prerequisites check - KRYTYCZNE NA SERWERZE ⚠️
@@ -201,7 +201,7 @@ STATUS:
    - **Walidacja NA SERWERZE**:
      ```bash
      # Pull latest image from registry
-     ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest"
+     ssh nebula "docker pull ghcr.io/hretheum/detektr/example-otel:latest"
      # Deploy using deployment script
      ./scripts/deploy-to-nebula.sh
      # OR manual deploy:
@@ -281,7 +281,7 @@ STATUS:
    - **Walidacja NA SERWERZE**:
      ```bash
      # Pull latest image from registry
-     ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest"
+     ssh nebula "docker pull ghcr.io/hretheum/detektr/frame-tracking:latest"
      # Deploy using deployment script
      ./scripts/deploy-to-nebula.sh
      # OR manual deploy:
@@ -352,7 +352,7 @@ STATUS:
    - **Walidacja NA SERWERZE**:
      ```bash
      # Pull latest image from registry
-     ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/echo-service:latest"
+     ssh nebula "docker pull ghcr.io/hretheum/detektr/echo-service:latest"
      # Deploy using deployment script
      ./scripts/deploy-to-nebula.sh
      # OR manual deploy:
@@ -408,7 +408,7 @@ STATUS:
    - **Walidacja NA SERWERZE**:
      ```bash
      # Pull latest GPU image from registry
-     ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/gpu-demo:latest"
+     ssh nebula "docker pull ghcr.io/hretheum/detektr/gpu-demo:latest"
      # Deploy using deployment script (with GPU support)
      ./scripts/deploy-to-nebula.sh
      # OR manual deploy:

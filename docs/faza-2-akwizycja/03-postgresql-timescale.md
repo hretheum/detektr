@@ -222,9 +222,9 @@ Wdrożyć TimescaleDB jako time-series database dla metadanych klatek z automaty
      # docker-compose.db.yml
      services:
        postgres:
-         image: ghcr.io/hretheum/bezrobocie-detektor/timescaledb:latest
+         image: ghcr.io/hretheum/detektr/timescaledb:latest
        pgbouncer:
-         image: ghcr.io/hretheum/bezrobocie-detektor/pgbouncer:latest
+         image: ghcr.io/hretheum/detektr/pgbouncer:latest
        postgres-exporter:
          image: prom/postgres-exporter:latest
      ```
@@ -399,7 +399,7 @@ ssh nebula "docker logs postgres --tail 50"
 
 ### Image Registry Structure
 ```
-ghcr.io/hretheum/bezrobocie-detektor/
+ghcr.io/hretheum/detektr/
 ├── timescaledb:latest         # TimescaleDB z migrations
 ├── timescaledb:main-SHA       # Tagged versions
 ├── pgbouncer:latest          # Connection pooler

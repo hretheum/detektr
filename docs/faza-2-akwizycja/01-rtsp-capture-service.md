@@ -166,7 +166,7 @@ curl http://nebula:8001/stream/status
 
 ### Image Registry Structure
 ```
-ghcr.io/hretheum/bezrobocie-detektor/
+ghcr.io/hretheum/detektr/
 ├── rtsp-capture:latest        # Latest stable version
 ├── rtsp-capture:main-SHA      # Git commit tagged
 └── rtsp-capture:v1.0.0        # Semantic version tags

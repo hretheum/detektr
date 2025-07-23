@@ -51,7 +51,7 @@ curl -u user:pass rtsp://camera-ip:554/stream
 # 4. Test locally
 docker run -it --rm \
   -e RTSP_URL="rtsp://user:pass@camera-ip:554/stream" \
-  ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+  ghcr.io/hretheum/detektr/rtsp-capture:latest
 ```
 
 ### Issue 2: High Memory Usage
@@ -147,14 +147,14 @@ Error: image not found
 **Solutions**:
 ```bash
 # 1. Check image exists
-docker pull ghcr.io/hretheum/bezrobocie-detektor/[service-name]:latest
+docker pull ghcr.io/hretheum/detektr/[service-name]:latest
 
 # 2. Check GitHub packages
-# Visit: https://github.com/hretheum/bezrobocie-detektor/packages
+# Visit: https://github.com/hretheum/detektr/packages
 
 # 3. Manual build
-docker build -t ghcr.io/hretheum/bezrobocie-detektor/[service-name]:latest .
-docker push ghcr.io/hretheum/bezrobocie-detektor/[service-name]:latest
+docker build -t ghcr.io/hretheum/detektr/[service-name]:latest .
+docker push ghcr.io/hretheum/detektr/[service-name]:latest
 ```
 
 ### Issue 2: Registry Authentication
@@ -285,7 +285,7 @@ docker system df
 ### Before Creating Issue
 1. **Check logs**: `docker logs [service-name]`
 2. **Check health**: `curl http://localhost:[port]/health`
-3. **Check GitHub Actions**: https://github.com/hretheum/bezrobocie-detektor/actions
+3. **Check GitHub Actions**: https://github.com/hretheum/detektr/actions
 
 ### Create Detailed Issue
 ```markdown

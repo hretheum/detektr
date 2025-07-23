@@ -8,7 +8,7 @@ The auto-deployment system uses **self-hosted GitHub Runner** on Nebula, elimina
 ### 1. **Self-hosted Runner Architecture**
 - **Runner Location**: Directly on Nebula server
 - **Access**: Local filesystem and Docker (no SSH required)
-- **Repository**: hretheum/bezrobocie-detektor
+- **Repository**: hretheum/detektr
 
 ### 2. **Service Discovery**
 - **Source**: `docker-compose.yml` used as central service registry
@@ -59,7 +59,7 @@ graph LR
 2. **Add to docker-compose.yml**:
    ```yaml
    [service-name]:
-     image: ghcr.io/hretheum/bezrobocie-detektor/[service-name]:latest
+     image: ghcr.io/hretheum/detektr/[service-name]:latest
      ports:
        - "8xxx:8000"
      # ... other config
@@ -84,7 +84,7 @@ graph LR
 #### **Runner Status**
 - **Location**: Nebula server (self-hosted)
 - **Access**: Local Docker and filesystem
-- **Repository**: Connected to hretheum/bezrobocie-detektor
+- **Repository**: Connected to hretheum/detektr
 
 ### 8. **Setup Instructions**
 
@@ -112,7 +112,7 @@ ssh nebula "curl -f http://localhost:8001/health"
 
 #### **Deployment Failed**
 1. **Check logs**: GitHub Actions → Deploy workflow
-2. **Check runner**: `systemctl status actions.runner.hretheum-bezrobocie-detektor.nebula`
+2. **Check runner**: `systemctl status actions.runner.hretheum-detektr.nebula`
 3. **Check images**: `docker images | grep ghcr.io`
 
 #### **Service Not Starting**

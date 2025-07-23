@@ -116,7 +116,7 @@ git push origin main
 - Receives webhook from push
 - Starts workflow on ubuntu-latest runners
 - Builds all service images in parallel
-- Pushes to ghcr.io/hretheum/bezrobocie-detektor/*
+- Pushes to ghcr.io/hretheum/detektr/*
 
 ### 3. Self-hosted Runner (Nebula)
 - Picks up deployment job

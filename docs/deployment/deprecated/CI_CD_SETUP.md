@@ -49,7 +49,7 @@ docker network create detektor-network
 
 2. **GitHub Actions automatycznie**:
    - Buduje wszystkie service images
-   - Publikuje do `ghcr.io/hretheum/bezrobocie-detektor/`
+   - Publikuje do `ghcr.io/hretheum/detektr/`
    - Deployuje na serwer Nebula (jeśli enabled)
 
 ### Manual deployment
@@ -114,7 +114,7 @@ ssh nebula "docker ps | grep detektor"
 
 2. Sprawdź czy images są dostępne:
    ```bash
-   ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest"
+   ssh nebula "docker pull ghcr.io/hretheum/detektr/example-otel:latest"
    ```
 
 3. Sprawdź secrets:
@@ -180,7 +180,7 @@ ssh nebula "docker ps | grep detektor"
 ssh nebula "cd /opt/detektor && docker-compose down [service-name]"
 
 # 2. Pull poprzednią wersję
-ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/[service]:previous-tag"
+ssh nebula "docker pull ghcr.io/hretheum/detektr/[service]:previous-tag"
 
 # 3. Update tag w docker-compose.yml (manual edit)
 

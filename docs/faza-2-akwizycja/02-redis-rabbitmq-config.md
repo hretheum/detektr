@@ -285,9 +285,9 @@ RTSP Capture → Redis Streams → Frame Buffer → AI Services
      # docker-compose.broker.yml should contain:
      services:
        redis:
-         image: ghcr.io/hretheum/bezrobocie-detektor/redis-broker:latest
+         image: ghcr.io/hretheum/detektr/redis-broker:latest
        redis-exporter:
-         image: ghcr.io/hretheum/bezrobocie-detektor/redis-exporter:latest
+         image: ghcr.io/hretheum/detektr/redis-exporter:latest
      ```
    - **Quality Gate**: No local build directives
    - **Guardrails**: Images pulled from registry only
@@ -433,7 +433,7 @@ curl http://nebula:9121/metrics | grep redis_up
 
 ### Image Registry Structure
 ```
-ghcr.io/hretheum/bezrobocie-detektor/
+ghcr.io/hretheum/detektr/
 ├── redis-broker:latest       # Redis z custom config
 ├── redis-broker:main-SHA     # Tagged versions
 ├── redis-exporter:latest     # Prometheus exporter

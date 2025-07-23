@@ -208,7 +208,7 @@ docker exec [service-name] env | grep PROMETHEUS
 
 ### **Project Context for LLMs:**
 - **Deployment Method**: CI/CD only (no manual deployment)
-- **Registry**: ghcr.io/hretheum/bezrobocie-detektor/
+- **Registry**: ghcr.io/hretheum/detektr/
 - **Server**: Nebula (Ubuntu with GPU)
 - **Runner**: GitHub self-hosted runner
 - **Secrets**: SOPS with age encryption
@@ -221,8 +221,8 @@ Deploy with git push → Verify with health checks
 ```
 
 ### **LLM Emergency Contacts:**
-- **GitHub Actions**: https://github.com/hretheum/bezrobocie-detektor/actions
-- **Registry**: https://github.com/hretheum/bezrobocie-detektor/packages
+- **GitHub Actions**: https://github.com/hretheum/detektr/actions
+- **Registry**: https://github.com/hretheum/detektr/packages
 - **Monitoring**: http://nebula:3000 (Grafana)
 
 ## 🎯 **LLM Success Metrics**

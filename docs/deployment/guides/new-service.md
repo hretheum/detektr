@@ -264,7 +264,7 @@ Edit `docker-compose.yml`:
 
 ```yaml
   ${SERVICE_NAME}:
-    image: ghcr.io/hretheum/bezrobocie-detektor/${SERVICE_NAME}:latest
+    image: ghcr.io/hretheum/detektr/${SERVICE_NAME}:latest
     container_name: ${SERVICE_NAME}
     restart: unless-stopped
     ports:

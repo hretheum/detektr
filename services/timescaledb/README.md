@@ -32,7 +32,7 @@ The database is automatically built and deployed via GitHub Actions:
 
 1. Push changes to `main` branch
 2. GitHub Actions builds the image
-3. Image is pushed to `ghcr.io/hretheum/bezrobocie-detektor/timescaledb:latest`
+3. Image is pushed to `ghcr.io/hretheum/detektr/timescaledb:latest`
 4. Deployment script pulls and runs the new image
 
 ## Manual Operations

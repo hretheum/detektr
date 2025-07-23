@@ -65,7 +65,7 @@ TRACING_ENABLED=true
 ```yaml
 services:
   [service-name]:
-    image: ghcr.io/hretheum/bezrobocie-detektor/[service-name]:latest
+    image: ghcr.io/hretheum/detektr/[service-name]:latest
     ports:
       - "[port]:[port]"
     environment:

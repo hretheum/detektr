@@ -183,7 +183,7 @@ RUN npm run build && \
 
 ```yaml
 management-ui:
-  image: ghcr.io/hretheum/bezrobocie-detektor/management-ui:latest
+  image: ghcr.io/hretheum/detektr/management-ui:latest
   container_name: management-ui
   restart: unless-stopped
   ports:

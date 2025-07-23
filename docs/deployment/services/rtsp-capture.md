@@ -31,7 +31,7 @@ git commit -m "feat: deploy rtsp-capture service"
 git push origin main
 
 # 3. Monitor deployment
-# Watch GitHub Actions at: https://github.com/hretheum/bezrobocie-detektor/actions
+# Watch GitHub Actions at: https://github.com/hretheum/detektr/actions
 ```
 
 ### 4. Verify Deployment
@@ -71,7 +71,7 @@ STREAM_QUALITY=high
 ```yaml
 services:
   rtsp-capture:
-    image: ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+    image: ghcr.io/hretheum/detektr/rtsp-capture:latest
     ports:
       - "8080:8080"
     environment:
@@ -254,4 +254,4 @@ git push origin main
 # Test RTSP URL before deployment
 docker run -it --rm \
   -e RTSP_URL="rtsp://user:pass@camera-ip:554/stream" \
-  ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+  ghcr.io/hretheum/detektr/rtsp-capture:latest

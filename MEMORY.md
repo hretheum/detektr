@@ -106,7 +106,7 @@ graph LR
 ```
 
 ### **📦 Registry**
-- **URL**: `ghcr.io/hretheum/bezrobocie-detektor/`
+- **URL**: `ghcr.io/hretheum/detektr/`
 - **Services**: All services use registry deployment
 - **Never**: Build on production server
 

@@ -184,7 +184,7 @@ ssh nebula "docker logs detektor-example-otel-1"
 ssh nebula "docker images | grep example-otel"
 
 # 3. Pull manually jeśli brak
-ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/example-otel:latest"
+ssh nebula "docker pull ghcr.io/hretheum/detektr/example-otel:latest"
 ```
 
 ### Problem: Health check failing
@@ -217,7 +217,7 @@ ssh nebula "docker images | grep example-otel"
 ssh nebula "cd /opt/detektor && docker-compose stop example-otel"
 
 # 3. Zmień tag w docker-compose.yml lub pull konkretny
-ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/example-otel:previous-sha"
+ssh nebula "docker pull ghcr.io/hretheum/detektr/example-otel:previous-sha"
 
 # 4. Restart
 ssh nebula "cd /opt/detektor && docker-compose up -d example-otel"

@@ -46,7 +46,7 @@ git push origin main
 ## 🔍 Verify Deployment
 
 ### 1. Check GitHub Actions
-Go to: `https://github.com/hretheum/bezrobocie-detektor/actions`
+Go to: `https://github.com/hretheum/detektr/actions`
 
 ### 2. Check Service Health
 ```bash

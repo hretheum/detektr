@@ -129,7 +129,7 @@ ssh nebula "cd /opt/detektor && docker compose restart [service-name]"
 
 2. **Image pull errors** - sprawdź czy runner ma dostęp do registry:
    ```bash
-   ssh nebula "docker pull ghcr.io/hretheum/bezrobocie-detektor/[service]:latest"
+   ssh nebula "docker pull ghcr.io/hretheum/detektr/[service]:latest"
    ```
 
 3. **SOPS decryption** - upewnij się że age key jest na miejscu:

@@ -267,7 +267,7 @@ Docker Registry (ghcr.io):
 
 2. **Use provided Dockerfile template**:
    ```dockerfile
-   FROM ghcr.io/hretheum/bezrobocie-detektor/processor-template:latest
+   FROM ghcr.io/hretheum/detektr/processor-template:latest
    COPY requirements.txt .
    RUN pip install -r requirements.txt
    COPY . .

@@ -17,7 +17,7 @@ sudo systemctl restart docker
 docker-compose up -d
 
 # 3. Check GitHub Actions
-# Visit: https://github.com/hretheum/bezrobocie-detektor/actions
+# Visit: https://github.com/hretheum/detektr/actions
 ```
 
 ### 2. Database Corruption
@@ -83,7 +83,7 @@ curl https://www.githubstatus.com/api/v2/status.json
 
 # 2. Use local images
 docker images | grep rtsp-capture
-docker tag local-image:latest ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+docker tag local-image:latest ghcr.io/hretheum/detektr/rtsp-capture:latest
 
 # 3. Manual deployment
 docker-compose -f docker-compose.rtsp.yml up -d
@@ -134,7 +134,7 @@ git revert [commit-hash]
 git push origin main
 
 # 3. Manual rollback
-docker pull ghcr.io/hretheum/bezrobocie-detektor/[service]:[previous-tag]
+docker pull ghcr.io/hretheum/detektr/[service]:[previous-tag]
 docker-compose up -d
 ```
 

@@ -394,7 +394,7 @@ open http://nebula:16686
 
 ### Image Registry Structure
 ```
-ghcr.io/hretheum/bezrobocie-detektor/
+ghcr.io/hretheum/detektr/
 ├── frame-tracking:latest      # Main tracking service
 ├── frame-tracking:main-SHA    # Tagged versions
 └── frame-tracking-lib:latest  # Shared library package
