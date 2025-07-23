@@ -9,7 +9,6 @@ Ustanawia baseline dla RTSP operations zgodnie z wymaganiami Phase 2:
 
 import asyncio
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -52,6 +51,7 @@ class TestRTSPPerformanceBaseline:
         return BaselineManager(str(baseline_file))
 
     @pytest.mark.benchmark
+    @pytest.mark.asyncio
     async def test_rtsp_connection_baseline(self, baseline_manager):
         """Establish baseline for RTSP connection time"""
 
@@ -92,6 +92,7 @@ class TestRTSPPerformanceBaseline:
         assert Path(baseline_manager.baseline_file).exists()
 
     @pytest.mark.benchmark
+    @pytest.mark.asyncio
     async def test_frame_capture_baseline(self, baseline_manager):
         """Establish baseline for frame capture performance"""
 
@@ -130,6 +131,7 @@ class TestRTSPPerformanceBaseline:
         baseline_manager.save_baselines()
 
     @pytest.mark.benchmark
+    @pytest.mark.asyncio
     async def test_frame_processing_pipeline_baseline(self, baseline_manager):
         """Establish baseline for complete frame processing pipeline"""
 
@@ -170,6 +172,7 @@ class TestRTSPPerformanceBaseline:
         baseline_manager.save_baselines()
 
     @pytest.mark.benchmark
+    @pytest.mark.asyncio
     async def test_memory_allocation_baseline(self, baseline_manager):
         """Establish baseline for memory allocation in frame processing"""
 
@@ -211,6 +214,7 @@ class TestRTSPPerformanceBaseline:
         baseline_manager.save_baselines()
 
     @pytest.mark.benchmark
+    @pytest.mark.asyncio
     async def test_concurrent_streams_baseline(self, baseline_manager):
         """Establish baseline for concurrent stream processing"""
 
@@ -263,6 +267,7 @@ class TestRTSPPerformanceBaseline:
         return {"stream_id": stream_id, "frame_processed": True}
 
     @pytest.mark.benchmark
+    @pytest.mark.asyncio
     async def test_reconnection_baseline(self, baseline_manager):
         """Establish baseline for RTSP reconnection performance"""
 
@@ -310,6 +315,7 @@ class TestRTSPPerformanceBaseline:
         baseline_manager.save_baselines()
 
     @pytest.mark.benchmark
+    @pytest.mark.asyncio
     async def test_comprehensive_baseline_report(self, baseline_manager):
         """Generate comprehensive baseline report"""
 
@@ -368,6 +374,7 @@ class TestRTSPRegressionDetection:
         return BaselineManager(str(baseline_file))
 
     @pytest.mark.benchmark
+    @pytest.mark.asyncio
     async def test_regression_detection_capability(self, baseline_manager):
         """Test that regression detection works for RTSP operations"""
 
