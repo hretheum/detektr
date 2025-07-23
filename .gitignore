@@ -51,6 +51,7 @@ logs/
 !docs/**/*.jpg
 
 # Secrets
+.env
 .env.decrypted
 .env.local
 .env.*.decrypted

@@ -125,18 +125,5 @@ SELECT add_continuous_aggregate_policy(
     schedule_interval => INTERVAL '1 minute'
 );
 
--- Create user for application
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT FROM pg_user WHERE usename = 'detektor_app') THEN
-        CREATE USER detektor_app WITH PASSWORD 'app_password';
-    END IF;
-END
-$$;
-
--- Grant permissions
-GRANT USAGE ON SCHEMA tracking TO detektor_app;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA tracking TO detektor_app;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA tracking TO detektor_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA tracking GRANT ALL ON TABLES TO detektor_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA tracking GRANT ALL ON SEQUENCES TO detektor_app;
+-- Application will use the main user configured via environment variables
+-- No hardcoded passwords in SQL scripts!
