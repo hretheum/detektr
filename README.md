@@ -203,6 +203,13 @@ make lint     # Sprawdź kod
 git commit    # Zapisz zmiany
 ```
 
+## 📚 Documentation
+
+- **[Deployment Guide](docs/deployment/README.md)** - Start here for deployment
+- **[Adding New Service](docs/deployment/guides/new-service.md)** - Step-by-step guide
+- **[Troubleshooting](docs/deployment/troubleshooting/)** - Common issues and solutions
+- **[Project Context](PROJECT_CONTEXT.md)** - Architecture and decisions
+
 ## Porty Serwisów
 
 - **8001**: rtsp-capture ✅ (deployed on Nebula, status: degraded)
@@ -229,7 +236,7 @@ git commit    # Zapisz zmiany
 - ✅ Example service z pełnym observability (example-otel)
 - ✅ Secrets management (SOPS z age)
 - ✅ Health monitoring (scripts/health-check-all.sh)
-- ✅ **NOWA DOKUMENTACJA**: Unified deployment docs (`docs/deployment/`)
+- ✅ **NOWA DOKUMENTACJA**: Unified deployment docs ([`docs/deployment/`](docs/deployment/README.md))
 
 **Faza 2 - W trakcie**:
 - ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)

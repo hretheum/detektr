@@ -121,7 +121,9 @@ git push origin main  # → Automatyczny build i deploy
 - **Co zrobić**: `/architektura_systemu.md`
 - **Szczegóły zadania**: `/docs/faza-*/`
 - **Szablon nowego zadania**: `/docs/TASK_TEMPLATE.md`
-- **CI/CD setup**: `/docs/CI_CD_SETUP.md`
+- **DEPLOYMENT DOCS**: `/docs/deployment/README.md` ⭐ (unified workflows)
+- **Add new service**: `/docs/deployment/guides/new-service.md`
+- **CI/CD troubleshooting**: `/docs/deployment/troubleshooting/`
 - **Deployment scripts**: `/scripts/deploy-to-nebula.sh`
 
 ## Komendy projektu
