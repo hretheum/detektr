@@ -39,7 +39,7 @@ services:
     image: example-otel:simple
     restart: unless-stopped
     ports:
-      - "8005:8000"
+      - "8009:8000"
     environment:
       SERVICE_NAME: example-otel
       PORT: 8000
