@@ -42,3 +42,9 @@ scrape_configs:
     static_configs:
       - targets: ["redis-exporter:9121"]
     metrics_path: "/metrics"
+
+  # PostgreSQL exporter
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+    metrics_path: "/metrics"

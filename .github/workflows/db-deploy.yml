@@ -1,0 +1,154 @@
+name: Build and Deploy Database Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/timescaledb/**'
+      - 'services/pgbouncer/**'
+      - '.github/workflows/db-deploy.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/timescaledb/**'
+      - 'services/pgbouncer/**'
+      - '.github/workflows/db-deploy.yml'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/bezrobocie-detektor
+
+jobs:
+  build-timescaledb:
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/timescaledb
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=main-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push TimescaleDB image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./services/timescaledb/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-pgbouncer:
+    runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create PgBouncer Dockerfile
+        run: |
+          mkdir -p services/pgbouncer
+          cat > services/pgbouncer/Dockerfile << 'EOF'
+          FROM edoburu/pgbouncer:latest
+
+          # Custom configuration can be added here
+          # COPY pgbouncer.ini /etc/pgbouncer/
+
+          # Health check
+          HEALTHCHECK --interval=30s --timeout=5s --retries=5 \
+            CMD pg_isready -h localhost -p 5432 || exit 1
+
+          # Labels
+          LABEL org.opencontainers.image.source="https://github.com/hretheum/bezrobocie-detektor"
+          LABEL org.opencontainers.image.description="PgBouncer connection pooler for Detektor"
+          EOF
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/pgbouncer
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=main-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push PgBouncer image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/pgbouncer
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-to-nebula:
+    needs: [build-timescaledb, build-pgbouncer]
+    runs-on: self-hosted
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to Nebula
+        run: |
+          echo "Deploying database stack to Nebula..."
+
+          # Pull latest images
+          docker pull ${{ env.IMAGE_PREFIX }}/timescaledb:latest
+          docker pull ${{ env.IMAGE_PREFIX }}/pgbouncer:latest
+
+          # Restart services if running
+          cd /opt/detektor
+          if docker compose ps | grep -q "postgres"; then
+            docker compose stop postgres pgbouncer || true
+            docker compose rm -f postgres pgbouncer || true
+          fi
+
+          # Update and start services
+          docker compose up -d postgres pgbouncer
+
+          # Wait for services to be healthy
+          echo "Waiting for services to be healthy..."
+          for i in {1..30}; do
+            if docker compose ps | grep -E "postgres.*healthy" && \
+               docker compose ps | grep -E "pgbouncer.*healthy"; then
+              echo "Services are healthy!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 10
+          done
+
+          # Show status
+          docker compose ps postgres pgbouncer

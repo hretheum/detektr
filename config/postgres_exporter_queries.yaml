@@ -1,0 +1,129 @@
+# Custom metrics for Detektor project
+# These queries export business-specific metrics from TimescaleDB
+
+# Frame tracking metrics
+frame_count:
+  query: |
+    SELECT
+      service_name,
+      COUNT(*) as count
+    FROM tracking.frame_events
+    WHERE event_timestamp > NOW() - INTERVAL '5 minutes'
+    GROUP BY service_name
+  metrics:
+    - service_name:
+        usage: "LABEL"
+        description: "Service that processed the frame"
+    - count:
+        usage: "GAUGE"
+        description: "Number of frames processed in last 5 minutes"
+
+# Detection statistics
+detection_stats:
+  query: |
+    SELECT
+      detection_type,
+      COUNT(*) as total_detections,
+      AVG(confidence)::float as avg_confidence,
+      MAX(confidence)::float as max_confidence
+    FROM tracking.detections
+    WHERE detected_at > NOW() - INTERVAL '5 minutes'
+    GROUP BY detection_type
+  metrics:
+    - detection_type:
+        usage: "LABEL"
+        description: "Type of detection (face, object, gesture)"
+    - total_detections:
+        usage: "GAUGE"
+        description: "Total detections in last 5 minutes"
+    - avg_confidence:
+        usage: "GAUGE"
+        description: "Average confidence score"
+    - max_confidence:
+        usage: "GAUGE"
+        description: "Maximum confidence score"
+
+# Service performance metrics
+service_performance:
+  query: |
+    SELECT
+      service_name,
+      AVG(value)::float as avg_latency,
+      MAX(value)::float as max_latency,
+      COUNT(*) as request_count
+    FROM tracking.service_metrics
+    WHERE
+      metric_name = 'processing_time_ms'
+      AND recorded_at > NOW() - INTERVAL '5 minutes'
+    GROUP BY service_name
+  metrics:
+    - service_name:
+        usage: "LABEL"
+        description: "Service name"
+    - avg_latency:
+        usage: "GAUGE"
+        description: "Average processing latency in ms"
+    - max_latency:
+        usage: "GAUGE"
+        description: "Maximum processing latency in ms"
+    - request_count:
+        usage: "GAUGE"
+        description: "Number of requests processed"
+
+# Storage utilization
+storage_stats:
+  query: |
+    SELECT
+      hypertable_name,
+      pg_size_pretty(total_bytes) as total_size,
+      total_bytes::float as total_bytes_num,
+      pg_size_pretty(compression_total_bytes) as compressed_size,
+      compression_total_bytes::float as compressed_bytes_num,
+      number_compressed_chunks
+    FROM timescaledb_information.hypertable
+    WHERE hypertable_schema IN ('tracking', 'metadata')
+  metrics:
+    - hypertable_name:
+        usage: "LABEL"
+        description: "Name of the hypertable"
+    - total_size:
+        usage: "LABEL"
+        description: "Human readable total size"
+    - total_bytes_num:
+        usage: "GAUGE"
+        description: "Total size in bytes"
+    - compressed_size:
+        usage: "LABEL"
+        description: "Human readable compressed size"
+    - compressed_bytes_num:
+        usage: "GAUGE"
+        description: "Compressed size in bytes"
+    - number_compressed_chunks:
+        usage: "GAUGE"
+        description: "Number of compressed chunks"
+
+# Continuous aggregate lag
+continuous_aggregate_lag:
+  query: |
+    WITH aggregate_info AS (
+      SELECT
+        view_name,
+        EXTRACT(EPOCH FROM (NOW() - last_refresh))::float as lag_seconds
+      FROM timescaledb_information.continuous_aggregates ca
+      LEFT JOIN LATERAL (
+        SELECT MAX(refresh_window_end) as last_refresh
+        FROM timescaledb_information.continuous_aggregate_stats
+        WHERE hypertable_name = ca.view_name
+      ) stats ON true
+    )
+    SELECT
+      view_name,
+      COALESCE(lag_seconds, 0) as lag_seconds
+    FROM aggregate_info
+  metrics:
+    - view_name:
+        usage: "LABEL"
+        description: "Name of the continuous aggregate"
+    - lag_seconds:
+        usage: "GAUGE"
+        description: "Seconds since last refresh"

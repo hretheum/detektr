@@ -106,6 +106,59 @@ services:
     depends_on:
       - loki
 
+  # Redis exporter for Prometheus
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    restart: unless-stopped
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9121/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  # PostgreSQL exporter for Prometheus
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    restart: unless-stopped
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://detektor:${POSTGRES_PASSWORD}@postgres:5432/detektor_db?sslmode=disable"
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
+      PG_EXPORTER_INCLUDE_DATABASES: "detektor_db"
+      PG_EXPORTER_EXCLUDE_DATABASES: "template0,template1"
+      PG_EXPORTER_EXTEND_QUERY_PATH: "/config/queries.yaml"
+    volumes:
+      - ./config/postgres_exporter_queries.yaml:/config/queries.yaml:ro
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9187/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
 volumes:
   prometheus-data:
   grafana-data:
