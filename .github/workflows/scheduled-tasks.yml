@@ -1,0 +1,360 @@
+name: Scheduled Tasks
+
+on:
+  schedule:
+    # Daily cleanup at 2 AM UTC
+    - cron: '0 2 * * *'
+    # Weekly base image rebuild on Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+    # Monthly security scan on 1st day at 4 AM UTC
+    - cron: '0 4 1 * *'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task to run'
+        required: true
+        type: choice
+        options:
+          - all
+          - daily-cleanup
+          - weekly-rebuild
+          - monthly-security
+          - docker-prune
+          - log-rotation
+          - backup-check
+
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+
+jobs:
+  # =================================
+  # DETERMINE TASKS TO RUN
+  # =================================
+  determine-tasks:
+    name: Determine Tasks
+    runs-on: ubuntu-latest
+    outputs:
+      run_cleanup: ${{ steps.determine.outputs.run_cleanup }}
+      run_rebuild: ${{ steps.determine.outputs.run_rebuild }}
+      run_security: ${{ steps.determine.outputs.run_security }}
+    steps:
+      - name: Determine which tasks to run
+        id: determine
+        run: |
+          # Default all to false
+          run_cleanup="false"
+          run_rebuild="false"
+          run_security="false"
+
+          # Check if triggered by schedule
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            # Determine based on cron expression
+            hour=$(date -u +%H)
+            day_of_week=$(date -u +%u)  # 1=Monday, 7=Sunday
+            day_of_month=$(date -u +%d)
+
+            # Daily cleanup (2 AM)
+            if [[ "$hour" == "02" ]]; then
+              run_cleanup="true"
+            fi
+
+            # Weekly rebuild (Sunday 3 AM)
+            if [[ "$hour" == "03" && "$day_of_week" == "7" ]]; then
+              run_rebuild="true"
+            fi
+
+            # Monthly security (1st day, 4 AM)
+            if [[ "$hour" == "04" && "$day_of_month" == "01" ]]; then
+              run_security="true"
+            fi
+          else
+            # Manual trigger
+            case "${{ github.event.inputs.task }}" in
+              "all")
+                run_cleanup="true"
+                run_rebuild="true"
+                run_security="true"
+                ;;
+              "daily-cleanup"|"docker-prune"|"log-rotation")
+                run_cleanup="true"
+                ;;
+              "weekly-rebuild")
+                run_rebuild="true"
+                ;;
+              "monthly-security")
+                run_security="true"
+                ;;
+              "backup-check")
+                run_cleanup="true"  # Include backup check in cleanup
+                ;;
+            esac
+          fi
+
+          # Output results
+          echo "run_cleanup=$run_cleanup" >> $GITHUB_OUTPUT
+          echo "run_rebuild=$run_rebuild" >> $GITHUB_OUTPUT
+          echo "run_security=$run_security" >> $GITHUB_OUTPUT
+
+          # Summary
+          echo "### 📅 Scheduled Tasks" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cleanup**: $run_cleanup" >> $GITHUB_STEP_SUMMARY
+          echo "- **Rebuild**: $run_rebuild" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security**: $run_security" >> $GITHUB_STEP_SUMMARY
+
+  # =================================
+  # DAILY CLEANUP TASKS
+  # =================================
+  daily-cleanup:
+    name: Daily Cleanup
+    needs: determine-tasks
+    if: needs.determine-tasks.outputs.run_cleanup == 'true'
+    runs-on: self-hosted
+    steps:
+      - name: Docker System Cleanup
+        run: |
+          echo "🧹 Running Docker cleanup..."
+
+          # Show initial state
+          echo "### Initial Docker disk usage:"
+          docker system df
+
+          # Remove stopped containers older than 24h
+          echo "Removing old stopped containers..."
+          docker container prune -f --filter "until=24h"
+
+          # Remove dangling images
+          echo "Removing dangling images..."
+          docker image prune -f
+
+          # Remove unused volumes (careful - only unnamed ones)
+          echo "Removing unused anonymous volumes..."
+          docker volume prune -f
+
+          # Remove unused networks
+          echo "Removing unused networks..."
+          docker network prune -f
+
+          # Remove build cache older than 7 days
+          echo "Removing old build cache..."
+          docker builder prune -f --filter "until=168h"
+
+          # Show final state
+          echo "### Final Docker disk usage:"
+          docker system df
+
+      - name: Log Rotation
+        run: |
+          echo "📜 Rotating logs..."
+
+          # Find and compress logs older than 7 days
+          find /opt/detektor/logs -name "*.log" -type f -mtime +7 -exec gzip {} \; 2>/dev/null || true
+
+          # Remove compressed logs older than 30 days
+          find /opt/detektor/logs -name "*.log.gz" -type f -mtime +30 -delete 2>/dev/null || true
+
+          # Truncate active logs if they're too large (>100MB)
+          for log in /opt/detektor/logs/*.log; do
+            if [ -f "$log" ]; then
+              size=$(stat -f%z "$log" 2>/dev/null || stat -c%s "$log" 2>/dev/null || echo 0)
+              if [ "$size" -gt 104857600 ]; then
+                echo "Truncating large log: $log ($(($size / 1048576))MB)"
+                tail -n 10000 "$log" > "$log.tmp" && mv "$log.tmp" "$log"
+              fi
+            fi
+          done
+
+      - name: Backup Health Check
+        if: github.event.inputs.task == 'backup-check' || github.event.inputs.task == 'all'
+        run: |
+          echo "💾 Checking backups..."
+
+          BACKUP_DIR="/backups/detektor"
+          if [ -d "$BACKUP_DIR" ]; then
+            echo "### Recent backups:"
+            ls -lah "$BACKUP_DIR" | head -20
+
+            # Check if latest backup is not older than 7 days
+            latest_backup=$(find "$BACKUP_DIR" -type d -name "20*" | sort -r | head -1)
+            if [ -n "$latest_backup" ]; then
+              backup_age=$(( ($(date +%s) - $(stat -f%m "$latest_backup" 2>/dev/null || stat -c%Y "$latest_backup")) / 86400 ))
+              echo "Latest backup: $latest_backup (${backup_age} days old)"
+
+              if [ "$backup_age" -gt 7 ]; then
+                echo "⚠️ WARNING: Latest backup is older than 7 days!"
+              else
+                echo "✅ Backup is recent"
+              fi
+            else
+              echo "❌ ERROR: No backups found!"
+            fi
+          else
+            echo "❌ ERROR: Backup directory not found!"
+          fi
+
+  # =================================
+  # WEEKLY BASE IMAGE REBUILD
+  # =================================
+  weekly-rebuild:
+    name: Weekly Base Image Rebuild
+    needs: determine-tasks
+    if: needs.determine-tasks.outputs.run_rebuild == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - name: base-python
+            context: .
+            dockerfile: docker/base/Dockerfile.python
+            build-args: |
+              PYTHON_VERSION=3.11
+          - name: base-gpu
+            context: .
+            dockerfile: docker/base/Dockerfile.gpu
+            build-args: |
+              CUDA_VERSION=12.1.0
+              PYTHON_VERSION=3.11
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate date tag
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/detektr/${{ matrix.name }}:latest
+            ghcr.io/${{ github.repository_owner }}/detektr/${{ matrix.name }}:${{ steps.date.outputs.date }}
+          build-args: ${{ matrix.build-args }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  # =================================
+  # MONTHLY SECURITY SCAN
+  # =================================
+  monthly-security:
+    name: Monthly Security Scan
+    needs: determine-tasks
+    if: needs.determine-tasks.outputs.run_security == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Scan Docker images
+        run: |
+          echo "🔍 Scanning Docker images..."
+
+          # Get list of our images
+          images=(
+            "ghcr.io/${{ github.repository_owner }}/detektr/base-python:latest"
+            "ghcr.io/${{ github.repository_owner }}/detektr/base-gpu:latest"
+            "ghcr.io/${{ github.repository_owner }}/detektr/rtsp-capture:latest"
+            "ghcr.io/${{ github.repository_owner }}/detektr/frame-tracking:latest"
+          )
+
+          # Scan each image
+          for image in "${images[@]}"; do
+            echo "Scanning $image..."
+            docker run --rm \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              aquasec/trivy image \
+              --severity CRITICAL,HIGH \
+              --no-progress \
+              "$image" || echo "Failed to scan $image"
+          done
+
+      - name: Check dependencies
+        run: |
+          echo "📦 Checking Python dependencies..."
+
+          # Install safety for Python dependency check
+          pip install safety
+
+          # Check each service's requirements
+          for req in services/*/requirements.txt; do
+            if [ -f "$req" ]; then
+              service=$(dirname "$req")
+              echo "Checking $service..."
+              safety check -r "$req" --json || echo "Issues found in $service"
+            fi
+          done
+
+  # =================================
+  # SUMMARY
+  # =================================
+  summary:
+    name: Task Summary
+    runs-on: ubuntu-latest
+    needs: [determine-tasks, daily-cleanup, weekly-rebuild, monthly-security]
+    if: always()
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 📅 Scheduled Tasks Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Task execution status
+          echo "### Task Execution" >> $GITHUB_STEP_SUMMARY
+          echo "| Task | Scheduled | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.determine-tasks.outputs.run_cleanup }}" == "true" ]]; then
+            echo "| Daily Cleanup | ✅ | ${{ needs.daily-cleanup.result }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Daily Cleanup | ❌ | skipped |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.determine-tasks.outputs.run_rebuild }}" == "true" ]]; then
+            echo "| Weekly Rebuild | ✅ | ${{ needs.weekly-rebuild.result }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Weekly Rebuild | ❌ | skipped |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "${{ needs.determine-tasks.outputs.run_security }}" == "true" ]]; then
+            echo "| Monthly Security | ✅ | ${{ needs.monthly-security.result }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Monthly Security | ❌ | skipped |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Next scheduled runs
+          echo "### Next Scheduled Runs" >> $GITHUB_STEP_SUMMARY
+          echo "- **Daily Cleanup**: Tomorrow 2:00 AM UTC" >> $GITHUB_STEP_SUMMARY
+          echo "- **Weekly Rebuild**: Next Sunday 3:00 AM UTC" >> $GITHUB_STEP_SUMMARY
+          echo "- **Monthly Security**: 1st of next month 4:00 AM UTC" >> $GITHUB_STEP_SUMMARY

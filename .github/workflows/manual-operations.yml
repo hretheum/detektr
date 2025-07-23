@@ -1,0 +1,353 @@
+name: Manual Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Operation to perform'
+        required: true
+        type: choice
+        options:
+          - cleanup-runner
+          - cleanup-docker
+          - test-runner
+          - diagnostic
+          - db-migrate
+          - backup-volumes
+          - restore-volumes
+          - rebuild-base-images
+      target:
+        description: 'Target environment'
+        required: false
+        default: 'self-hosted'
+        type: choice
+        options:
+          - self-hosted
+          - nebula
+          - all
+      verbose:
+        description: 'Enable verbose output'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # =================================
+  # CLEANUP OPERATIONS
+  # =================================
+  cleanup:
+    name: Cleanup Operations
+    if: contains(fromJSON('["cleanup-runner", "cleanup-docker"]'), github.event.inputs.operation)
+    runs-on: ${{ github.event.inputs.target == 'all' && matrix.runner || github.event.inputs.target }}
+    strategy:
+      matrix:
+        runner: ${{ github.event.inputs.target == 'all' && fromJSON('["self-hosted", "ubuntu-latest"]') || fromJSON('["placeholder"]') }}
+    steps:
+      - name: Runner Information
+        run: |
+          echo "🏃 Running on: ${{ runner.name }}"
+          echo "📍 Runner OS: ${{ runner.os }}"
+          echo "🔧 Operation: ${{ github.event.inputs.operation }}"
+
+      - name: Cleanup Runner Workspace
+        if: github.event.inputs.operation == 'cleanup-runner'
+        run: |
+          echo "🧹 Cleaning runner workspace..."
+
+          # Clean workspace
+          if [ -d "${{ github.workspace }}" ]; then
+            echo "Cleaning ${{ github.workspace }}..."
+            sudo rm -rf ${{ github.workspace }}/* || true
+            sudo rm -rf ${{ github.workspace }}/.* 2>/dev/null || true
+          fi
+
+          # Clean temp directories
+          echo "Cleaning temp directories..."
+          sudo rm -rf /tmp/runner-* || true
+
+          # Show disk usage
+          echo "💾 Disk usage after cleanup:"
+          df -h
+
+      - name: Cleanup Docker System
+        if: github.event.inputs.operation == 'cleanup-docker'
+        run: |
+          echo "🐳 Cleaning Docker system..."
+
+          # Show initial state
+          echo "Initial Docker state:"
+          docker system df
+
+          # Stop all containers
+          echo "Stopping all containers..."
+          docker stop $(docker ps -aq) 2>/dev/null || true
+
+          # Remove stopped containers
+          echo "Removing stopped containers..."
+          docker container prune -f
+
+          # Remove unused images
+          echo "Removing unused images..."
+          docker image prune -af
+
+          # Remove unused volumes (careful!)
+          echo "Removing unused volumes..."
+          docker volume prune -f
+
+          # Remove unused networks
+          echo "Removing unused networks..."
+          docker network prune -f
+
+          # Full system prune
+          echo "Running full system prune..."
+          docker system prune -af --volumes
+
+          # Show final state
+          echo "Final Docker state:"
+          docker system df
+          echo "💾 Disk usage after cleanup:"
+          df -h
+
+  # =================================
+  # TEST & DIAGNOSTIC OPERATIONS
+  # =================================
+  test-diagnostic:
+    name: Test & Diagnostic
+    if: contains(fromJSON('["test-runner", "diagnostic"]'), github.event.inputs.operation)
+    runs-on: ${{ github.event.inputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event.inputs.operation == 'diagnostic'
+
+      - name: Test Runner
+        if: github.event.inputs.operation == 'test-runner'
+        run: |
+          echo "🧪 Testing runner: ${{ runner.name }}"
+          echo "================================="
+          echo "Runner Information:"
+          echo "- OS: ${{ runner.os }}"
+          echo "- Arch: ${{ runner.arch }}"
+          echo "- Temp: ${{ runner.temp }}"
+          echo "- Tool cache: ${{ runner.tool_cache }}"
+          echo ""
+          echo "Environment:"
+          echo "- User: $(whoami)"
+          echo "- Home: $HOME"
+          echo "- PWD: $(pwd)"
+          echo ""
+          echo "System Info:"
+          uname -a
+          echo ""
+          echo "Docker Info:"
+          docker --version || echo "Docker not installed"
+          docker compose version || echo "Docker Compose not installed"
+          echo ""
+          echo "Disk Space:"
+          df -h
+          echo ""
+          echo "Memory:"
+          free -h 2>/dev/null || vm_stat 2>/dev/null || echo "Cannot determine memory"
+          echo ""
+          echo "✅ Runner test completed successfully!"
+
+      - name: Diagnostic Information
+        if: github.event.inputs.operation == 'diagnostic'
+        run: |
+          echo "🔍 Running diagnostics..."
+          echo "================================="
+
+          # GitHub context
+          echo "### GitHub Context"
+          echo "- Repository: ${{ github.repository }}"
+          echo "- Ref: ${{ github.ref }}"
+          echo "- SHA: ${{ github.sha }}"
+          echo "- Actor: ${{ github.actor }}"
+          echo "- Workflow: ${{ github.workflow }}"
+          echo "- Run ID: ${{ github.run_id }}"
+          echo "- Run Number: ${{ github.run_number }}"
+          echo ""
+
+          # Check connectivity
+          echo "### Connectivity Tests"
+          echo "GitHub API:"
+          curl -s https://api.github.com/rate_limit | jq -r '.rate' || echo "Failed to reach GitHub API"
+          echo ""
+          echo "Container Registry:"
+          curl -s https://ghcr.io/v2/ || echo "Failed to reach ghcr.io"
+          echo ""
+
+          # Check secrets availability (without exposing them)
+          echo "### Secrets Check"
+          [ -n "${{ secrets.GITHUB_TOKEN }}" ] && echo "✅ GITHUB_TOKEN is set" || echo "❌ GITHUB_TOKEN is not set"
+          [ -n "${{ secrets.NEBULA_SSH_KEY }}" ] && echo "✅ NEBULA_SSH_KEY is set" || echo "❌ NEBULA_SSH_KEY is not set"
+          echo ""
+
+          # Docker diagnostics
+          if command -v docker &> /dev/null; then
+            echo "### Docker Diagnostics"
+            docker info
+            echo ""
+            echo "Running containers:"
+            docker ps
+            echo ""
+            echo "Docker networks:"
+            docker network ls
+            echo ""
+          fi
+
+          # Project structure
+          echo "### Project Structure"
+          echo "Services found:"
+          ls -la services/ | grep "^d" | awk '{print "- " $9}'
+          echo ""
+          echo "Workflows:"
+          ls -la .github/workflows/*.yml | awk '{print "- " $9}'
+
+  # =================================
+  # DATABASE OPERATIONS
+  # =================================
+  database:
+    name: Database Operations
+    if: github.event.inputs.operation == 'db-migrate'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Database Migrations
+        run: |
+          echo "🗄️ Running database migrations..."
+
+          # This is a placeholder - implement based on your migration strategy
+          # Example approaches:
+          # 1. Using docker compose profiles
+          # 2. Direct connection to database
+          # 3. Via migration container
+
+          echo "⚠️ Database migration not yet implemented"
+          echo "Please implement based on your migration strategy"
+
+          # Example implementation:
+          # docker compose --profile migrate run db-migrate
+
+  # =================================
+  # BACKUP & RESTORE OPERATIONS
+  # =================================
+  backup-restore:
+    name: Backup & Restore
+    if: contains(fromJSON('["backup-volumes", "restore-volumes"]'), github.event.inputs.operation)
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Backup Volumes
+        if: github.event.inputs.operation == 'backup-volumes'
+        run: |
+          echo "💾 Backing up volumes..."
+
+          BACKUP_DIR="/backups/detektor/$(date +%Y%m%d-%H%M%S)"
+          mkdir -p "$BACKUP_DIR"
+
+          # List all volumes
+          volumes=$(docker volume ls --filter "label=com.docker.compose.project=detektor" -q)
+
+          if [ -z "$volumes" ]; then
+            echo "No volumes found for project 'detektor'"
+            exit 0
+          fi
+
+          # Backup each volume
+          for volume in $volumes; do
+            echo "Backing up volume: $volume"
+            docker run --rm \
+              -v "$volume:/data:ro" \
+              -v "$BACKUP_DIR:/backup" \
+              alpine tar czf "/backup/${volume}.tar.gz" -C /data .
+          done
+
+          echo "✅ Backup completed: $BACKUP_DIR"
+          ls -la "$BACKUP_DIR"
+
+      - name: Restore Volumes
+        if: github.event.inputs.operation == 'restore-volumes'
+        run: |
+          echo "📥 Restoring volumes..."
+          echo "⚠️ Volume restore not yet implemented"
+          echo "Please implement based on your backup strategy"
+
+  # =================================
+  # BUILD BASE IMAGES
+  # =================================
+  rebuild-base:
+    name: Rebuild Base Images
+    if: github.event.inputs.operation == 'rebuild-base-images'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - name: base-python
+            context: services/base-template
+            dockerfile: Dockerfile.base
+          - name: base-gpu
+            context: services/gpu-demo
+            dockerfile: Dockerfile.base
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.context }}/${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/detektr/${{ matrix.name }}:latest
+            ghcr.io/${{ github.repository_owner }}/detektr/${{ matrix.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # =================================
+  # SUMMARY
+  # =================================
+  summary:
+    name: Operation Summary
+    runs-on: ubuntu-latest
+    needs: [cleanup, test-diagnostic, database, backup-restore, rebuild-base]
+    if: always()
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## 🔧 Manual Operation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Operation**: ${{ github.event.inputs.operation }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Target**: ${{ github.event.inputs.target }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Verbose**: ${{ github.event.inputs.verbose }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check which job ran and its status
+          if [[ "${{ needs.cleanup.result }}" != "skipped" ]]; then
+            echo "**Cleanup**: ${{ needs.cleanup.result }}" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.test-diagnostic.result }}" != "skipped" ]]; then
+            echo "**Test/Diagnostic**: ${{ needs.test-diagnostic.result }}" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.database.result }}" != "skipped" ]]; then
+            echo "**Database**: ${{ needs.database.result }}" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.backup-restore.result }}" != "skipped" ]]; then
+            echo "**Backup/Restore**: ${{ needs.backup-restore.result }}" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.rebuild-base.result }}" != "skipped" ]]; then
+            echo "**Rebuild Base Images**: ${{ needs.rebuild-base.result }}" >> $GITHUB_STEP_SUMMARY
+          fi

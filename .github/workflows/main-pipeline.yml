@@ -1,0 +1,363 @@
+name: Main CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'build-and-deploy'
+        type: choice
+        options:
+          - build-and-deploy
+          - build-only
+          - deploy-only
+      services:
+        description: 'Services to process (comma-separated or "all" or "changed")'
+        default: 'changed'
+        required: false
+      force_all:
+        description: 'Force build all services (overrides services input)'
+        type: boolean
+        default: false
+      tag:
+        description: 'Custom tag for images (default: latest)'
+        default: 'latest'
+        required: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/hretheum/detektr
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =================================
+  # 1. DETECT CHANGES
+  # =================================
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.determine-services.outputs.services }}
+      matrix: ${{ steps.determine-services.outputs.matrix }}
+      should_build: ${{ steps.determine-services.outputs.should_build }}
+      should_deploy: ${{ steps.determine-services.outputs.should_deploy }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect changed files
+        id: changes
+        if: github.event.inputs.force_all != 'true' && github.event.inputs.services == 'changed'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            rtsp-capture:
+              - 'services/rtsp-capture/**'
+              - 'docker-compose.rtsp.yml'
+            frame-tracking:
+              - 'services/frame-tracking/**'
+            frame-buffer:
+              - 'services/frame-buffer/**'
+            telegram-alerts:
+              - 'services/telegram-alerts/**'
+            metadata-storage:
+              - 'services/metadata-storage/**'
+            example-otel:
+              - 'services/example-otel/**'
+            echo-service:
+              - 'services/echo-service/**'
+            gpu-demo:
+              - 'services/gpu-demo/**'
+            timescaledb:
+              - 'services/timescaledb/**'
+              - 'docker-compose.storage.yml'
+            pgbouncer:
+              - 'services/pgbouncer/**'
+              - 'docker-compose.storage.yml'
+            base-template:
+              - 'services/base-template/**'
+            face-recognition:
+              - 'services/face-recognition/**'
+            object-detection:
+              - 'services/object-detection/**'
+            ha-bridge:
+              - 'services/ha-bridge/**'
+            llm-intent:
+              - 'services/llm-intent/**'
+
+      - name: Determine services to build
+        id: determine-services
+        run: |
+          # Initialize arrays
+          services=()
+
+          # Handle different scenarios
+          if [[ "${{ github.event.inputs.force_all }}" == "true" ]] || [[ "${{ github.event.inputs.services }}" == "all" ]]; then
+            # Build all services
+            services=(
+              "rtsp-capture"
+              "frame-tracking"
+              "frame-buffer"
+              "telegram-alerts"
+              "metadata-storage"
+              "example-otel"
+              "echo-service"
+              "gpu-demo"
+              "timescaledb"
+              "pgbouncer"
+              "base-template"
+              "face-recognition"
+              "object-detection"
+              "ha-bridge"
+              "llm-intent"
+            )
+          elif [[ "${{ github.event.inputs.services }}" == "changed" ]]; then
+            # Use detected changes
+            changes='${{ toJSON(steps.changes.outputs.changes) }}'
+            if [[ "$changes" != "{}" && "$changes" != "null" ]]; then
+              # Parse JSON and extract service names that changed
+              for service in rtsp-capture frame-tracking frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb pgbouncer base-template face-recognition object-detection ha-bridge llm-intent; do
+                if [[ $(echo "$changes" | jq -r ".$service // false") == "true" ]]; then
+                  services+=("$service")
+                fi
+              done
+            fi
+          elif [[ -n "${{ github.event.inputs.services }}" ]]; then
+            # Use manually specified services
+            IFS=',' read -ra SERVICES_ARRAY <<< "${{ github.event.inputs.services }}"
+            for service in "${SERVICES_ARRAY[@]}"; do
+              services+=("$(echo $service | xargs)")  # trim whitespace
+            done
+          fi
+
+          # Determine actions based on input
+          should_build="true"
+          should_deploy="true"
+
+          if [[ "${{ github.event.inputs.action }}" == "build-only" ]]; then
+            should_deploy="false"
+          elif [[ "${{ github.event.inputs.action }}" == "deploy-only" ]]; then
+            should_build="false"
+          fi
+
+          # Output results
+          if [ ${#services[@]} -eq 0 ]; then
+            echo "services=" >> $GITHUB_OUTPUT
+            echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+          else
+            services_json=$(printf '%s\n' "${services[@]}" | jq -R . | jq -s .)
+            echo "services=${services[*]}" >> $GITHUB_OUTPUT
+
+            # Create matrix for parallel builds
+            matrix_json='{"include":['
+            first=true
+            for service in "${services[@]}"; do
+              if [ "$first" = true ]; then
+                first=false
+              else
+                matrix_json+=','
+              fi
+              matrix_json+="{\"service\":\"$service\"}"
+            done
+            matrix_json+=']}'
+            echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+          fi
+
+          echo "should_build=$should_build" >> $GITHUB_OUTPUT
+          echo "should_deploy=$should_deploy" >> $GITHUB_OUTPUT
+
+          # Summary
+          echo "### 📋 Pipeline Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action**: ${{ github.event.inputs.action || 'build-and-deploy' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Should Build**: $should_build" >> $GITHUB_STEP_SUMMARY
+          echo "- **Should Deploy**: $should_deploy" >> $GITHUB_STEP_SUMMARY
+          echo "- **Services**: ${services[*]:-none}" >> $GITHUB_STEP_SUMMARY
+
+  # =================================
+  # 2. BUILD SERVICES
+  # =================================
+  build:
+    name: Build ${{ matrix.service }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.services != '' && needs.detect-changes.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.detect-changes.outputs.matrix) }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ github.event.inputs.tag || 'latest' }}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: services/${{ matrix.service }}
+          file: services/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            SERVICE_NAME=${{ matrix.service }}
+
+  # =================================
+  # 3. DEPLOY TO NEBULA
+  # =================================
+  deploy:
+    name: Deploy to Nebula
+    needs: [detect-changes, build]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.should_deploy == 'true' &&
+      (needs.build.result == 'success' || needs.build.result == 'skipped')
+    runs-on: self-hosted
+    steps:
+      - name: Pre-deployment cleanup
+        run: |
+          echo "🧹 Pre-deployment cleanup..."
+          # Clean any existing checkout
+          sudo rm -rf ${{ github.workspace }}/* || true
+          sudo rm -rf ${{ github.workspace }}/.* 2>/dev/null || true
+
+          # Clean Docker system (optional, be careful)
+          docker system prune -f || true
+
+      - uses: actions/checkout@v4
+
+      - name: Fix ownership
+        run: |
+          sudo chown -R $USER:$USER ${{ github.workspace }}
+
+      - name: Deploy services
+        run: |
+          echo "🚀 Deploying to Nebula..."
+          cd /opt/detektor
+
+          # Decrypt secrets
+          echo "🔐 Decrypting secrets..."
+          make secrets-decrypt || {
+            echo "❌ Failed to decrypt secrets"
+            exit 1
+          }
+
+          # Set environment
+          export IMAGE_TAG="${{ github.event.inputs.tag || 'latest' }}"
+          export COMPOSE_PROJECT_NAME=detektor
+
+          # Deploy services
+          if [[ "${{ needs.detect-changes.outputs.services }}" == "" ]]; then
+            echo "📦 No services to deploy"
+          else
+            services="${{ needs.detect-changes.outputs.services }}"
+            echo "📦 Deploying services: $services"
+
+            # Pull latest images
+            for service in $services; do
+              echo "  📥 Pulling ${{ env.IMAGE_PREFIX }}/$service:$IMAGE_TAG"
+              docker pull "${{ env.IMAGE_PREFIX }}/$service:$IMAGE_TAG" || {
+                echo "  ❌ Failed to pull image for $service"
+                exit 1
+              }
+            done
+
+            # Restart services
+            docker compose up -d $services || {
+              echo "❌ Failed to start services"
+              exit 1
+            }
+
+            # Wait for services to be healthy
+            echo "⏳ Waiting for services to be healthy..."
+            sleep 10
+
+            # Check health
+            for service in $services; do
+              container_name="detektor-${service}-1"
+              if docker ps --filter "name=$container_name" --filter "status=running" | grep -q "$container_name"; then
+                echo "  ✅ $service is running"
+              else
+                echo "  ❌ $service is not running"
+                docker logs "$container_name" --tail 50
+              fi
+            done
+          fi
+
+          # Cleanup decrypted secrets
+          echo "🧹 Cleaning up secrets..."
+          rm -f .env.decrypted
+
+      - name: Post-deployment cleanup
+        if: always()
+        run: |
+          echo "🧹 Post-deployment cleanup..."
+          sudo rm -rf ${{ github.workspace }}/* || true
+          sudo rm -rf ${{ github.workspace }}/.* 2>/dev/null || true
+
+  # =================================
+  # 4. SUMMARY
+  # =================================
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build, deploy]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 🚀 Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Configuration
+          echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action**: ${{ github.event.inputs.action || 'build-and-deploy' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: ${{ github.event.inputs.tag || 'latest' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Services**: ${{ needs.detect-changes.outputs.services || 'none' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Results
+          echo "### Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Detect Changes | ${{ needs.detect-changes.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy | ${{ needs.deploy.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Overall status
+          if [[ "${{ needs.deploy.result }}" == "success" || "${{ needs.deploy.result }}" == "skipped" ]]; then
+            echo "✅ **Pipeline completed successfully**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Pipeline failed**" >> $GITHUB_STEP_SUMMARY
+          fi
