@@ -282,9 +282,22 @@ jobs:
       )
     runs-on: [self-hosted, nebula]
     steps:
+      - name: Pre-checkout cleanup
+        run: |
+          echo "Pre-checkout cleanup..."
+          # Clean any existing checkout
+          sudo rm -rf ${{ github.workspace }}/* || true
+          sudo rm -rf ${{ github.workspace }}/.* 2>/dev/null || true
+          # Ensure workspace exists and has right permissions
+          sudo mkdir -p ${{ github.workspace }}
+          sudo chown -R $USER:$USER ${{ github.workspace }}
+
       - name: Clean workspace
         run: |
           echo "Cleaning workspace to avoid permission issues..."
+          # Fix permissions on target directory first
+          sudo chown -R github-runner:github-runner /opt/detektor || true
+          sudo chmod -R 755 /opt/detektor || true
           # Remove directories that might have wrong permissions
           sudo rm -rf ${{ github.workspace }}/init-scripts || true
           sudo rm -rf ${{ github.workspace }}/grafana || true
@@ -376,13 +389,15 @@ jobs:
           echo "===================="
           echo "Target: Nebula (self-hosted runner)"
           echo ""
-          if [ -n "$CHANGED_SERVICES" ]; then
+          if [ -n "$CHANGED_SERVICES" ] && [ "$CHANGED_SERVICES" != "[]" ]; then
             echo "Updated services:"
-            echo "$CHANGED_SERVICES" | jq -r '.[]' | while read service; do
-              echo "  ✅ ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/$service:latest"
+            echo "$CHANGED_SERVICES" | jq -r '.[]' 2>/dev/null | while read service; do
+              if [ -n "$service" ]; then
+                echo "  ✅ ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/$service:latest"
+              fi
             done
           else
-            echo "All services deployed (forced build)"
+            echo "All services deployed (forced build or no changes)"
           fi
           echo ""
           echo "Deployment completed at: $(date)"
