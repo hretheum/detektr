@@ -6,8 +6,10 @@ on:
     - cron: '0 2 * * *'
     # Weekly base image rebuild on Sunday at 3 AM UTC
     - cron: '0 3 * * 0'
-    # Monthly security scan on 1st day at 4 AM UTC
-    - cron: '0 4 1 * *'
+    # Weekly GHCR cleanup on Sunday at 4 AM UTC
+    - cron: '0 4 * * 0'
+    # Monthly security scan on 1st day at 5 AM UTC
+    - cron: '0 5 1 * *'
   workflow_dispatch:
     inputs:
       task:
@@ -22,6 +24,7 @@ on:
           - docker-prune
           - log-rotation
           - backup-check
+          - ghcr-cleanup
 
 permissions:
   contents: read
@@ -39,6 +42,7 @@ jobs:
       run_cleanup: ${{ steps.determine.outputs.run_cleanup }}
       run_rebuild: ${{ steps.determine.outputs.run_rebuild }}
       run_security: ${{ steps.determine.outputs.run_security }}
+      run_ghcr_cleanup: ${{ steps.determine.outputs.run_ghcr_cleanup }}
     steps:
       - name: Determine which tasks to run
         id: determine
@@ -47,6 +51,7 @@ jobs:
           run_cleanup="false"
           run_rebuild="false"
           run_security="false"
+          run_ghcr_cleanup="false"
 
           # Check if triggered by schedule
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
@@ -65,8 +70,13 @@ jobs:
               run_rebuild="true"
             fi
 
-            # Monthly security (1st day, 4 AM)
-            if [[ "$hour" == "04" && "$day_of_month" == "01" ]]; then
+            # Weekly GHCR cleanup (Sunday 4 AM)
+            if [[ "$hour" == "04" && "$day_of_week" == "7" ]]; then
+              run_ghcr_cleanup="true"
+            fi
+
+            # Monthly security (1st day, 5 AM)
+            if [[ "$hour" == "05" && "$day_of_month" == "01" ]]; then
               run_security="true"
             fi
           else
@@ -76,6 +86,7 @@ jobs:
                 run_cleanup="true"
                 run_rebuild="true"
                 run_security="true"
+                run_ghcr_cleanup="true"
                 ;;
               "daily-cleanup"|"docker-prune"|"log-rotation")
                 run_cleanup="true"
@@ -89,6 +100,9 @@ jobs:
               "backup-check")
                 run_cleanup="true"  # Include backup check in cleanup
                 ;;
+              "ghcr-cleanup")
+                run_ghcr_cleanup="true"
+                ;;
             esac
           fi
 
@@ -96,6 +110,7 @@ jobs:
           echo "run_cleanup=$run_cleanup" >> $GITHUB_OUTPUT
           echo "run_rebuild=$run_rebuild" >> $GITHUB_OUTPUT
           echo "run_security=$run_security" >> $GITHUB_OUTPUT
+          echo "run_ghcr_cleanup=$run_ghcr_cleanup" >> $GITHUB_OUTPUT
 
           # Summary
           echo "### 📅 Scheduled Tasks" >> $GITHUB_STEP_SUMMARY
@@ -103,6 +118,7 @@ jobs:
           echo "- **Cleanup**: $run_cleanup" >> $GITHUB_STEP_SUMMARY
           echo "- **Rebuild**: $run_rebuild" >> $GITHUB_STEP_SUMMARY
           echo "- **Security**: $run_security" >> $GITHUB_STEP_SUMMARY
+          echo "- **GHCR Cleanup**: $run_ghcr_cleanup" >> $GITHUB_STEP_SUMMARY
 
   # =================================
   # DAILY CLEANUP TASKS
@@ -315,12 +331,22 @@ jobs:
           done
 
   # =================================
+  # GHCR CLEANUP
+  # =================================
+  ghcr-cleanup:
+    name: GHCR Cleanup
+    needs: determine-tasks
+    if: needs.determine-tasks.outputs.run_ghcr_cleanup == 'true'
+    uses: ./.github/workflows/ghcr-cleanup.yml
+    secrets: inherit
+
+  # =================================
   # SUMMARY
   # =================================
   summary:
     name: Task Summary
     runs-on: ubuntu-latest
-    needs: [determine-tasks, daily-cleanup, weekly-rebuild, monthly-security]
+    needs: [determine-tasks, daily-cleanup, weekly-rebuild, monthly-security, ghcr-cleanup]
     if: always()
     steps:
       - name: Generate Summary
@@ -351,10 +377,17 @@ jobs:
             echo "| Monthly Security | ❌ | skipped |" >> $GITHUB_STEP_SUMMARY
           fi
 
+          if [[ "${{ needs.determine-tasks.outputs.run_ghcr_cleanup }}" == "true" ]]; then
+            echo "| GHCR Cleanup | ✅ | ${{ needs.ghcr-cleanup.result }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| GHCR Cleanup | ❌ | skipped |" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Next scheduled runs
           echo "### Next Scheduled Runs" >> $GITHUB_STEP_SUMMARY
           echo "- **Daily Cleanup**: Tomorrow 2:00 AM UTC" >> $GITHUB_STEP_SUMMARY
           echo "- **Weekly Rebuild**: Next Sunday 3:00 AM UTC" >> $GITHUB_STEP_SUMMARY
-          echo "- **Monthly Security**: 1st of next month 4:00 AM UTC" >> $GITHUB_STEP_SUMMARY
+          echo "- **Weekly GHCR Cleanup**: Next Sunday 4:00 AM UTC" >> $GITHUB_STEP_SUMMARY
+          echo "- **Monthly Security**: 1st of next month 5:00 AM UTC" >> $GITHUB_STEP_SUMMARY

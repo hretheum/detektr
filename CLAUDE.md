@@ -222,6 +222,19 @@ When working on this project, create entries like:
   make migrate-compose      # Migrate structure
   ```
 
-### ⏳ Faza 4: GHCR Cleanup (IN PROGRESS)
+### ✅ Faza 4: GHCR Cleanup
+- **Migrated**: 5 missing services to `detektr/*`
+  - base-template, echo-service, example-otel, frame-buffer, frame-tracking
+- **Cleaned**: Removed old `consensus/*` images
+- **Automated**: Weekly cleanup workflow
+  ```yaml
+  # .github/workflows/ghcr-cleanup.yml
+  - Runs: Every Sunday 4 AM UTC
+  - Retention: 30 days, keep last 5 versions
+  - Integrated with scheduled-tasks.yml
+  ```
+- **Status**: All 9 services available under `ghcr.io/hretheum/detektr/*`
+
+### ⏳ Faza 5: Deployment Automation (NEXT)
 
 **Remember**: This project is **production-ready** and uses **modern DevOps practices**. Always start with the documentation in `docs/deployment/` and follow the established patterns.

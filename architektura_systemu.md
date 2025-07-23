@@ -21,9 +21,12 @@ INSPIRACJE: Bazujemy na proven patterns z eofek/detektor (docs/analysis/eofek-de
 STATUS (2025-07-23):
 ✅ Faza 0: Infrastruktura ukończona (observability, CI/CD)
 ✅ Faza 1: W trakcie (serwisy podstawowe)
-✅ Unifikacja nazewnictwa: bezrobocie-detektor → detektr (42 pliki)
-✅ Konsolidacja workflows: 14 → 5 plików (-64%)
-⏳ W trakcie: Reorganizacja Docker Compose
+✅ Transformacja systemu - Fazy ukończone:
+  - Faza 1: Unifikacja nazewnictwa → detektr (42 pliki)
+  - Faza 2: Konsolidacja workflows: 14 → 5 plików (-64%)
+  - Faza 3: Reorganizacja Docker Compose: 16+ → 8 plików
+  - Faza 4: GHCR Cleanup + automatyzacja (weekly cleanup)
+⏳ Następna: Faza 5 - Deployment Automation
 
 Gdy rozpoczynasz pracę w dowolnym punkcie projektu:
 1. Sprawdź w której fazie jesteśmy (zobacz sekcję 2)

@@ -99,6 +99,12 @@ ssh nebula "cd /opt/detektor && ./scripts/migrate-docker-compose.sh"
 - **Trigger**: Tag push (v*)
 - **Funkcja**: Tworzenie release, changelog, deployment
 
+#### 6. `ghcr-cleanup.yml` - Czyszczenie rejestru (NOWE)
+- **Trigger**: Weekly (Sunday 4 AM) lub manual
+- **Funkcja**: Cleanup starych wersji obrazów
+- **Retention**: 30 dni, zachowuj ostatnie 5 wersji
+- **Chroni**: Wersje z tagami v*.*.*
+
 ## 🔐 Zarządzanie Sekretami
 
 ### SOPS + Age
@@ -150,6 +156,18 @@ ssh nebula "cd /opt/detektor && docker compose logs -f [service-name]"
 ### Restart serwisu
 ```bash
 ssh nebula "cd /opt/detektor && docker compose restart [service-name]"
+```
+
+### GHCR Status
+```bash
+# Sprawdź obrazy w rejestrze
+gh api "/user/packages?package_type=container" | jq -r '.[].name' | grep detektr
+
+# Sprawdź wersje konkretnego obrazu
+gh api "/users/hretheum/packages/container/detektr%2Frtsp-capture/versions" | jq '.[0:5] | .[] | .metadata.container.tags'
+
+# Manualne czyszczenie
+gh workflow run ghcr-cleanup.yml -f dry_run=true
 ```
 
 ## ⚠️ Znane Problemy

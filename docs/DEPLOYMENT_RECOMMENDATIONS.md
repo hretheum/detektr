@@ -128,22 +128,34 @@ docker/
 - **Migracja**: Skrypt automatycznej migracji ze starych plików
 - **Dokumentacja**: Kompletny README z przykładami użycia
 
-### FAZA 4: CLEANUP GHCR (Priorytet: ŚREDNI)
+### FAZA 4: CLEANUP GHCR (Priorytet: ŚREDNI) ✅ UKOŃCZONA
 
-#### 4.1 Migracja obrazów
+#### 4.1 Migracja obrazów ✅
 ```bash
-# Skrypt migracji starych obrazów
-for image in rtsp-capture telegram-alerts metadata-storage; do
-  docker pull ghcr.io/hretheum/detektr/$image:latest
-  docker tag ghcr.io/hretheum/detektr/$image:latest ghcr.io/hretheum/detektr/$image:latest
-  docker push ghcr.io/hretheum/detektr/$image:latest
-done
+# Zmigrowano 5 brakujących serwisów:
+- base-template
+- echo-service
+- example-otel
+- frame-buffer
+- frame-tracking
+
+# Wszystkie 9 serwisów dostępne pod ghcr.io/hretheum/detektr/*
 ```
 
-#### 4.2 Retention policy
-- Zachować: 5 ostatnich wersji każdego obrazu
-- Usunąć: Obrazy starsze niż 30 dni (oprócz tagged releases)
-- Archiwizować: Release images w osobnym registry
+#### 4.2 Cleanup starych obrazów ✅
+```bash
+# Usunięto przestarzałe obrazy:
+- consensus.net/api
+- consenus/api
+
+# Obrazy bezrobocie-detektor/* pozostają jako legacy
+```
+
+#### 4.3 Automatyzacja cleanup ✅
+- **Workflow**: `.github/workflows/ghcr-cleanup.yml`
+- **Schedule**: Co niedzielę o 4:00 UTC
+- **Retention**: 30 dni, zachowuj ostatnie 5 wersji
+- **Integracja**: Z `scheduled-tasks.yml`
 
 ### FAZA 5: DEPLOYMENT AUTOMATION (Priorytet: WYSOKI)
 
@@ -286,14 +298,24 @@ setup:
 
 ## 📊 METRYKI SUKCESU
 
-| Metryka | Przed | Po | Cel |
-|---------|-------|-----|-----|
-| Liczba workflow files | 14 | 5 | ✅ -64% |
-| Liczba docker-compose files | 16 | 8 | ✅ -50% |
-| Czas deployment | ~15 min | ~5 min | ✅ -67% |
-| Nazwy projektu | 3 | 1 | ✅ Unified |
-| Dokumentacja | Rozproszona | 3 główne pliki | ✅ |
-| Komend do deployment | Wiele | 1 (make deploy) | ✅ |
+| Metryka | Przed | Po | Status |
+|---------|-------|-----|--------|
+| Liczba workflow files | 14 | 5 | ✅ UKOŃCZONE (-64%) |
+| Liczba docker-compose files | 16+ | 8 | ✅ UKOŃCZONE (-50%) |
+| Nazwy projektu w GHCR | 3 | 1 | ✅ UKOŃCZONE (detektr) |
+| Duplikaty obrazów | 9 | 0 | ✅ UKOŃCZONE |
+| Automatyczne czyszczenie | Brak | Weekly | ✅ UKOŃCZONE |
+| Czas deployment | ~15 min | ~5 min | 🔄 W TRAKCIE |
+| Dokumentacja | Rozproszona | Ujednolicona | ✅ UKOŃCZONE |
+
+### Stan realizacji faz:
+- ✅ **Faza 1**: Unifikacja nazewnictwa (100%)
+- ✅ **Faza 2**: Konsolidacja workflows (100%)
+- ✅ **Faza 3**: Reorganizacja Docker Compose (100%)
+- ✅ **Faza 4**: Cleanup GHCR (100%)
+- ⏳ **Faza 5**: Deployment Automation (0%)
+- ⏳ **Faza 6**: Documentation (0%)
+- ⏳ **Faza 7**: Makefile Unification (0%)
 
 ## ⚠️ RYZYKA I MITYGACJE
 

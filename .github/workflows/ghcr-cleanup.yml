@@ -1,0 +1,196 @@
+name: GHCR Cleanup
+
+on:
+  schedule:
+    # Run every Sunday at 4 AM UTC
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no deletions)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      retention_days:
+        description: 'Keep images newer than X days'
+        required: false
+        default: '30'
+        type: string
+      keep_last:
+        description: 'Keep last X versions per package'
+        required: false
+        default: '5'
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: hretheum
+  NEW_PREFIX: detektr
+  OLD_PREFIXES: bezrobocie-detektor
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup retention policy
+        id: config
+        run: |
+          echo "RETENTION_DAYS=${{ inputs.retention_days || '30' }}" >> $GITHUB_OUTPUT
+          echo "KEEP_LAST=${{ inputs.keep_last || '5' }}" >> $GITHUB_OUTPUT
+          echo "DRY_RUN=${{ inputs.dry_run || 'false' }}" >> $GITHUB_OUTPUT
+          echo "DATE_CUTOFF=$(date -d "${{ inputs.retention_days || '30' }} days ago" +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+      - name: List packages to clean
+        id: packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== Packages in GHCR ==="
+
+          # Get all packages
+          PACKAGES=$(gh api --paginate "/users/${OWNER}/packages?package_type=container" | jq -r '.[].name')
+          echo "$PACKAGES"
+
+          # Filter for our prefixes
+          echo "=== Packages to process ==="
+          echo "$PACKAGES" | grep -E "^(${NEW_PREFIX}|${OLD_PREFIXES})/" || true
+
+      - name: Clean old versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RETENTION_DAYS="${{ steps.config.outputs.RETENTION_DAYS }}"
+          KEEP_LAST="${{ steps.config.outputs.KEEP_LAST }}"
+          DRY_RUN="${{ steps.config.outputs.DRY_RUN }}"
+          DATE_CUTOFF="${{ steps.config.outputs.DATE_CUTOFF }}"
+
+          echo "Configuration:"
+          echo "- Retention: ${RETENTION_DAYS} days"
+          echo "- Keep last: ${KEEP_LAST} versions"
+          echo "- Date cutoff: ${DATE_CUTOFF}"
+          echo "- Dry run: ${DRY_RUN}"
+          echo ""
+
+          # Function to clean package versions
+          clean_package() {
+            local package=$1
+            echo "Processing package: $package"
+
+            # Get all versions
+            VERSIONS=$(gh api --paginate "/users/${OWNER}/packages/container/${package//\//%2F}/versions" | \
+              jq -r --arg cutoff "$DATE_CUTOFF" --arg keep "$KEEP_LAST" '
+                sort_by(.created_at) | reverse |
+                to_entries |
+                map(select(
+                  (.key >= ($keep | tonumber)) and
+                  (.value.created_at < $cutoff) and
+                  ((.value.metadata.container.tags | length == 0) or
+                   (.value.metadata.container.tags | all(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$") | not)))
+                )) |
+                .[] | {
+                  id: .value.id,
+                  created: .value.created_at,
+                  tags: .value.metadata.container.tags
+                }'
+            )
+
+            if [ -z "$VERSIONS" ]; then
+              echo "  No versions to delete"
+              return
+            fi
+
+            echo "$VERSIONS" | jq -r '. | @json' | while read -r version; do
+              VERSION_ID=$(echo "$version" | jq -r '.id')
+              CREATED=$(echo "$version" | jq -r '.created')
+              TAGS=$(echo "$version" | jq -r '.tags | join(", ")')
+
+              echo "  - Version ${VERSION_ID} (${CREATED}) [${TAGS:-untagged}]"
+
+              if [ "$DRY_RUN" != "true" ]; then
+                gh api --method DELETE "/users/${OWNER}/packages/container/${package//\//%2F}/versions/${VERSION_ID}" \
+                  -H "Accept: application/vnd.github+json" || echo "    Failed to delete"
+              else
+                echo "    [DRY RUN] Would delete"
+              fi
+            done
+          }
+
+          # Process all our packages
+          gh api --paginate "/users/${OWNER}/packages?package_type=container" | \
+            jq -r '.[].name' | \
+            grep -E "^(${NEW_PREFIX}|${OLD_PREFIXES})/" | \
+            while read -r package; do
+              clean_package "$package"
+              echo ""
+            done
+
+      - name: Generate cleanup report
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "# GHCR Cleanup Report" > cleanup-report.md
+          echo "" >> cleanup-report.md
+          echo "**Date**: $(date)" >> cleanup-report.md
+          echo "**Configuration**:" >> cleanup-report.md
+          echo "- Retention: ${{ steps.config.outputs.RETENTION_DAYS }} days" >> cleanup-report.md
+          echo "- Keep last: ${{ steps.config.outputs.KEEP_LAST }} versions" >> cleanup-report.md
+          echo "- Dry run: ${{ steps.config.outputs.DRY_RUN }}" >> cleanup-report.md
+          echo "" >> cleanup-report.md
+          echo "## Current Package Status" >> cleanup-report.md
+          echo "" >> cleanup-report.md
+
+          # List all packages with version counts
+          gh api --paginate "/users/${OWNER}/packages?package_type=container" | \
+            jq -r '.[].name' | \
+            grep -E "^(${NEW_PREFIX}|${OLD_PREFIXES})/" | \
+            while read -r package; do
+              COUNT=$(gh api "/users/${OWNER}/packages/container/${package//\//%2F}/versions" | jq '. | length')
+              echo "- **${package}**: ${COUNT} versions" >> cleanup-report.md
+            done
+
+          cat cleanup-report.md
+
+      - name: Upload cleanup report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghcr-cleanup-report
+          path: cleanup-report.md
+          retention-days: 30
+
+  remove-old-packages:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Remove deprecated packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== Checking for deprecated packages ==="
+
+          # List of deprecated prefixes to remove entirely
+          DEPRECATED="bezrobocie-detektor"
+
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
+            echo "[DRY RUN] Would remove packages with prefix: $DEPRECATED"
+            gh api --paginate "/users/${OWNER}/packages?package_type=container" | \
+              jq -r '.[].name' | \
+              grep "^${DEPRECATED}/" || echo "No deprecated packages found"
+          else
+            echo "This would permanently delete all packages with deprecated prefixes."
+            echo "Run with dry_run=true first to see what would be deleted."
+          fi

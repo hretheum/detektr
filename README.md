@@ -105,7 +105,11 @@ Transformacja systemu (2025-07-23):
   - 16+ plików → 8 w hierarchicznej strukturze
   - Convenience scripts: docker/dev.sh, docker/prod.sh
   - Skrypt migracji: scripts/migrate-docker-compose.sh
-⏳ Faza 4: Cleanup GHCR                     [W TRAKCIE]
+✅ Faza 4: Cleanup GHCR                     [UKOŃCZONA]
+  - Migracja 5 serwisów do detektr/*
+  - Usunięcie starych consensus/* images
+  - Automatyczny cleanup co tydzień
+⏳ Faza 5: Deployment Automation            [NASTĘPNA]
 ```
 
 ## Quick Start
