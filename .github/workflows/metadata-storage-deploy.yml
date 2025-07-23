@@ -77,8 +77,8 @@ jobs:
 
         # Update and restart service
         cd /opt/detektor
-        docker-compose -f docker-compose.yml pull metadata-storage || true
-        docker-compose -f docker-compose.yml up -d metadata-storage || true
+        docker compose -f docker-compose.yml pull metadata-storage || true
+        docker compose -f docker-compose.yml up -d metadata-storage || true
 
         # Wait for service to be healthy
         echo "Waiting for service to be healthy..."
