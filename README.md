@@ -97,6 +97,11 @@ Faza 3: AI services podstawy               ⏳ [ZAPLANOWANA]
 Faza 4: Integracja z Home Assistant        ⏳ [ZAPLANOWANA]
 Faza 5: Zaawansowane AI i voice            ⏳ [ZAPLANOWANA]
 Faza 6: Optymalizacja i refinement         ⏳ [ZAPLANOWANA]
+
+Transformacja systemu (2025-07-23):
+✅ Unifikacja nazewnictwa                   [UKOŃCZONA]
+✅ Konsolidacja workflows (14→5)            [UKOŃCZONA]
+⏳ Reorganizacja Docker Compose             [W TRAKCIE]
 ```
 
 ## Quick Start

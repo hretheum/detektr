@@ -19,9 +19,11 @@ INSPIRACJE: Bazujemy na proven patterns z eofek/detektor (docs/analysis/eofek-de
 - Ale UNIKAMY: over-engineering, microservices complexity, external lock-in
 
 STATUS (2025-07-23):
-✅ Faza 1 ukończona (infrastruktura, CI/CD)
-✅ Unifikacja nazewnictwa: bezrobocie-detektor → detektr
-⏳ W trakcie: Faza 2 (workflow consolidation)
+✅ Faza 0: Infrastruktura ukończona (observability, CI/CD)
+✅ Faza 1: W trakcie (serwisy podstawowe)
+✅ Unifikacja nazewnictwa: bezrobocie-detektor → detektr (42 pliki)
+✅ Konsolidacja workflows: 14 → 5 plików (-64%)
+⏳ W trakcie: Reorganizacja Docker Compose
 
 Gdy rozpoczynasz pracę w dowolnym punkcie projektu:
 1. Sprawdź w której fazie jesteśmy (zobacz sekcję 2)

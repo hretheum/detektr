@@ -173,9 +173,33 @@ When working on this project, create entries like:
 - **Maintenance**: Minimal (template updates)
 
 ## 📝 **Recent Changes (2025-07-23)**
-- **Naming Unification**: bezrobocie-detektor → detektr
-- **Registry Path**: ghcr.io/hretheum/detektr/
-- **Updated**: 42 files (workflows, docker-compose, docs)
-- **Next Phase**: Workflow consolidation (14 → 5 files)
+
+### ✅ Faza 1: Naming Unification
+- **Change**: bezrobocie-detektor → detektr
+- **Registry**: ghcr.io/hretheum/detektr/
+- **Updated**: 42 files
+
+### ✅ Faza 2: Workflow Consolidation
+- **Reduced**: 14 → 5 workflows (-64%)
+- **New Structure**:
+  - `main-pipeline.yml`: Build, deploy, or both
+  - `pr-checks.yml`: PR validation + tests
+  - `manual-operations.yml`: Cleanup, diagnostic, backup
+  - `scheduled-tasks.yml`: Daily/weekly/monthly jobs
+  - `release.yml`: Unchanged
+- **Usage**:
+  ```bash
+  # Main pipeline
+  gh workflow run main-pipeline.yml -f action=build-and-deploy
+
+  # Manual operations
+  gh workflow run manual-operations.yml -f operation=cleanup-docker
+
+  # Check PR (automatic on PR)
+  # Scheduled tasks (automatic or manual)
+  gh workflow run scheduled-tasks.yml -f task=daily-cleanup
+  ```
+
+### ⏳ Next: Docker Compose Reorganization
 
 **Remember**: This project is **production-ready** and uses **modern DevOps practices**. Always start with the documentation in `docs/deployment/` and follow the established patterns.

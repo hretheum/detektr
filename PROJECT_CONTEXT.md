@@ -160,13 +160,28 @@ git push origin main  # → Automatyczny build i deploy
 - ✅ Deployment automation (scripts/deploy-to-nebula.sh)
 - ✅ Example service z pełnym observability (example-otel)
 
-## Status unifikacji nazewnictwa (COMPLETED ✅)
+## Status transformacji projektu (2025-07-23)
 
-### Wykonane zmiany (2025-07-23):
-- ✅ Zmiana nazwy projektu: bezrobocie-detektor → detektr
-- ✅ Aktualizacja 42 plików (workflows, docker-compose, dokumentacja)
-- ✅ Nowy registry path: ghcr.io/hretheum/detektr/
-- ✅ Backup branch: naming-unification-backup-20250723-220210
+### ✅ Faza 1: Unifikacja nazewnictwa (COMPLETED)
+- Zmiana nazwy projektu: bezrobocie-detektor → detektr
+- Aktualizacja 42 plików (workflows, docker-compose, dokumentacja)
+- Nowy registry path: ghcr.io/hretheum/detektr/
+- Backup branch: naming-unification-backup-20250723-220210
+
+### ✅ Faza 2: Konsolidacja workflows (COMPLETED)
+- Redukcja z 14 do 5 workflows (-64%)
+- Nowe workflows:
+  - main-pipeline.yml (główny CI/CD)
+  - pr-checks.yml (walidacja PR + testy)
+  - manual-operations.yml (operacje manualne)
+  - scheduled-tasks.yml (zadania cykliczne)
+  - release.yml (bez zmian)
+- Skrypt migracji: scripts/migrate-workflows.sh
+- Dokumentacja: docs/WORKFLOW_CONSOLIDATION_PLAN.md
+
+### ⏳ Faza 3: Reorganizacja Docker Compose (W TRAKCIE)
+- Cel: Struktura hierarchiczna dla lepszego zarządzania
+- Plan: docker/base, docker/environments, docker/features
 - ✅ Secrets management (SOPS z age)
 - ✅ Health monitoring (scripts/health-check-all.sh)
 
