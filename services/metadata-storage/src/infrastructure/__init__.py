@@ -1,1 +1,1 @@
-"""Infrastructure layer for metadata storage service."""
+"""Infrastructure layer for metadata storage."""
