@@ -16,6 +16,7 @@ on:
           - rtsp-capture
           - frame-buffer
           - telegram-alerts
+          - metadata-storage
       deploy:
         description: 'Deploy after build'
         required: true

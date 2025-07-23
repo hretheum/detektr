@@ -72,6 +72,9 @@ jobs:
               - 'services/base-template/**'
             telegram-alerts:
               - 'services/telegram-alerts/**'
+            metadata-storage:
+              - 'services/metadata-storage/**'
+              - 'services/base-template/**'
 
       - name: Set matrix output
         id: set-matrix
@@ -203,6 +206,7 @@ jobs:
           - rtsp-capture
           - frame-buffer
           - telegram-alerts
+          - metadata-storage
     steps:
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
