@@ -2,6 +2,8 @@
 
 > **WAŻNE**: Ta dokumentacja odzwierciedla FAKTYCZNY stan deployment na Nebula (self-hosted runner + Docker Compose)
 
+> **🆕 NOWE**: Wprowadziliśmy [Unified Deployment System](./unified-deployment.md) który upraszcza deployment we wszystkich środowiskach!
+
 ## 📋 Spis treści
 
 1. [Quick Start](#quick-start)
@@ -21,19 +23,22 @@ git push origin main
 ssh nebula "cd /opt/detektor && docker compose ps"
 ```
 
-### NOWA metoda (hierarchiczna struktura)
+### NOWA metoda (unified deployment script)
 ```bash
 # Deploy produkcyjny
-ssh nebula "cd /opt/detektor && ./docker/prod.sh up -d"
+./scripts/deploy.sh production deploy
 
 # Sprawdź status
-ssh nebula "cd /opt/detektor && ./docker/prod.sh ps"
+./scripts/deploy.sh production status
 
 # Sprawdź logi
-ssh nebula "cd /opt/detektor && ./docker/prod.sh logs -f [service-name]"
+./scripts/deploy.sh production logs [service-name]
 
-# Migracja ze starej struktury
-ssh nebula "cd /opt/detektor && ./scripts/migrate-docker-compose.sh"
+# Weryfikuj health wszystkich serwisów
+./scripts/deploy.sh production verify
+
+# Alternatywa - bezpośrednio na serwerze
+ssh nebula "cd /opt/detektor && ./docker/prod.sh up -d"
 ```
 
 ## 🏗️ Architektura Deployment

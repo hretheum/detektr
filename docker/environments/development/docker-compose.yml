@@ -1,0 +1,282 @@
+# Development environment overrides
+# This file contains development-specific configuration with hot reload and debug tools
+# Use with: docker compose -f docker/base/docker-compose.yml -f docker/environments/development/docker-compose.yml
+
+version: "3.8"
+
+# Global configuration for development
+x-development-defaults: &development-defaults
+  restart: "no" # No auto-restart in dev
+  logging:
+    driver: json-file
+    options:
+      max-size: "100m"
+      max-file: "10"
+  # No resource limits in development
+
+services:
+  # Application services with development settings
+  rtsp-capture:
+    <<: *development-defaults
+    image: ghcr.io/hretheum/detektr/rtsp-capture:${IMAGE_TAG:-dev}
+    build:
+      context: ../../services/rtsp-capture
+      dockerfile: Dockerfile
+      target: development # Use dev stage if available
+    environment:
+      - LOG_LEVEL=DEBUG
+      - METRICS_ENABLED=true
+      - TRACE_ENABLED=true
+      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
+      - DEBUG=true
+    volumes:
+      - ../../services/rtsp-capture:/app:ro
+      - rtsp_capture_cache:/app/__pycache__
+    command:
+      [
+        "python",
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8001",
+        "--reload",
+      ]
+
+  frame-tracking:
+    <<: *development-defaults
+    image: ghcr.io/hretheum/detektr/frame-tracking:${IMAGE_TAG:-dev}
+    build:
+      context: ../../services/frame-tracking
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      - LOG_LEVEL=DEBUG
+      - METRICS_ENABLED=true
+      - TRACE_ENABLED=true
+      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
+      - DEBUG=true
+    volumes:
+      - ../../services/frame-tracking:/app:ro
+      - frame_tracking_cache:/app/__pycache__
+    command:
+      [
+        "python",
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8006",
+        "--reload",
+      ]
+
+  echo-service:
+    <<: *development-defaults
+    image: ghcr.io/hretheum/detektr/echo-service:${IMAGE_TAG:-dev}
+    build:
+      context: ../../services/echo-service
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      - LOG_LEVEL=DEBUG
+      - METRICS_ENABLED=true
+      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
+      - DEBUG=true
+    volumes:
+      - ../../services/echo-service:/app:ro
+      - echo_service_cache:/app/__pycache__
+    command:
+      [
+        "python",
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8007",
+        "--reload",
+      ]
+
+  example-otel:
+    <<: *development-defaults
+    image: ghcr.io/hretheum/detektr/example-otel:${IMAGE_TAG:-dev}
+    build:
+      context: ../../services/example-otel
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      - LOG_LEVEL=DEBUG
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://jaeger:4317
+      - OTEL_METRICS_EXPORTER=prometheus
+      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
+      - DEBUG=true
+    volumes:
+      - ../../services/example-otel:/app:ro
+      - example_otel_cache:/app/__pycache__
+    command:
+      [
+        "python",
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8005",
+        "--reload",
+      ]
+
+  base-template:
+    <<: *development-defaults
+    image: ghcr.io/hretheum/detektr/base-template:${IMAGE_TAG:-dev}
+    build:
+      context: ../../services/base-template
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      - LOG_LEVEL=DEBUG
+      - METRICS_ENABLED=true
+      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
+      - DEBUG=true
+    volumes:
+      - ../../services/base-template:/app:ro
+      - base_template_cache:/app/__pycache__
+    command:
+      [
+        "python",
+        "-m",
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8010",
+        "--reload",
+      ]
+
+  gpu-demo:
+    <<: *development-defaults
+    image: ghcr.io/hretheum/detektr/gpu-demo:${IMAGE_TAG:-dev}
+    build:
+      context: ../../services/gpu-demo
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      - LOG_LEVEL=DEBUG
+      - CUDA_VISIBLE_DEVICES=0
+      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
+      - DEBUG=true
+    volumes:
+      - ../../services/gpu-demo:/app:ro
+      - gpu_demo_cache:/app/__pycache__
+
+  # Infrastructure services with development settings
+  postgres:
+    <<: *development-defaults
+    environment:
+      - POSTGRES_PASSWORD=dev_password
+      - POSTGRES_DB=detektor_dev
+    ports:
+      - "5432:5432" # Expose for local development
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+
+  redis:
+    <<: *development-defaults
+    ports:
+      - "6379:6379" # Expose for local development
+    volumes:
+      - redis_data_dev:/data
+
+  # Development tools
+  adminer:
+    <<: *development-defaults
+    image: adminer:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    depends_on:
+      - postgres
+
+  redis-commander:
+    <<: *development-defaults
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+
+  # Monitoring with development access
+  prometheus:
+    <<: *development-defaults
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=1d"
+      - "--web.enable-lifecycle"
+      - "--log.level=debug"
+    ports:
+      - "9090:9090" # Expose for local development
+    volumes:
+      - prometheus_data_dev:/prometheus
+      - ../../docker/base/config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    <<: *development-defaults
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_LOG_LEVEL=debug
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    ports:
+      - "3000:3000" # Expose for local development
+    volumes:
+      - grafana_data_dev:/var/lib/grafana
+
+  jaeger:
+    <<: *development-defaults
+    environment:
+      - SPAN_STORAGE_TYPE=memory
+      - MEMORY_MAX_TRACES=10000
+      - LOG_LEVEL=debug
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14268:14268" # Jaeger collector
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+
+# Development volumes
+volumes:
+  postgres_data_dev:
+  redis_data_dev:
+  prometheus_data_dev:
+  grafana_data_dev:
+  # Cache volumes for hot reload
+  rtsp_capture_cache:
+  frame_tracking_cache:
+  echo_service_cache:
+  example_otel_cache:
+  base_template_cache:
+  gpu_demo_cache:
+
+# Development network configuration
+networks:
+  default:
+    name: detektor-dev
+    driver: bridge

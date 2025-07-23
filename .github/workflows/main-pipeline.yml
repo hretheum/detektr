@@ -260,68 +260,46 @@ jobs:
         run: |
           sudo chown -R $USER:$USER ${{ github.workspace }}
 
-      - name: Deploy services
+      - name: Deploy using unified script
         run: |
-          echo "🚀 Deploying to Nebula..."
-          cd /opt/detektor
+          echo "🚀 Deploying to Nebula using unified deployment script..."
 
-          # Decrypt secrets
-          echo "🔐 Decrypting secrets..."
-          make secrets-decrypt || {
-            echo "❌ Failed to decrypt secrets"
+          # Copy deployment script to workspace
+          cp ${{ github.workspace }}/scripts/deploy.sh /tmp/deploy.sh
+          chmod +x /tmp/deploy.sh
+
+          # Determine environment based on branch/tag
+          ENVIRONMENT="production"
+          if [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+            ENVIRONMENT="staging"
+          fi
+
+          # Run deployment
+          export IMAGE_TAG="${{ github.event.inputs.tag || 'latest' }}"
+          export DEPLOY_SERVICES="${{ needs.detect-changes.outputs.services }}"
+
+          echo "📦 Environment: $ENVIRONMENT"
+          echo "📦 Services: $DEPLOY_SERVICES"
+          echo "📦 Tag: $IMAGE_TAG"
+
+          # Execute deployment
+          /tmp/deploy.sh "$ENVIRONMENT" deploy || {
+            echo "❌ Deployment failed"
             exit 1
           }
 
-          # Set environment
-          export IMAGE_TAG="${{ github.event.inputs.tag || 'latest' }}"
-          export COMPOSE_PROJECT_NAME=detektor
-
-          # Deploy services
-          if [[ "${{ needs.detect-changes.outputs.services }}" == "" ]]; then
-            echo "📦 No services to deploy"
-          else
-            services="${{ needs.detect-changes.outputs.services }}"
-            echo "📦 Deploying services: $services"
-
-            # Pull latest images
-            for service in $services; do
-              echo "  📥 Pulling ${{ env.IMAGE_PREFIX }}/$service:$IMAGE_TAG"
-              docker pull "${{ env.IMAGE_PREFIX }}/$service:$IMAGE_TAG" || {
-                echo "  ❌ Failed to pull image for $service"
-                exit 1
-              }
-            done
-
-            # Restart services
-            docker compose up -d $services || {
-              echo "❌ Failed to start services"
-              exit 1
-            }
-
-            # Wait for services to be healthy
-            echo "⏳ Waiting for services to be healthy..."
-            sleep 10
-
-            # Check health
-            for service in $services; do
-              container_name="detektor-${service}-1"
-              if docker ps --filter "name=$container_name" --filter "status=running" | grep -q "$container_name"; then
-                echo "  ✅ $service is running"
-              else
-                echo "  ❌ $service is not running"
-                docker logs "$container_name" --tail 50
-              fi
-            done
-          fi
-
-          # Cleanup decrypted secrets
-          echo "🧹 Cleaning up secrets..."
-          rm -f .env.decrypted
+          # Verify deployment
+          echo "🔍 Verifying deployment..."
+          /tmp/deploy.sh "$ENVIRONMENT" verify || {
+            echo "⚠️ Some services may not be healthy"
+            # Don't fail here, just warn
+          }
 
       - name: Post-deployment cleanup
         if: always()
         run: |
           echo "🧹 Post-deployment cleanup..."
+          rm -f /tmp/deploy.sh
           sudo rm -rf ${{ github.workspace }}/* || true
           sudo rm -rf ${{ github.workspace }}/.* 2>/dev/null || true
 

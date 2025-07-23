@@ -1,0 +1,151 @@
+# Staging environment overrides
+# This file contains staging-specific configuration
+# Use with: docker compose -f docker/base/docker-compose.yml -f docker/environments/staging/docker-compose.yml
+
+version: "3.8"
+
+# Global configuration for staging
+x-staging-defaults: &staging-defaults
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "50m"
+      max-file: "5"
+  deploy:
+    resources:
+      limits:
+        memory: 1G
+      reservations:
+        memory: 256M
+
+services:
+  # Application services with staging settings
+  rtsp-capture:
+    <<: *staging-defaults
+    image: ghcr.io/hretheum/detektr/rtsp-capture:${IMAGE_TAG:-staging}
+    environment:
+      - LOG_LEVEL=DEBUG
+      - METRICS_ENABLED=true
+      - TRACE_ENABLED=true
+      - ENVIRONMENT=staging
+
+  frame-tracking:
+    <<: *staging-defaults
+    image: ghcr.io/hretheum/detektr/frame-tracking:${IMAGE_TAG:-staging}
+    environment:
+      - LOG_LEVEL=DEBUG
+      - METRICS_ENABLED=true
+      - TRACE_ENABLED=true
+      - ENVIRONMENT=staging
+
+  echo-service:
+    <<: *staging-defaults
+    image: ghcr.io/hretheum/detektr/echo-service:${IMAGE_TAG:-staging}
+    environment:
+      - LOG_LEVEL=DEBUG
+      - METRICS_ENABLED=true
+      - ENVIRONMENT=staging
+
+  example-otel:
+    <<: *staging-defaults
+    image: ghcr.io/hretheum/detektr/example-otel:${IMAGE_TAG:-staging}
+    environment:
+      - LOG_LEVEL=DEBUG
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://jaeger:4317
+      - OTEL_METRICS_EXPORTER=prometheus
+      - ENVIRONMENT=staging
+
+  base-template:
+    <<: *staging-defaults
+    image: ghcr.io/hretheum/detektr/base-template:${IMAGE_TAG:-staging}
+    environment:
+      - LOG_LEVEL=DEBUG
+      - METRICS_ENABLED=true
+      - ENVIRONMENT=staging
+
+  # Infrastructure services with staging limits
+  postgres:
+    <<: *staging-defaults
+    environment:
+      - POSTGRES_MAX_CONNECTIONS=100
+      - POSTGRES_SHARED_BUFFERS=128MB
+      - POSTGRES_EFFECTIVE_CACHE_SIZE=512MB
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    volumes:
+      - postgres_data_staging:/var/lib/postgresql/data
+
+  redis:
+    <<: *staging-defaults
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: "0.5"
+    volumes:
+      - redis_data_staging:/data
+
+  # Monitoring with shorter retention
+  prometheus:
+    <<: *staging-defaults
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+      - "--storage.tsdb.retention.size=5GB"
+      - "--web.enable-lifecycle"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "0.5"
+    volumes:
+      - prometheus_data_staging:/prometheus
+
+  grafana:
+    <<: *staging-defaults
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-staging}
+      - GF_SERVER_ROOT_URL=http://staging:3000
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    volumes:
+      - grafana_data_staging:/var/lib/grafana
+
+  jaeger:
+    <<: *staging-defaults
+    environment:
+      - SPAN_STORAGE_TYPE=memory
+      - MEMORY_MAX_TRACES=5000
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+
+# Staging volumes (no backup needed)
+volumes:
+  postgres_data_staging:
+  redis_data_staging:
+  prometheus_data_staging:
+  grafana_data_staging:
+
+# Staging network configuration
+networks:
+  default:
+    name: detektor-staging
+    driver: bridge

@@ -305,7 +305,7 @@ setup:
 | Nazwy projektu w GHCR | 3 | 1 | ✅ UKOŃCZONE (detektr) |
 | Duplikaty obrazów | 9 | 0 | ✅ UKOŃCZONE |
 | Automatyczne czyszczenie | Brak | Weekly | ✅ UKOŃCZONE |
-| Czas deployment | ~15 min | ~5 min | 🔄 W TRAKCIE |
+| Czas deployment | ~15 min | ~5 min | ✅ UKOŃCZONE |
 | Dokumentacja | Rozproszona | Ujednolicona | ✅ UKOŃCZONE |
 
 ### Stan realizacji faz:
@@ -313,7 +313,7 @@ setup:
 - ✅ **Faza 2**: Konsolidacja workflows (100%)
 - ✅ **Faza 3**: Reorganizacja Docker Compose (100%)
 - ✅ **Faza 4**: Cleanup GHCR (100%)
-- ⏳ **Faza 5**: Deployment Automation (0%)
+- ✅ **Faza 5**: Deployment Automation (100%)
 - ⏳ **Faza 6**: Documentation (0%)
 - ⏳ **Faza 7**: Makefile Unification (0%)
 
