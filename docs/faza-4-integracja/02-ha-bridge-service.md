@@ -215,67 +215,81 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
 
 ## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
 
-### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+### 🎯 **UNIFIED CI/CD DEPLOYMENT**
 
-**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/ha-bridge.md`
+> **📚 Deployment dla tego serwisu jest zautomatyzowany przez zunifikowany workflow CI/CD.**
 
-### Zadania atomowe
+### Kroki deployment
 
-1. **[ ] Deploy via CI/CD pipeline**
-   - **Metryka**: Automated deployment to Nebula via GitHub Actions
-   - **Walidacja**: `git push origin main` triggers deployment
-   - **Procedura**: [docs/deployment/services/ha-bridge.md#deploy](docs/deployment/services/ha-bridge.md#deploy)
+1. **[ ] Przygotowanie serwisu do deployment**
+   - **Metryka**: HA bridge dodany do workflow matrix
+   - **Walidacja**:
+     ```bash
+     # Sprawdź czy serwis jest w .github/workflows/deploy-self-hosted.yml
+     grep "ha-bridge" .github/workflows/deploy-self-hosted.yml
+     ```
+   - **Dokumentacja**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
 
-2. **[ ] Konfiguracja HA API credentials**
-   - **Metryka**: Secure HA token in SOPS
-   - **Walidacja**: Bridge connects to HA instance
-   - **Procedura**: [docs/deployment/services/ha-bridge.md#ha-configuration](docs/deployment/services/ha-bridge.md#ha-configuration)
+2. **[ ] Konfiguracja Home Assistant API**
+   - **Metryka**: HA API token i URL w SOPS
+   - **Konfiguracja**:
+     ```bash
+     # Edytuj sekrety
+     make secrets-edit
+     # Dodaj: HA_API_TOKEN, HA_API_URL
+     # Opcjonalnie: HA_RATE_LIMIT, HA_TIMEOUT
+     ```
 
-3. **[ ] Action queue setup**
-   - **Metryka**: Redis queue for HA actions
-   - **Walidacja**: Actions queued and executed
-   - **Procedura**: [docs/deployment/services/ha-bridge.md#action-queue](docs/deployment/services/ha-bridge.md#action-queue)
+3. **[ ] Deploy przez GitHub Actions**
+   - **Metryka**: Automated deployment via git push
+   - **Komenda**:
+     ```bash
+     git add .
+     git commit -m "feat: deploy ha-bridge service for Home Assistant actions"
+     git push origin main
+     ```
+   - **Monitorowanie**: https://github.com/hretheum/bezrobocie/actions
 
-4. **[ ] Rate limiting configuration**
-   - **Metryka**: Respect HA API limits
-   - **Walidacja**: No 429 errors under load
-   - **Procedura**: [docs/deployment/services/ha-bridge.md#rate-limiting](docs/deployment/services/ha-bridge.md#rate-limiting)
+### **📋 Walidacja po deployment:**
 
-5. **[ ] Integration test with HA**
-   - **Metryka**: End-to-end action execution
-   - **Walidacja**: Test automation via bridge
-   - **Procedura**: [docs/deployment/services/ha-bridge.md#integration-testing](docs/deployment/services/ha-bridge.md#integration-testing)
-
-### **🚀 JEDNA KOMENDA DO WYKONANIA:**
 ```bash
-# Cały Blok 5 wykonuje się automatycznie:
-git push origin main
-```
-
-### **📋 Walidacja sukcesu:**
-```bash
-# Sprawdź deployment:
+# 1. Sprawdź health serwisu
 curl http://nebula:8004/health
 
-# Test HA connection:
+# 2. Test połączenia z HA
 curl http://nebula:8004/api/ha/status
 
-# Execute test action:
-curl -X POST http://nebula:8004/api/actions -d '{"service": "light.turn_on", "entity_id": "light.test"}'
+# 3. Pobierz listę dostępnych serwisów HA
+curl http://nebula:8004/api/ha/services
+
+# 4. Wykonaj testową akcję
+curl -X POST http://nebula:8004/api/actions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "service": "notify.persistent_notification",
+    "data": {
+      "message": "Test from Detektor HA Bridge",
+      "title": "Test Notification"
+    }
+  }'
+
+# 5. Sprawdź trace w Jaeger
+open http://nebula:16686/search?service=ha-bridge
 ```
 
-### **🔗 Linki do procedur:**
-- **Deployment Guide**: [docs/deployment/services/ha-bridge.md](docs/deployment/services/ha-bridge.md)
-- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
-- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+### **🔗 Dokumentacja:**
+- **Unified Deployment Guide**: [docs/deployment/README.md](../../deployment/README.md)
+- **New Service Guide**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+- **HA REST API**: https://developers.home-assistant.io/docs/api/rest/
 
 ### **🔍 Metryki sukcesu bloku:**
-- ✅ HA Bridge service operational
-- ✅ Secure API token management
-- ✅ Action queue processing
-- ✅ Rate limiting working
-- ✅ Full tracing of all actions
-- ✅ Zero-downtime deployment via CI/CD
+- ✅ Serwis w workflow matrix `.github/workflows/deploy-self-hosted.yml`
+- ✅ Secure connection to HA API
+- ✅ Action queue processing works
+- ✅ Rate limiting prevents 429 errors
+- ✅ All actions traced in Jaeger
+- ✅ Metrics visible in Prometheus
+- ✅ Zero-downtime deployment
 
 ## Następne kroki
 

@@ -305,67 +305,76 @@ Zbudować dwukierunkową integrację MQTT między systemem Detektor a Home Assis
 
 ## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
 
-### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+### 🎯 **UNIFIED CI/CD DEPLOYMENT**
 
-**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/mqtt-bridge.md`
+> **📚 Deployment dla tego serwisu jest zautomatyzowany przez zunifikowany workflow CI/CD.**
 
-### Zadania atomowe
+### Kroki deployment
 
-1. **[ ] Deploy via CI/CD pipeline**
-   - **Metryka**: Automated deployment to Nebula via GitHub Actions
-   - **Walidacja**: `git push origin main` triggers deployment
-   - **Procedura**: [docs/deployment/services/mqtt-bridge.md#deploy](docs/deployment/services/mqtt-bridge.md#deploy)
+1. **[ ] Przygotowanie serwisu do deployment**
+   - **Metryka**: MQTT bridge dodany do workflow matrix
+   - **Walidacja**:
+     ```bash
+     # Sprawdź czy serwis jest w .github/workflows/deploy-self-hosted.yml
+     grep "mqtt-bridge" .github/workflows/deploy-self-hosted.yml
+     ```
+   - **Dokumentacja**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
 
-2. **[ ] Konfiguracja MQTT broker na Nebuli**
-   - **Metryka**: Mosquitto broker operational
-   - **Walidacja**: `mosquitto_sub -h nebula -t '$SYS/#' -C 1`
-   - **Procedura**: [docs/deployment/services/mqtt-bridge.md#mqtt-setup](docs/deployment/services/mqtt-bridge.md#mqtt-setup)
+2. **[ ] Konfiguracja MQTT i Home Assistant**
+   - **Metryka**: MQTT broker i HA credentials w SOPS
+   - **Konfiguracja**:
+     ```bash
+     # Edytuj sekrety
+     make secrets-edit
+     # Dodaj: MQTT_HOST, MQTT_PORT, HA_TOKEN, HA_URL
+     ```
 
-3. **[ ] Home Assistant integration**
-   - **Metryka**: HA discovers Detektor entities
-   - **Walidacja**: Entities visible in HA UI
-   - **Procedura**: [docs/deployment/services/mqtt-bridge.md#ha-integration](docs/deployment/services/mqtt-bridge.md#ha-integration)
+3. **[ ] Deploy przez GitHub Actions**
+   - **Metryka**: Automated deployment via git push
+   - **Komenda**:
+     ```bash
+     git add .
+     git commit -m "feat: deploy mqtt-bridge for Home Assistant integration"
+     git push origin main
+     ```
+   - **Monitorowanie**: https://github.com/hretheum/bezrobocie/actions
 
-4. **[ ] Event flow configuration**
-   - **Metryka**: Detection events → HA automations
-   - **Walidacja**: Test automation triggers
-   - **Procedura**: [docs/deployment/services/mqtt-bridge.md#event-flow](docs/deployment/services/mqtt-bridge.md#event-flow)
+### **📋 Walidacja po deployment:**
 
-5. **[ ] Performance test MQTT**
-   - **Metryka**: 1000 msg/sec throughput
-   - **Walidacja**: Load test via CI/CD
-   - **Procedura**: [docs/deployment/services/mqtt-bridge.md#performance-testing](docs/deployment/services/mqtt-bridge.md#performance-testing)
-
-### **🚀 JEDNA KOMENDA DO WYKONANIA:**
 ```bash
-# Cały Blok 5 wykonuje się automatycznie:
-git push origin main
-```
-
-### **📋 Walidacja sukcesu:**
-```bash
-# Sprawdź MQTT broker:
-mosquitto_sub -h nebula -t 'detektor/#' -v
-
-# Sprawdź bridge service:
+# 1. Sprawdź health serwisu
 curl http://nebula:8016/health
 
-# Test HA discovery:
-mosquitto_pub -h nebula -t 'homeassistant/sensor/detektor/test/config' -m '{"name": "Test Sensor"}'
+# 2. Test MQTT broker
+mosquitto_sub -h nebula -t '$SYS/#' -C 1
+mosquitto_sub -h nebula -t 'detektor/#' -v &
+
+# 3. Test HA discovery
+mosquitto_pub -h nebula -t 'homeassistant/sensor/detektor_test/config' \
+  -m '{"name": "Detektor Test", "state_topic": "detektor/test/state"}'
+
+# 4. Sprawdź entity w Home Assistant
+# Otwórz HA UI i sprawdź Developer Tools > States
+# Szukaj: sensor.detektor_test
+
+# 5. Test event flow
+curl -X POST http://nebula:8016/api/test-event \
+  -d '{"type": "motion_detected", "camera": "front"}'
 ```
 
-### **🔗 Linki do procedur:**
-- **Deployment Guide**: [docs/deployment/services/mqtt-bridge.md](docs/deployment/services/mqtt-bridge.md)
-- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
-- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+### **🔗 Dokumentacja:**
+- **Unified Deployment Guide**: [docs/deployment/README.md](../../deployment/README.md)
+- **New Service Guide**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+- **Home Assistant Docs**: https://www.home-assistant.io/integrations/mqtt/
 
 ### **🔍 Metryki sukcesu bloku:**
-- ✅ MQTT broker handling 1000 msg/sec
-- ✅ Auto-discovery working in HA
-- ✅ Bidirectional communication operational
-- ✅ All Detektor entities in HA
-- ✅ Automations triggered by events
-- ✅ Zero-downtime deployment via CI/CD
+- ✅ Serwis w workflow matrix `.github/workflows/deploy-self-hosted.yml`
+- ✅ MQTT broker operational
+- ✅ HA auto-discovery working
+- ✅ Bidirectional communication tested
+- ✅ All Detektor entities visible in HA
+- ✅ Events trigger HA automations
+- ✅ Zero-downtime deployment
 
 ## Następne kroki
 

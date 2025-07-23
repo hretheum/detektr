@@ -216,6 +216,73 @@ Wdrożyć Whisper do rozpoznawania mowy w języku polskim z niskim WER (<10%) i 
 
 3. **Czas rollback**: <10 min
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **UNIFIED CI/CD DEPLOYMENT**
+
+> **📚 Deployment dla tego serwisu jest zautomatyzowany przez zunifikowany workflow CI/CD.**
+
+### Kroki deployment
+
+1. **[ ] Przygotowanie serwisu do deployment**
+   - **Metryka**: Voice processing dodany do workflow matrix
+   - **Walidacja**:
+     ```bash
+     # Sprawdź czy serwis jest w .github/workflows/deploy-self-hosted.yml
+     grep "voice-processing" .github/workflows/deploy-self-hosted.yml
+     ```
+   - **Dokumentacja**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+
+2. **[ ] Konfiguracja Whisper model**
+   - **Metryka**: Model size selected (base/small/medium)
+   - **Konfiguracja**: W `.env.sops` ustaw `WHISPER_MODEL_SIZE`
+   - **GPU**: Opcjonalne GPU acceleration dla większych modeli
+
+3. **[ ] Deploy przez GitHub Actions**
+   - **Metryka**: Automated deployment via git push
+   - **Komenda**:
+     ```bash
+     git add .
+     git commit -m "feat: deploy voice-processing service with Whisper"
+     git push origin main
+     ```
+   - **Monitorowanie**: https://github.com/hretheum/bezrobocie/actions
+
+### **📋 Walidacja po deployment:**
+
+```bash
+# 1. Sprawdź health serwisu
+curl http://nebula:8008/health
+
+# 2. Sprawdź metryki
+curl http://nebula:8008/metrics | grep voice_
+
+# 3. Test transkrypcji
+curl -X POST http://nebula:8008/transcribe \
+  -F "audio=@test_audio/polish_command.wav" \
+  | jq .transcript
+
+# 4. Test streaming (jeśli włączone)
+ws://nebula:8008/stream
+
+# 5. Sprawdź traces w Jaeger
+open http://nebula:16686/search?service=voice-processing
+```
+
+### **🔗 Dokumentacja:**
+- **Unified Deployment Guide**: [docs/deployment/README.md](../../deployment/README.md)
+- **New Service Guide**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+- **Whisper Docs**: https://github.com/openai/whisper
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ Serwis w workflow matrix `.github/workflows/deploy-self-hosted.yml`
+- ✅ Whisper model loaded successfully
+- ✅ <3s latency for 10s audio
+- ✅ Polish language support working
+- ✅ VAD reducing false triggers
+- ✅ Metrics visible in Prometheus
+- ✅ Zero-downtime deployment
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

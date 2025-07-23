@@ -215,6 +215,73 @@ Implementować detekcję gestów przy użyciu MediaPipe z wysoką dokładności�
 
 3. **Czas rollback**: <10 min
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **UNIFIED CI/CD DEPLOYMENT**
+
+> **📚 Deployment dla tego serwisu jest zautomatyzowany przez zunifikowany workflow CI/CD.**
+
+### Kroki deployment
+
+1. **[ ] Przygotowanie serwisu do deployment**
+   - **Metryka**: Gesture detection dodany do workflow matrix
+   - **Walidacja**:
+     ```bash
+     # Sprawdź czy serwis jest w .github/workflows/deploy-self-hosted.yml
+     grep "gesture-detection" .github/workflows/deploy-self-hosted.yml
+     ```
+   - **Dokumentacja**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+
+2. **[ ] Konfiguracja GPU dla MediaPipe**
+   - **Metryka**: GPU acceleration enabled dla hand detection
+   - **Walidacja**: Serwis ma sekcję `deploy.resources.reservations.devices`
+   - **Konfiguracja**: MediaPipe GPU delegate w docker-compose.yml
+
+3. **[ ] Deploy przez GitHub Actions**
+   - **Metryka**: Automated deployment via git push
+   - **Komenda**:
+     ```bash
+     git add .
+     git commit -m "feat: deploy gesture-detection service with MediaPipe"
+     git push origin main
+     ```
+   - **Monitorowanie**: https://github.com/hretheum/bezrobocie/actions
+
+### **📋 Walidacja po deployment:**
+
+```bash
+# 1. Sprawdź health serwisu
+curl http://nebula:8007/health
+
+# 2. Sprawdź metryki
+curl http://nebula:8007/metrics | grep gesture_
+
+# 3. Test detekcji gestu
+curl -X POST http://nebula:8007/detect \
+  -F "image=@test_images/hand_gesture.jpg" \
+  | jq .gestures
+
+# 4. Sprawdź GPU usage
+ssh nebula "docker exec detektor-gesture-detection-1 nvidia-smi"
+
+# 5. Sprawdź traces w Jaeger
+open http://nebula:16686/search?service=gesture-detection
+```
+
+### **🔗 Dokumentacja:**
+- **Unified Deployment Guide**: [docs/deployment/README.md](../../deployment/README.md)
+- **New Service Guide**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+- **MediaPipe Docs**: https://google.github.io/mediapipe/
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ Serwis w workflow matrix `.github/workflows/deploy-self-hosted.yml`
+- ✅ MediaPipe hand detection operational
+- ✅ <100ms latency per frame
+- ✅ GPU acceleration working
+- ✅ Gestures recognized accurately
+- ✅ Metrics visible in Prometheus
+- ✅ Zero-downtime deployment
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

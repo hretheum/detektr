@@ -245,6 +245,95 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
 | Prompt injection | Średnie | Średni | Input sanitization, prompt guards |
 | Rate limiting | Wysokie | Średni | Queue, backoff, multiple keys |
 
+## Rollback Plan
+
+1. **Detekcja problemu**:
+   - API costs >$100/day
+   - Latency >5s consistently
+   - Error rate >5%
+
+2. **Kroki rollback**:
+   - [ ] Switch to cheaper model (GPT-3.5)
+   - [ ] Increase cache TTL
+   - [ ] Disable non-critical intents
+   - [ ] Fall back to rule-based system
+
+3. **Czas rollback**: <5 min
+
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **UNIFIED CI/CD DEPLOYMENT**
+
+> **📚 Deployment dla tego serwisu jest zautomatyzowany przez zunifikowany workflow CI/CD.**
+
+### Kroki deployment
+
+1. **[ ] Przygotowanie serwisu do deployment**
+   - **Metryka**: LLM intent dodany do workflow matrix
+   - **Walidacja**:
+     ```bash
+     # Sprawdź czy serwis jest w .github/workflows/deploy-self-hosted.yml
+     grep "llm-intent" .github/workflows/deploy-self-hosted.yml
+     ```
+   - **Dokumentacja**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+
+2. **[ ] Konfiguracja API keys**
+   - **Metryka**: LLM API keys w SOPS
+   - **Konfiguracja**:
+     ```bash
+     # Edytuj sekrety
+     make secrets-edit
+     # Dodaj: OPENAI_API_KEY, ANTHROPIC_API_KEY
+     # Opcjonalnie: LLM_MODEL, LLM_TEMPERATURE, LLM_MAX_TOKENS
+     ```
+
+3. **[ ] Deploy przez GitHub Actions**
+   - **Metryka**: Automated deployment via git push
+   - **Komenda**:
+     ```bash
+     git add .
+     git commit -m "feat: deploy llm-intent service for natural language understanding"
+     git push origin main
+     ```
+   - **Monitorowanie**: https://github.com/hretheum/bezrobocie/actions
+
+### **📋 Walidacja po deployment:**
+
+```bash
+# 1. Sprawdź health serwisu
+curl http://nebula:8005/health
+
+# 2. Sprawdź metryki
+curl http://nebula:8005/metrics | grep llm_
+
+# 3. Test intent recognition
+curl -X POST http://nebula:8005/intent \
+  -H "Content-Type: application/json" \
+  -d '{"text": "włącz światło w salonie"}' \
+  | jq .intent
+
+# 4. Sprawdź cache hit rate
+curl http://nebula:8005/metrics | grep llm_cache_hit_ratio
+
+# 5. Sprawdź traces w Jaeger
+open http://nebula:16686/search?service=llm-intent
+```
+
+### **🔗 Dokumentacja:**
+- **Unified Deployment Guide**: [docs/deployment/README.md](../../deployment/README.md)
+- **New Service Guide**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+- **OpenAI API**: https://platform.openai.com/docs
+- **Anthropic API**: https://docs.anthropic.com
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ Serwis w workflow matrix `.github/workflows/deploy-self-hosted.yml`
+- ✅ LLM API connections working
+- ✅ >95% intent recognition accuracy
+- ✅ <3s response time p99
+- ✅ Cost tracking operational
+- ✅ Cache reducing API calls
+- ✅ Zero-downtime deployment
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

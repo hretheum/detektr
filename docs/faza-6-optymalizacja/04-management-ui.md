@@ -230,6 +230,83 @@ Stworzyć intuicyjny interfejs webowy do zarządzania systemem detekcji z podgl�
 
 3. **Czas rollback**: <5 min
 
+## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
+
+### 🎯 **UNIFIED CI/CD DEPLOYMENT**
+
+> **📚 Deployment dla tego serwisu jest zautomatyzowany przez zunifikowany workflow CI/CD.**
+
+### Kroki deployment
+
+1. **[ ] Przygotowanie serwisu do deployment**
+   - **Metryka**: Management UI dodany do workflow matrix
+   - **Walidacja**:
+     ```bash
+     # Sprawdź czy serwis jest w .github/workflows/deploy-self-hosted.yml
+     grep "management-ui" .github/workflows/deploy-self-hosted.yml
+     ```
+   - **Dokumentacja**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+
+2. **[ ] Build frontend assets**
+   - **Metryka**: Production build zoptymalizowany
+   - **Konfiguracja**:
+     ```dockerfile
+     # Multi-stage build dla React/Vue
+     FROM node:18 as builder
+     WORKDIR /app
+     COPY package*.json ./
+     RUN npm ci
+     COPY . .
+     RUN npm run build
+
+     FROM nginx:alpine
+     COPY --from=builder /app/dist /usr/share/nginx/html
+     ```
+
+3. **[ ] Deploy przez GitHub Actions**
+   - **Metryka**: Automated deployment via git push
+   - **Komenda**:
+     ```bash
+     git add .
+     git commit -m "feat: deploy management-ui for system administration"
+     git push origin main
+     ```
+   - **Monitorowanie**: https://github.com/hretheum/bezrobocie/actions
+
+### **📋 Walidacja po deployment:**
+
+```bash
+# 1. Sprawdź dostępność UI
+curl -I http://nebula:8080
+
+# 2. Test static assets
+curl http://nebula:8080/static/js/main.js | head -1
+
+# 3. Sprawdź WebSocket endpoint
+curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" \
+  http://nebula:8080/ws
+
+# 4. Test API integration
+curl http://nebula:8080/api/status
+
+# 5. Otwórz UI w przeglądarce
+open http://nebula:8080
+```
+
+### **🔗 Dokumentacja:**
+- **Unified Deployment Guide**: [docs/deployment/README.md](../../deployment/README.md)
+- **New Service Guide**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+- **Frontend Build Guide**: [docs/deployment/guides/frontend-services.md](../../deployment/guides/frontend-services.md)
+
+### **🔍 Metryki sukcesu bloku:**
+- ✅ Serwis w workflow matrix `.github/workflows/deploy-self-hosted.yml`
+- ✅ UI accessible at http://nebula:8080
+- ✅ All pages loading <2s
+- ✅ WebSocket connections stable
+- ✅ API calls authenticated
+- ✅ Mobile responsive design
+- ✅ Zero-downtime deployment
+
 ## Następne kroki
 
 Po ukończeniu tego zadania, przejdź do:

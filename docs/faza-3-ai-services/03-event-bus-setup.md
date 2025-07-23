@@ -206,67 +206,69 @@ Wdrożyć skalowalny event bus do komunikacji między serwisami AI z gwarancją 
 
 ## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
 
-### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+### 🎯 **UNIFIED CI/CD DEPLOYMENT**
 
-**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/event-bus.md`
+> **📚 Deployment dla tego serwisu jest zautomatyzowany przez zunifikowany workflow CI/CD.**
 
-### Zadania atomowe
+### Kroki deployment
 
-1. **[ ] Deploy via CI/CD pipeline**
-   - **Metryka**: Automated deployment to Nebula via GitHub Actions
-   - **Walidacja**: `git push origin main` triggers deployment
-   - **Procedura**: [docs/deployment/services/event-bus.md#deploy](docs/deployment/services/event-bus.md#deploy)
+1. **[ ] Przygotowanie serwisu do deployment**
+   - **Metryka**: Event bus dodany do workflow matrix
+   - **Walidacja**:
+     ```bash
+     # Sprawdź czy serwis jest w .github/workflows/deploy-self-hosted.yml
+     grep "event-bus" .github/workflows/deploy-self-hosted.yml
+     ```
+   - **Dokumentacja**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
 
-2. **[ ] Konfiguracja Kafka/NATS cluster na Nebuli**
-   - **Metryka**: 3-node cluster operational
-   - **Walidacja**: `.env.sops` contains cluster configuration
-   - **Procedura**: [docs/deployment/services/event-bus.md#configuration](docs/deployment/services/event-bus.md#configuration)
+2. **[ ] Wybór i konfiguracja event bus (Kafka/NATS/Redis Streams)**
+   - **Metryka**: Event bus technology selected and configured
+   - **Decyzja**: Based on [ADR for queue abstraction](../../adr/2024-07-19-queue-abstraction-implementation.md)
+   - **Konfiguracja**: W `.env.sops` (edytuj przez `make secrets-edit`)
 
-3. **[ ] Weryfikacja metryk w Prometheus**
-   - **Metryka**: Event bus metrics visible at http://nebula:9090
-   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=kafka_topic_partition_current_offset`
-   - **Procedura**: [docs/deployment/services/event-bus.md#monitoring](docs/deployment/services/event-bus.md#monitoring)
+3. **[ ] Deploy przez GitHub Actions**
+   - **Metryka**: Automated deployment via git push
+   - **Komenda**:
+     ```bash
+     git add .
+     git commit -m "feat: deploy event-bus service with [Kafka/NATS/Redis]"
+     git push origin main
+     ```
+   - **Monitorowanie**: https://github.com/hretheum/bezrobocie/actions
 
-4. **[ ] Grafana dashboard dla event bus**
-   - **Metryka**: Lag, throughput, partitions visible
-   - **Walidacja**: Dashboard shows all topics and consumer groups
-   - **Procedura**: [docs/deployment/services/event-bus.md#dashboard](docs/deployment/services/event-bus.md#dashboard)
+### **📋 Walidacja po deployment:**
 
-5. **[ ] Test event flow AI services**
-   - **Metryka**: Events flow between face/object detection
-   - **Walidacja**: End-to-end event processing test
-   - **Procedura**: [docs/deployment/services/event-bus.md#integration-testing](docs/deployment/services/event-bus.md#integration-testing)
-
-### **🚀 JEDNA KOMENDA DO WYKONANIA:**
 ```bash
-# Cały Blok 5 wykonuje się automatycznie:
-git push origin main
+# 1. Sprawdź health serwisu
+curl http://nebula:8010/health  # Port zależny od implementacji
+
+# 2. Dla Kafka:
+ssh nebula "docker exec detektor-kafka-1 kafka-broker-api-versions --bootstrap-server localhost:9092"
+ssh nebula "docker exec detektor-kafka-1 kafka-topics --bootstrap-server localhost:9092 --list"
+
+# 3. Dla NATS:
+curl http://nebula:8222/varz  # NATS monitoring endpoint
+
+# 4. Dla Redis Streams:
+ssh nebula "docker exec detektor-redis-1 redis-cli XINFO STREAM detection-events"
+
+# 5. Sprawdź metryki
+curl http://nebula:9090/api/v1/query?query=event_bus_messages_total
 ```
 
-### **📋 Walidacja sukcesu:**
-```bash
-# Sprawdź Kafka cluster:
-ssh nebula "docker exec kafka-1 kafka-broker-api-versions --bootstrap-server localhost:9092"
-
-# List topics:
-ssh nebula "docker exec kafka-1 kafka-topics --bootstrap-server localhost:9092 --list"
-
-# Check consumer groups:
-ssh nebula "docker exec kafka-1 kafka-consumer-groups --bootstrap-server localhost:9092 --list"
-```
-
-### **🔗 Linki do procedur:**
-- **Deployment Guide**: [docs/deployment/services/event-bus.md](docs/deployment/services/event-bus.md)
-- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
-- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+### **🔗 Dokumentacja:**
+- **Unified Deployment Guide**: [docs/deployment/README.md](../../deployment/README.md)
+- **New Service Guide**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+- **Queue Abstraction ADR**: [docs/adr/2024-07-19-queue-abstraction-implementation.md](../../adr/2024-07-19-queue-abstraction-implementation.md)
 
 ### **🔍 Metryki sukcesu bloku:**
-- ✅ Kafka/NATS cluster healthy (3 nodes)
-- ✅ Event flow between AI services working
+- ✅ Serwis w workflow matrix `.github/workflows/deploy-self-hosted.yml`
+- ✅ Event bus cluster healthy
+- ✅ Events flowing between AI services
 - ✅ <10ms latency p99
 - ✅ Zero message loss
-- ✅ Monitoring dashboard operational
-- ✅ Zero-downtime deployment via CI/CD
+- ✅ Metrics visible in Prometheus
+- ✅ Zero-downtime deployment
 
 ## Następne kroki
 

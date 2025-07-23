@@ -240,9 +240,12 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
 
 ## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
 
-### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DEPLOYMENT**
 
-**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/face-recognition.md`
+**WAŻNE**: Ten serwis musi być dodany do workflow matrix w `.github/workflows/deploy-self-hosted.yml`
+
+**Procedury deploymentu**: Zobacz [docs/deployment/README.md](../../deployment/README.md) dla pełnego przewodnika.
+**Quick reference**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
 
 ### Zadania atomowe
 
@@ -291,9 +294,10 @@ curl -X POST http://nebula:8002/detect -F "image=@test_face.jpg"
 ```
 
 ### **🔗 Linki do procedur:**
-- **Deployment Guide**: [docs/deployment/services/face-recognition.md](docs/deployment/services/face-recognition.md)
-- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
-- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+- **Główny przewodnik**: [docs/deployment/README.md](../../deployment/README.md)
+- **Dodawanie serwisu**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+- **Troubleshooting**: [docs/deployment/guides/troubleshooting.md](../../deployment/guides/troubleshooting.md)
+- **Workflow config**: [.github/workflows/deploy-self-hosted.yml](../../.github/workflows/deploy-self-hosted.yml)
 
 ### **🔍 Metryki sukcesu bloku:**
 - ✅ Service running on Nebula with GPU access

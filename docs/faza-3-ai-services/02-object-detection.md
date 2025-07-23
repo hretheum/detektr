@@ -210,68 +210,70 @@ Wdrożyć wysokowydajny serwis detekcji obiektów oparty na YOLO v8 z pełnym mo
 
 ## Blok 5: DEPLOYMENT NA SERWERZE NEBULA
 
-### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+### 🎯 **UNIFIED CI/CD DEPLOYMENT**
 
-**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/object-detection.md`
+> **📚 Deployment dla tego serwisu jest zautomatyzowany przez zunifikowany workflow CI/CD.**
 
-### Zadania atomowe
+### Kroki deployment
 
-1. **[ ] Deploy via CI/CD pipeline**
-   - **Metryka**: Automated deployment to Nebula via GitHub Actions
-   - **Walidacja**: `git push origin main` triggers deployment
-   - **Procedura**: [docs/deployment/services/object-detection.md#deploy](docs/deployment/services/object-detection.md#deploy)
+1. **[ ] Przygotowanie serwisu do deployment**
+   - **Metryka**: Serwis dodany do workflow matrix
+   - **Walidacja**:
+     ```bash
+     # Sprawdź czy serwis jest w .github/workflows/deploy-self-hosted.yml
+     grep "object-detection" .github/workflows/deploy-self-hosted.yml
+     ```
+   - **Dokumentacja**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
 
-2. **[ ] Konfiguracja YOLO z GPU na Nebuli**
-   - **Metryka**: YOLOv8 running on GTX 4070
-   - **Walidacja**: `docker exec object-detection nvidia-smi`
-   - **Procedura**: [docs/deployment/services/object-detection.md#gpu-configuration](docs/deployment/services/object-detection.md#gpu-configuration)
+2. **[ ] Konfiguracja GPU dla YOLO**
+   - **Metryka**: GPU resources defined in docker-compose.yml
+   - **Walidacja**: Serwis ma sekcję `deploy.resources.reservations.devices`
+   - **Przykład**: Zobacz `services/gpu-demo` w docker-compose.yml
 
-3. **[ ] Weryfikacja metryk w Prometheus**
-   - **Metryka**: Object detection metrics visible at http://nebula:9090
-   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=object_detections_total`
-   - **Procedura**: [docs/deployment/services/object-detection.md#monitoring](docs/deployment/services/object-detection.md#monitoring)
+3. **[ ] Deploy przez GitHub Actions**
+   - **Metryka**: Automated deployment via git push
+   - **Komenda**:
+     ```bash
+     git add .
+     git commit -m "feat: deploy object-detection service with YOLOv8"
+     git push origin main
+     ```
+   - **Monitorowanie**: https://github.com/hretheum/bezrobocie/actions
 
-4. **[ ] Integracja z Jaeger tracing**
-   - **Metryka**: Traces visible at http://nebula:16686
-   - **Walidacja**: `curl http://nebula:16686/api/traces?service=object-detection`
-   - **Procedura**: [docs/deployment/services/object-detection.md#tracing](docs/deployment/services/object-detection.md#tracing)
+### **📋 Walidacja po deployment:**
 
-5. **[ ] Performance test YOLO na GTX 4070**
-   - **Metryka**: >10 FPS z YOLOv8m na 1080p
-   - **Walidacja**: Load test via CI/CD pipeline
-   - **Procedura**: [docs/deployment/services/object-detection.md#performance-testing](docs/deployment/services/object-detection.md#performance-testing)
-
-### **🚀 JEDNA KOMENDA DO WYKONANIA:**
 ```bash
-# Cały Blok 5 wykonuje się automatycznie:
-git push origin main
-```
-
-### **📋 Walidacja sukcesu:**
-```bash
-# Sprawdź deployment:
+# 1. Sprawdź health serwisu
 curl http://nebula:8003/health
-curl http://nebula:8003/metrics
 
-# Test GPU i YOLO:
-ssh nebula "docker exec object-detection python -c 'from ultralytics import YOLO; print(YOLO(\"yolov8m.pt\").model.device)'"
+# 2. Sprawdź metryki
+curl http://nebula:8003/metrics | grep object_detection
 
-# Test detekcji:
-curl -X POST http://nebula:8003/detect -F "image=@test_scene.jpg"
+# 3. Weryfikuj GPU
+ssh nebula "docker exec detektor-object-detection-1 nvidia-smi"
+
+# 4. Test detekcji
+curl -X POST http://nebula:8003/detect \
+  -F "image=@test_images/scene.jpg" \
+  | jq .detections
+
+# 5. Sprawdź traces w Jaeger
+open http://nebula:16686/search?service=object-detection
 ```
 
-### **🔗 Linki do procedur:**
-- **Deployment Guide**: [docs/deployment/services/object-detection.md](docs/deployment/services/object-detection.md)
-- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
-- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+### **🔗 Dokumentacja:**
+- **Unified Deployment Guide**: [docs/deployment/README.md](../../deployment/README.md)
+- **New Service Guide**: [docs/deployment/guides/new-service.md](../../deployment/guides/new-service.md)
+- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](../../deployment/troubleshooting/common-issues.md)
 
 ### **🔍 Metryki sukcesu bloku:**
+- ✅ Serwis w workflow matrix `.github/workflows/deploy-self-hosted.yml`
 - ✅ YOLOv8 running on GTX 4070 Super
-- ✅ >10 FPS on 1080p video streams
-- ✅ GPU memory usage <8GB
-- ✅ Metrics and traces in monitoring stack
-- ✅ Grafana GPU dashboard operational
-- ✅ Zero-downtime deployment via CI/CD
+- ✅ >10 FPS on 1080p streams
+- ✅ GPU memory <8GB
+- ✅ Metrics visible in Prometheus
+- ✅ Traces visible in Jaeger
+- ✅ Zero-downtime deployment
 
 ## Następne kroki
 
