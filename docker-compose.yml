@@ -173,6 +173,29 @@ services:
     depends_on:
       - redis
 
+  metadata-storage:
+    image: ghcr.io/hretheum/bezrobocie-detektor/metadata-storage:latest
+    container_name: metadata-storage
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      SERVICE_NAME: metadata-storage
+      PORT: 8005
+      DATABASE_URL: postgresql://detektor:detektor_pass@postgres:5432/detektor_db
+      LOG_LEVEL: INFO
+      ENVIRONMENT: production
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      - postgres
+
 volumes:
   redis-data:
   postgres-data:

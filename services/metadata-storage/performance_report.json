@@ -1,0 +1,142 @@
+{
+  "timestamp": "2025-07-23T10:07:54.436567",
+  "individual_benchmarks": {
+    "Point Lookup": {
+      "name": "Point Lookup",
+      "iterations": 100,
+      "errors": 0,
+      "min_ms": 3.397,
+      "max_ms": 92.595,
+      "avg_ms": 6.10171,
+      "p50_ms": 4.1209999999999996,
+      "p95_ms": 5.8389999999999995,
+      "p99_ms": 92.595,
+      "meets_sla": false
+    },
+    "Time Range Query": {
+      "name": "Time Range Query",
+      "iterations": 100,
+      "errors": 0,
+      "min_ms": 3.1350000000000002,
+      "max_ms": 91.86500000000001,
+      "avg_ms": 5.00578,
+      "p50_ms": 4.0200000000000005,
+      "p95_ms": 5.053,
+      "p99_ms": 91.86500000000001,
+      "meets_sla": false
+    },
+    "Camera History": {
+      "name": "Camera History",
+      "iterations": 100,
+      "errors": 0,
+      "min_ms": 3.124,
+      "max_ms": 94.075,
+      "avg_ms": 6.090990000000001,
+      "p50_ms": 4.1209999999999996,
+      "p95_ms": 6.384,
+      "p99_ms": 94.075,
+      "meets_sla": false
+    },
+    "Motion Detection Query": {
+      "name": "Motion Detection Query",
+      "iterations": 100,
+      "errors": 0,
+      "min_ms": 3.262,
+      "max_ms": 93.73299999999999,
+      "avg_ms": 7.246989999999999,
+      "p50_ms": 4.2700000000000005,
+      "p95_ms": 20.474,
+      "p99_ms": 93.73299999999999,
+      "meets_sla": false
+    },
+    "JSONB Search": {
+      "name": "JSONB Search",
+      "iterations": 100,
+      "errors": 0,
+      "min_ms": 3.363,
+      "max_ms": 8.717,
+      "avg_ms": 4.267390000000001,
+      "p50_ms": 4.04,
+      "p95_ms": 5.978,
+      "p99_ms": 8.717,
+      "meets_sla": true
+    },
+    "1-Min Aggregate": {
+      "name": "1-Min Aggregate",
+      "iterations": 100,
+      "errors": 0,
+      "min_ms": 3.2390000000000003,
+      "max_ms": 100.96,
+      "avg_ms": 6.319310000000001,
+      "p50_ms": 4.037,
+      "p95_ms": 9.100999999999999,
+      "p99_ms": 100.96,
+      "meets_sla": false
+    },
+    "Hourly Aggregate": {
+      "name": "Hourly Aggregate",
+      "iterations": 100,
+      "errors": 0,
+      "min_ms": 3.4050000000000002,
+      "max_ms": 92.83800000000001,
+      "avg_ms": 5.21354,
+      "p50_ms": 4.0920000000000005,
+      "p95_ms": 5.630999999999999,
+      "p99_ms": 92.83800000000001,
+      "meets_sla": false
+    },
+    "Daily Aggregate": {
+      "name": "Daily Aggregate",
+      "iterations": 100,
+      "errors": 0,
+      "min_ms": 2.812,
+      "max_ms": 225.892,
+      "avg_ms": 6.469930000000001,
+      "p50_ms": 4.081,
+      "p95_ms": 5.338,
+      "p99_ms": 225.892,
+      "meets_sla": false
+    }
+  },
+  "stress_test": {
+    "duration_seconds": 60.0362,
+    "total_queries": 59136,
+    "qps": 985.0057132196907,
+    "queries": {
+      "point_lookup": {
+        "count": 20001,
+        "errors": 0,
+        "qps": 333.149000103271,
+        "min_ms": 2.451,
+        "avg_ms": 8.091172941352932,
+        "p50_ms": 5.557,
+        "p95_ms": 9.927999999999999,
+        "p99_ms": 93.378,
+        "max_ms": 555.935
+      },
+      "time_range": {
+        "count": 19564,
+        "errors": 0,
+        "qps": 325.8700583980998,
+        "min_ms": 2.597,
+        "avg_ms": 8.593394346759354,
+        "p50_ms": 5.887,
+        "p95_ms": 10.353,
+        "p99_ms": 94.071,
+        "max_ms": 553.846
+      },
+      "camera_scan": {
+        "count": 19571,
+        "errors": 0,
+        "qps": 325.9866547183199,
+        "min_ms": 2.4290000000000003,
+        "avg_ms": 8.56859874303817,
+        "p50_ms": 5.884,
+        "p95_ms": 10.286999999999999,
+        "p99_ms": 94.273,
+        "max_ms": 553.755
+      }
+    }
+  },
+  "all_meet_sla": false
+}

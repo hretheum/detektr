@@ -1,0 +1,95 @@
+name: Deploy Metadata Storage Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/metadata-storage/**'
+      - '.github/workflows/metadata-storage-deploy.yml'
+  workflow_dispatch:
+
+env:
+  SERVICE_NAME: metadata-storage
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/metadata-storage
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Log in to the Container registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/metadata-storage
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Deploy to Nebula
+      run: |
+        echo "Deploying metadata-storage service..."
+
+        # Ensure deployment directory exists
+        mkdir -p /opt/detektor/services/metadata-storage
+
+        # Copy docker-compose file if exists
+        if [ -f services/metadata-storage/docker-compose.yml ]; then
+          cp services/metadata-storage/docker-compose.yml /opt/detektor/services/metadata-storage/
+        fi
+
+        # Update and restart service
+        cd /opt/detektor
+        docker-compose -f docker-compose.yml pull metadata-storage || true
+        docker-compose -f docker-compose.yml up -d metadata-storage || true
+
+        # Wait for service to be healthy
+        echo "Waiting for service to be healthy..."
+        for i in {1..30}; do
+          if curl -f http://localhost:8005/health 2>/dev/null; then
+            echo "Service is healthy!"
+            break
+          fi
+          echo "Waiting for service... ($i/30)"
+          sleep 5
+        done
+
+        # Verify deployment
+        docker ps | grep metadata-storage
+        curl -s http://localhost:8005/health | jq .

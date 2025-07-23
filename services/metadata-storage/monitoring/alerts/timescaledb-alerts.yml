@@ -1,0 +1,122 @@
+groups:
+  - name: timescaledb-metadata
+    rules:
+      - alert: TimescaleDBDown
+        expr: pg_up{instance="timescaledb:5432"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: timescaledb
+          component: metadata-storage
+        annotations:
+          summary: "TimescaleDB is down"
+          description: "TimescaleDB instance {{ $labels.instance }} has been down for more than 30 seconds"
+          runbook_url: "https://github.com/hretheum/bezrobocie-detektor/docs/runbooks/timescaledb-down.md"
+
+      - alert: TimescaleDBHighConnections
+        expr: pg_stat_database_numbackends{datname="detektor_db"} > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: timescaledb
+          component: metadata-storage
+        annotations:
+          summary: "High number of database connections"
+          description: "Database {{ $labels.datname }} has {{ $value }} active connections (>80)"
+          runbook_url: "https://github.com/hretheum/bezrobocie-detektor/docs/runbooks/high-connections.md"
+
+      - alert: TimescaleDBLowCacheHitRatio
+        expr: (pg_stat_database_blks_hit{datname="detektor_db"} / (pg_stat_database_blks_hit{datname="detektor_db"} + pg_stat_database_blks_read{datname="detektor_db"})) * 100 < 90
+        for: 10m
+        labels:
+          severity: warning
+          service: timescaledb
+          component: metadata-storage
+        annotations:
+          summary: "Low cache hit ratio"
+          description: "Database {{ $labels.datname }} cache hit ratio is {{ $value }}% (<90%)"
+          runbook_url: "https://github.com/hretheum/bezrobocie-detektor/docs/runbooks/low-cache-hit-ratio.md"
+
+      - alert: TimescaleDBHighDiskUsage
+        expr: pg_database_size_bytes{datname="detektor_db"} > 10 * 1024 * 1024 * 1024 # 10GB
+        for: 5m
+        labels:
+          severity: warning
+          service: timescaledb
+          component: metadata-storage
+        annotations:
+          summary: "High database disk usage"
+          description: "Database {{ $labels.datname }} size is {{ $value | humanize1024 }}B (>10GB)"
+          runbook_url: "https://github.com/hretheum/bezrobocie-detektor/docs/runbooks/high-disk-usage.md"
+
+      - alert: TimescaleDBDeadTuplesHigh
+        expr: pg_stat_user_tables_n_dead_tup{schemaname="metadata", relname="frame_metadata"} > 10000
+        for: 15m
+        labels:
+          severity: warning
+          service: timescaledb
+          component: metadata-storage
+        annotations:
+          summary: "High number of dead tuples"
+          description: "Table {{ $labels.schemaname }}.{{ $labels.relname }} has {{ $value }} dead tuples (>10000)"
+          runbook_url: "https://github.com/hretheum/bezrobocie-detektor/docs/runbooks/dead-tuples.md"
+
+      - alert: TimescaleDBSlowQueries
+        expr: pg_stat_statements_mean_time_ms > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: timescaledb
+          component: metadata-storage
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Query mean execution time is {{ $value }}ms (>100ms)"
+          runbook_url: "https://github.com/hretheum/bezrobocie-detektor/docs/runbooks/slow-queries.md"
+
+      - alert: TimescaleDBTooManyChunks
+        expr: timescaledb_hypertable_chunks_total{hypertable_name="frame_metadata"} > 1000
+        for: 30m
+        labels:
+          severity: warning
+          service: timescaledb
+          component: metadata-storage
+        annotations:
+          summary: "Too many chunks in hypertable"
+          description: "Hypertable {{ $labels.hypertable_name }} has {{ $value }} chunks (>1000)"
+          runbook_url: "https://github.com/hretheum/bezrobocie-detektor/docs/runbooks/too-many-chunks.md"
+
+      - alert: TimescaleDBLowCompressionRatio
+        expr: timescaledb_hypertable_compression_ratio{hypertable_name="frame_metadata"} < 0.5
+        for: 1h
+        labels:
+          severity: info
+          service: timescaledb
+          component: metadata-storage
+        annotations:
+          summary: "Low compression ratio"
+          description: "Hypertable {{ $labels.hypertable_name }} compression ratio is {{ $value }} (<50%)"
+          runbook_url: "https://github.com/hretheum/bezrobocie-detektor/docs/runbooks/low-compression.md"
+
+      - alert: TimescaleDBReplicationLag
+        expr: pg_replication_lag_seconds > 60
+        for: 2m
+        labels:
+          severity: critical
+          service: timescaledb
+          component: metadata-storage
+        annotations:
+          summary: "High replication lag"
+          description: "Replication lag is {{ $value }}s (>60s)"
+          runbook_url: "https://github.com/hretheum/bezrobocie-detektor/docs/runbooks/replication-lag.md"
+
+      - alert: TimescaleDBBackupAge
+        expr: time() - pg_last_backup_timestamp > 86400 # 24 hours
+        for: 1h
+        labels:
+          severity: warning
+          service: timescaledb
+          component: metadata-storage
+        annotations:
+          summary: "Database backup is too old"
+          description: "Last backup was {{ $value | humanizeDuration }} ago (>24h)"
+          runbook_url: "https://github.com/hretheum/bezrobocie-detektor/docs/runbooks/old-backup.md"
