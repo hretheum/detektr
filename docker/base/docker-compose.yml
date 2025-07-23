@@ -1,0 +1,164 @@
+# Base application services
+# This file contains only the core application services
+# Storage (Redis, PostgreSQL) are defined in docker-compose.storage.yml
+# Observability stack is defined in docker-compose.observability.yml
+
+services:
+  # =================================
+  # CORE APPLICATION SERVICES
+  # =================================
+
+  rtsp-capture:
+    image: ghcr.io/hretheum/detektr/rtsp-capture:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      SERVICE_NAME: rtsp-capture
+      PORT: 8001
+      RTSP_URL: ${RTSP_URL:-rtsp://localhost:8554/stream}
+      FRAME_BUFFER_SIZE: ${FRAME_BUFFER_SIZE:-100}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+
+  frame-buffer:
+    image: ghcr.io/hretheum/detektr/frame-buffer:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      SERVICE_NAME: frame-buffer
+      PORT: 8002
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      FRAME_QUEUE_NAME: ${FRAME_QUEUE_NAME:-frame_queue}
+      DLQ_NAME: ${DLQ_NAME:-frame_dlq}
+      MAX_BUFFER_SIZE: ${MAX_BUFFER_SIZE:-1000}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+
+  frame-tracking:
+    image: ghcr.io/hretheum/detektr/frame-tracking:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      SERVICE_NAME: frame-tracking
+      PORT: 8006
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD:-detektor_pass}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-detektor_db}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - redis
+      - postgres
+
+  metadata-storage:
+    image: ghcr.io/hretheum/detektr/metadata-storage:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      SERVICE_NAME: metadata-storage
+      PORT: 8005
+      DATABASE_URL: postgresql://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD:-detektor_pass}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-detektor_db}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      - postgres
+
+  # =================================
+  # EXAMPLE & DEMO SERVICES
+  # =================================
+
+  example-otel:
+    image: ghcr.io/hretheum/detektr/example-otel:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8009:8000"
+    environment:
+      SERVICE_NAME: example-otel
+      PORT: 8000
+      OTEL_SERVICE_NAME: example-otel
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+    profiles:
+      - examples
+
+  echo-service:
+    image: ghcr.io/hretheum/detektr/echo-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      SERVICE_NAME: echo-service
+      PORT: 8007
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+    profiles:
+      - examples
+
+networks:
+  detektor-network:
+    name: detektor-network
+    driver: bridge

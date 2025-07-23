@@ -1,0 +1,181 @@
+# Additional AI services (LLM, gesture detection, etc.)
+# Use with: docker-compose -f docker/base/docker-compose.yml -f docker/features/ai-services/docker-compose.ai.yml up
+
+services:
+  # =================================
+  # AI/ML SERVICES
+  # =================================
+
+  llm-intent:
+    image: ghcr.io/hretheum/detektr/llm-intent:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    environment:
+      SERVICE_NAME: llm-intent
+      PORT: 8010
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      MODEL_PROVIDER: ${LLM_PROVIDER:-openai}
+      MODEL_NAME: ${LLM_MODEL:-gpt-4-turbo-preview}
+      MAX_TOKENS: ${LLM_MAX_TOKENS:-2000}
+      TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+
+  gesture-detection:
+    image: ghcr.io/hretheum/detektr/gesture-detection:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8011:8011"
+    environment:
+      SERVICE_NAME: gesture-detection
+      PORT: 8011
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      MODEL_PATH: /models/mediapipe
+      MIN_DETECTION_CONFIDENCE: ${GESTURE_MIN_CONFIDENCE:-0.5}
+      MIN_TRACKING_CONFIDENCE: ${GESTURE_TRACKING_CONFIDENCE:-0.5}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    volumes:
+      - mediapipe-models:/models/mediapipe
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+
+  audio-analysis:
+    image: ghcr.io/hretheum/detektr/audio-analysis:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8012:8012"
+    environment:
+      SERVICE_NAME: audio-analysis
+      PORT: 8012
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      WHISPER_MODEL: ${WHISPER_MODEL:-base}
+      WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-en}
+      VAD_THRESHOLD: ${VAD_THRESHOLD:-0.5}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    volumes:
+      - whisper-models:/models/whisper
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8012/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - redis
+
+  scene-understanding:
+    image: ghcr.io/hretheum/detektr/scene-understanding:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8013:8013"
+    environment:
+      SERVICE_NAME: scene-understanding
+      PORT: 8013
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      CLIP_MODEL: ${CLIP_MODEL:-ViT-B/32}
+      SCENE_CATEGORIES: ${SCENE_CATEGORIES:-indoor,outdoor,people,animals,vehicles}
+      CONFIDENCE_THRESHOLD: ${SCENE_CONFIDENCE:-0.7}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    volumes:
+      - clip-models:/models/clip
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8013/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    depends_on:
+      - redis
+
+  ha-bridge:
+    image: ghcr.io/hretheum/detektr/ha-bridge:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8014:8014"
+    environment:
+      SERVICE_NAME: ha-bridge
+      PORT: 8014
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      HOME_ASSISTANT_URL: ${HOME_ASSISTANT_URL}
+      HOME_ASSISTANT_TOKEN: ${HOME_ASSISTANT_TOKEN}
+      WEBHOOK_URL: ${HA_WEBHOOK_URL}
+      MAX_RETRY_ATTEMPTS: ${HA_MAX_RETRIES:-3}
+      RETRY_DELAY: ${HA_RETRY_DELAY:-1}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8014/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+
+  telegram-alerts:
+    image: ghcr.io/hretheum/detektr/telegram-alerts:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8015:8015"
+    environment:
+      SERVICE_NAME: telegram-alerts
+      PORT: 8015
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      ALERT_COOLDOWN: ${ALERT_COOLDOWN:-300}
+      MAX_ALERTS_PER_HOUR: ${MAX_ALERTS_PER_HOUR:-10}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8015/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+
+volumes:
+  mediapipe-models:
+    driver: local
+  whisper-models:
+    driver: local
+  clip-models:
+    driver: local
+
+networks:
+  detektor-network:
+    external: true

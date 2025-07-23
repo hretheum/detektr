@@ -200,6 +200,28 @@ When working on this project, create entries like:
   gh workflow run scheduled-tasks.yml -f task=daily-cleanup
   ```
 
-### ⏳ Next: Docker Compose Reorganization
+### ✅ Faza 3: Docker Compose Reorganization
+- **Reduced**: 16+ → 8 files in hierarchy
+- **New Structure**:
+  ```
+  docker/
+  ├── base/                  # Core definitions
+  ├── environments/          # Dev/prod overrides
+  └── features/              # GPU, HA, AI services
+  ```
+- **Convenience Scripts**:
+  ```bash
+  ./docker/dev.sh up -d      # Development
+  ./docker/prod.sh up -d     # Production
+  ./scripts/migrate-docker-compose.sh  # Migration
+  ```
+- **Makefile Targets**:
+  ```bash
+  make dev-up               # Start development
+  make prod-up              # Start production
+  make migrate-compose      # Migrate structure
+  ```
+
+### ⏳ Faza 4: GHCR Cleanup (IN PROGRESS)
 
 **Remember**: This project is **production-ready** and uses **modern DevOps practices**. Always start with the documentation in `docs/deployment/` and follow the established patterns.

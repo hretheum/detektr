@@ -1,0 +1,183 @@
+# Redis High Availability setup with Sentinel
+# Use with: docker-compose -f docker/base/docker-compose.yml -f docker/features/redis-ha/docker-compose.redis-ha.yml up
+
+services:
+  # =================================
+  # REDIS MASTER-SLAVE WITH SENTINEL
+  # =================================
+
+  # Override base redis service
+  redis:
+    deploy:
+      replicas: 0 # Disable standard redis when using HA
+
+  # Redis Master
+  redis-master:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-master-data:/data
+    networks:
+      - detektor-network
+    command: >
+      redis-server
+      --port 6379
+      --requirepass ${REDIS_PASSWORD}
+      --masterauth ${REDIS_PASSWORD}
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --save 300 10
+      --save 60 10000
+      --appendonly yes
+      --appendfsync everysec
+
+  # Redis Slave 1
+  redis-slave-1:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-slave1-data:/data
+    networks:
+      - detektor-network
+    command: >
+      redis-server
+      --port 6379
+      --slaveof redis-master 6379
+      --requirepass ${REDIS_PASSWORD}
+      --masterauth ${REDIS_PASSWORD}
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --appendonly yes
+      --appendfsync everysec
+    depends_on:
+      - redis-master
+
+  # Redis Slave 2
+  redis-slave-2:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis-slave2-data:/data
+    networks:
+      - detektor-network
+    command: >
+      redis-server
+      --port 6379
+      --slaveof redis-master 6379
+      --requirepass ${REDIS_PASSWORD}
+      --masterauth ${REDIS_PASSWORD}
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --appendonly yes
+      --appendfsync everysec
+    depends_on:
+      - redis-master
+
+  # Redis Sentinel 1
+  sentinel-1:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./config/sentinel.conf:/etc/redis/sentinel.conf:ro
+    networks:
+      - detektor-network
+    command: redis-sentinel /etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-slave-1
+      - redis-slave-2
+
+  # Redis Sentinel 2
+  sentinel-2:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "26380:26379"
+    volumes:
+      - ./config/sentinel.conf:/etc/redis/sentinel.conf:ro
+    networks:
+      - detektor-network
+    command: redis-sentinel /etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-slave-1
+      - redis-slave-2
+
+  # Redis Sentinel 3
+  sentinel-3:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "26381:26379"
+    volumes:
+      - ./config/sentinel.conf:/etc/redis/sentinel.conf:ro
+    networks:
+      - detektor-network
+    command: redis-sentinel /etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-slave-1
+      - redis-slave-2
+
+  # HAProxy for Redis load balancing
+  redis-haproxy:
+    image: haproxy:alpine
+    restart: unless-stopped
+    ports:
+      - "6378:6379" # Main Redis port
+      - "8404:8404" # HAProxy stats
+    volumes:
+      - ./config/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - detektor-network
+    depends_on:
+      - redis-master
+      - redis-slave-1
+      - redis-slave-2
+      - sentinel-1
+      - sentinel-2
+      - sentinel-3
+
+  # Redis Exporter for HA monitoring
+  redis-exporter-ha:
+    image: oliver006/redis_exporter:latest
+    restart: unless-stopped
+    ports:
+      - "9122:9121"
+    environment:
+      REDIS_ADDR: "redis-master:6379,redis-slave-1:6379,redis-slave-2:6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_EXPORTER_DEBUG: "false"
+      REDIS_EXPORTER_LOG_FORMAT: json
+    networks:
+      - detektor-network
+    depends_on:
+      - redis-master
+      - redis-slave-1
+      - redis-slave-2
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=9121"
+      - "prometheus.io/path=/metrics"
+
+volumes:
+  redis-master-data:
+    driver: local
+  redis-slave1-data:
+    driver: local
+  redis-slave2-data:
+    driver: local
+
+networks:
+  detektor-network:
+    external: true

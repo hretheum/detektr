@@ -12,15 +12,28 @@
 
 ## 🚀 Quick Start
 
+### Stara metoda (legacy)
 ```bash
 # Deploy wszystkiego
 git push origin main
 
 # Sprawdź status
 ssh nebula "cd /opt/detektor && docker compose ps"
+```
+
+### NOWA metoda (hierarchiczna struktura)
+```bash
+# Deploy produkcyjny
+ssh nebula "cd /opt/detektor && ./docker/prod.sh up -d"
+
+# Sprawdź status
+ssh nebula "cd /opt/detektor && ./docker/prod.sh ps"
 
 # Sprawdź logi
-ssh nebula "cd /opt/detektor && docker compose logs [service-name]"
+ssh nebula "cd /opt/detektor && ./docker/prod.sh logs -f [service-name]"
+
+# Migracja ze starej struktury
+ssh nebula "cd /opt/detektor && ./scripts/migrate-docker-compose.sh"
 ```
 
 ## 🏗️ Architektura Deployment
@@ -34,38 +47,57 @@ ssh nebula "cd /opt/detektor && docker compose logs [service-name]"
 ### Struktura na serwerze
 ```
 /opt/detektor/
-├── docker-compose.yml           # Główny compose z serwisami
-├── docker-compose.storage.yml   # PostgreSQL, Redis
-├── docker-compose.observability.yml  # Grafana, Prometheus, Jaeger
+├── docker/                      # NOWA struktura hierarchiczna
+│   ├── base/                    # Podstawowe definicje
+│   │   ├── docker-compose.yml
+│   │   ├── docker-compose.storage.yml
+│   │   └── docker-compose.observability.yml
+│   ├── environments/            # Override dla środowisk
+│   │   ├── development/
+│   │   └── production/
+│   └── features/                # Opcjonalne funkcje
+│       ├── gpu/
+│       ├── redis-ha/
+│       └── ai-services/
+├── docker-compose.yml           # Legacy (dla kompatybilności)
 ├── .env (encrypted with SOPS)   # Sekrety
 └── scripts/                     # Skrypty pomocnicze
+    └── migrate-docker-compose.sh # Migracja do nowej struktury
 ```
 
 ## 📦 Workflows CI/CD
 
-### Główne Workflows (FAKTYCZNIE UŻYWANE)
+### Główne Workflows (PO KONSOLIDACJI - Faza 2)
 
-#### 1. `deploy-self-hosted.yml` - Główny workflow
-- **Trigger**: Push do main lub manual
-- **Funkcja**: Buduje i deployuje zmienione serwisy
-- **Używa**: Buildx, cache, multi-stage builds
-- **Deploy**: Automatyczny na Nebula
+#### 1. `main-pipeline.yml` - Zunifikowany CI/CD
+- **Trigger**: Push do main, PR, manual
+- **Funkcja**: Buduje i deployuje na podstawie zmian
+- **Możliwości**:
+  - build-and-deploy (domyślnie)
+  - build-only
+  - deploy-only
+- **Smart detection**: Buduje tylko zmienione serwisy
 
-#### 2. `db-deploy.yml` - Deploy bazy danych
-- **Trigger**: Zmiany w services/timescaledb/** lub pgbouncer/**
-- **Funkcja**: Buduje obrazy TimescaleDB i PgBouncer
-- **Problem**: Tworzy Dockerfile w runtime (do naprawy!)
+#### 2. `pr-checks.yml` - Walidacja PR
+- **Trigger**: Pull requests
+- **Funkcja**: Linting, testy, security scan
+- **Rozszerzone**: Testy Python, Docker build validation
 
-#### 3. `deploy-only.yml` - Sam deployment
-- **Trigger**: Manual
-- **Funkcja**: Tylko pull i restart serwisów (bez budowania)
+#### 3. `manual-operations.yml` - Operacje manualne
+- **Trigger**: workflow_dispatch
+- **Funkcja**: Cleanup, diagnostyka, rebuild
+- **Konsoliduje**: cleanup-runner, test-runner, diagnostic
 
-### Pomocnicze Workflows
+#### 4. `scheduled-tasks.yml` - Zadania cykliczne
+- **Trigger**: Cron schedule
+- **Funkcja**:
+  - Daily cleanup (2 AM UTC)
+  - Weekly rebuild (Sunday 3 AM)
+  - Monthly security scan (1st day 4 AM)
 
-- `ci.yml` - Linting i testy
-- `cleanup-runner.yml` - Czyszczenie dysku (co 6h)
-- `manual-service-build.yml` - Ręczne budowanie pojedynczego serwisu
-- `security.yml` - Skanowanie CVE
+#### 5. `release.yml` - Zarządzanie wersjami
+- **Trigger**: Tag push (v*)
+- **Funkcja**: Tworzenie release, changelog, deployment
 
 ## 🔐 Zarządzanie Sekretami
 

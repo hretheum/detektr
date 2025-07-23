@@ -1,0 +1,119 @@
+# Storage services (Redis, PostgreSQL)
+# This file contains all persistent storage services
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.storage.yml up
+
+services:
+  # =================================
+  # REDIS - Message Broker & Cache
+  # =================================
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      redis-server
+      --maxmemory ${REDIS_MAX_MEMORY:-512mb}
+      --maxmemory-policy ${REDIS_MAX_MEMORY_POLICY:-allkeys-lru}
+      --save 60 1000
+      --appendonly yes
+      --appendfsync everysec
+
+  # =================================
+  # POSTGRESQL + TIMESCALEDB
+  # =================================
+
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-detektor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-detektor_db}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+      TS_TUNE_MAX_CONNS: ${POSTGRES_MAX_CONNECTIONS:-100}
+      TS_TUNE_MAX_BG_WORKERS: ${POSTGRES_MAX_BG_WORKERS:-8}
+      SHARED_PRELOAD_LIBRARIES: "timescaledb,pg_stat_statements"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    shm_size: 256mb
+
+  # =================================
+  # REDIS EXPORTER (for Prometheus)
+  # =================================
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    restart: unless-stopped
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_EXPORTER_DEBUG: ${REDIS_EXPORTER_DEBUG:-false}
+      REDIS_EXPORTER_LOG_FORMAT: json
+      REDIS_EXPORTER_CHECK_KEYS: "*"
+    networks:
+      - detektor-network
+    depends_on:
+      - redis
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=9121"
+      - "prometheus.io/path=/metrics"
+    profiles:
+      - monitoring
+
+  # =================================
+  # POSTGRES EXPORTER (for Prometheus)
+  # =================================
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    restart: unless-stopped
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-detektor_db}?sslmode=disable"
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
+      PG_EXPORTER_INCLUDE_DATABASES: "${POSTGRES_DB:-detektor_db}"
+    networks:
+      - detektor-network
+    depends_on:
+      - postgres
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=9187"
+      - "prometheus.io/path=/metrics"
+    profiles:
+      - monitoring
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+networks:
+  detektor-network:
+    external: true

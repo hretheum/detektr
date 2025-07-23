@@ -1,0 +1,74 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: "detektor"
+    environment: "${ENVIRONMENT:-production}"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Application services
+  - job_name: "detektor-services"
+    static_configs:
+      - targets:
+          - "rtsp-capture:8001"
+          - "frame-buffer:8002"
+          - "face-recognition:8003"
+          - "object-detection:8004"
+          - "metadata-storage:8005"
+          - "frame-tracking:8006"
+          - "echo-service:8007"
+          - "gpu-demo:8008"
+          - "example-otel:8000"
+          - "llm-intent:8010"
+          - "gesture-detection:8011"
+          - "audio-analysis:8012"
+          - "scene-understanding:8013"
+          - "ha-bridge:8014"
+          - "telegram-alerts:8015"
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: "([^:]+):.*"
+        target_label: service
+        replacement: "$1"
+
+  # Storage exporters
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  # Infrastructure monitoring
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  # GPU monitoring
+  - job_name: "nvidia-gpu"
+    static_configs:
+      - targets: ["nvidia-gpu-exporter:9445"]
+
+  # Jaeger metrics
+  - job_name: "jaeger"
+    static_configs:
+      - targets: ["jaeger:14269"]

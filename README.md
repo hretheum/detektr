@@ -99,14 +99,18 @@ Faza 5: Zaawansowane AI i voice            ⏳ [ZAPLANOWANA]
 Faza 6: Optymalizacja i refinement         ⏳ [ZAPLANOWANA]
 
 Transformacja systemu (2025-07-23):
-✅ Unifikacja nazewnictwa                   [UKOŃCZONA]
-✅ Konsolidacja workflows (14→5)            [UKOŃCZONA]
-⏳ Reorganizacja Docker Compose             [W TRAKCIE]
+✅ Faza 1: Unifikacja nazewnictwa           [UKOŃCZONA]
+✅ Faza 2: Konsolidacja workflows (14→5)    [UKOŃCZONA]
+✅ Faza 3: Reorganizacja Docker Compose     [UKOŃCZONA]
+  - 16+ plików → 8 w hierarchicznej strukturze
+  - Convenience scripts: docker/dev.sh, docker/prod.sh
+  - Skrypt migracji: scripts/migrate-docker-compose.sh
+⏳ Faza 4: Cleanup GHCR                     [W TRAKCIE]
 ```
 
 ## Quick Start
 
-### Lokalne development
+### Lokalne development (Nowa Struktura Docker Compose)
 
 ```bash
 # Klonowanie
@@ -117,13 +121,25 @@ cd detektr
 make secrets-init
 make secrets-edit  # Dodaj swoje klucze API
 
-# Uruchomienie stacku lokalnie
-make up
+# Uruchomienie stacku lokalnie - NOWE KOMENDY
+./docker/dev.sh up -d        # Development z hot reload
+# lub
+make dev-up                  # Alias w Makefile
 
 # Monitoring
 open http://localhost:3000    # Grafana
 open http://localhost:16686   # Jaeger
 open http://localhost:9090    # Prometheus
+
+# Logi
+./docker/dev.sh logs -f rtsp-capture
+# lub
+make dev-logs
+
+# Zatrzymanie
+./docker/dev.sh down
+# lub
+make dev-down
 ```
 
 ### Deployment na produkcję (Nebula)

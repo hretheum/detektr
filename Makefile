@@ -146,3 +146,33 @@ check-secrets:
 	else \
 		echo "✅ No exposed secrets found"; \
 	fi
+
+# New hierarchical docker-compose commands
+.PHONY: dev-up dev-down prod-up prod-down
+
+dev-up: ## Start development environment
+	./docker/dev.sh up -d
+
+dev-down: ## Stop development environment
+	./docker/dev.sh down
+
+prod-up: ## Start production environment
+	./docker/prod.sh up -d
+
+prod-down: ## Stop production environment
+	./docker/prod.sh down
+
+dev-logs: ## Show development logs
+	./docker/dev.sh logs -f
+
+prod-logs: ## Show production logs
+	./docker/prod.sh logs -f
+
+dev-ps: ## Show development container status
+	./docker/dev.sh ps
+
+prod-ps: ## Show production container status
+	./docker/prod.sh ps
+
+migrate-compose: ## Migrate to new docker-compose structure
+	./scripts/migrate-docker-compose.sh

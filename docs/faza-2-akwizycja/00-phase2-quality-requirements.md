@@ -1,5 +1,37 @@
 # Phase 2 Quality Requirements & Standards
 
+## 🆕 STAN TRANSFORMACJI SYSTEMU (2025-07-23)
+
+### ✅ UKOŃCZONE FAZY TRANSFORMACJI:
+1. **Faza 1: Unifikacja nazewnictwa**
+   - Wszystkie komponenty używają `detektr`
+   - Registry: `ghcr.io/hretheum/detektr/`
+   - 42 pliki zaktualizowane
+
+2. **Faza 2: Konsolidacja workflows**
+   - Z 14 do 5 plików (-64%)
+   - Główny: `main-pipeline.yml` (build + deploy)
+   - Pomocnicze: `pr-checks.yml`, `manual-operations.yml`, `scheduled-tasks.yml`, `release.yml`
+
+3. **Faza 3: Reorganizacja Docker Compose**
+   - Hierarchiczna struktura w `docker/`
+   - 16+ plików → 8 w logicznej organizacji
+   - Convenience scripts: `docker/dev.sh`, `docker/prod.sh`
+
+### 🚀 NOWE KOMENDY DEPLOYMENT:
+```bash
+# Development (hot reload, debug tools)
+./docker/dev.sh up -d        # lub: make dev-up
+./docker/dev.sh logs -f      # lub: make dev-logs
+
+# Production (resource limits, optimized)
+./docker/prod.sh up -d       # lub: make prod-up
+./docker/prod.sh ps          # lub: make prod-ps
+
+# Migracja ze starej struktury
+./scripts/migrate-docker-compose.sh  # lub: make migrate-compose
+```
+
 ## 🔴 MANDATORY Quality Gates (od Fazy 2)
 
 ### 1. API Documentation (OpenAPI/Swagger)
@@ -210,7 +242,7 @@ async def decode_frame(self, frame_data: bytes):
 
 3. **Production Configuration**
    ```yaml
-   # docker-compose.prod.yml
+   # docker/environments/production/docker-compose.override.yml
    services:
      rtsp-capture:
        image: ghcr.io/hretheum/detektr/rtsp-capture:latest

@@ -1,0 +1,143 @@
+# GPU-enabled services
+# Use with: docker-compose -f docker/base/docker-compose.yml -f docker/features/gpu/docker-compose.gpu.yml up
+
+services:
+  # =================================
+  # GPU-ENABLED AI SERVICES
+  # =================================
+
+  face-recognition:
+    image: ghcr.io/hretheum/detektr/face-recognition:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      SERVICE_NAME: face-recognition
+      PORT: 8003
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      MODEL_PATH: /models/face_recognition
+      GPU_MEMORY_FRACTION: ${GPU_MEMORY_FRACTION:-0.3}
+      BATCH_SIZE: ${FACE_BATCH_SIZE:-32}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    volumes:
+      - face-models:/models/face_recognition
+    networks:
+      - detektor-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import torch; assert torch.cuda.is_available()",
+        ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  object-detection:
+    image: ghcr.io/hretheum/detektr/object-detection:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      SERVICE_NAME: object-detection
+      PORT: 8004
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      MODEL_PATH: /models/yolov8
+      MODEL_NAME: ${YOLO_MODEL:-yolov8n.pt}
+      GPU_MEMORY_FRACTION: ${GPU_MEMORY_FRACTION:-0.3}
+      BATCH_SIZE: ${DETECTION_BATCH_SIZE:-16}
+      CONFIDENCE_THRESHOLD: ${CONFIDENCE_THRESHOLD:-0.5}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+    volumes:
+      - yolo-models:/models/yolov8
+    networks:
+      - detektor-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import torch; assert torch.cuda.is_available()",
+        ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  gpu-demo:
+    image: ghcr.io/hretheum/detektr/gpu-demo:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    environment:
+      SERVICE_NAME: gpu-demo
+      SERVICE_VERSION: 0.1.0
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    networks:
+      - detektor-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "nvidia-smi"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  # GPU monitoring
+  nvidia-gpu-exporter:
+    image: mindprince/nvidia_gpu_exporter:latest
+    restart: unless-stopped
+    ports:
+      - "9445:9445"
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: utility
+    networks:
+      - detektor-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=9445"
+      - "prometheus.io/path=/metrics"
+
+volumes:
+  face-models:
+    driver: local
+  yolo-models:
+    driver: local
+
+networks:
+  detektor-network:
+    external: true

@@ -84,55 +84,49 @@ jobs:
 - Scalić: `db-deploy.yml` → `main-pipeline.yml` (jako część matrix)
 - Przenieść: `cleanup-runner.yml` + `security.yml` → `scheduled-tasks.yml`
 
-### FAZA 3: REORGANIZACJA DOCKER COMPOSE (Priorytet: WYSOKI)
+### FAZA 3: REORGANIZACJA DOCKER COMPOSE (Priorytet: WYSOKI) ✅ UKOŃCZONA
 
-#### 3.1 Nowa struktura plików
+#### 3.1 Nowa struktura plików ✅
 
 ```
 docker/
 ├── base/
-│   ├── docker-compose.yml          # Podstawowe serwisy (redis, postgres)
-│   └── docker-compose.services.yml # Serwisy aplikacji
+│   ├── docker-compose.yml                  # Core application services
+│   ├── docker-compose.storage.yml         # Redis, PostgreSQL + exporters
+│   ├── docker-compose.observability.yml   # Prometheus, Grafana, Jaeger
+│   └── config/                            # Prometheus config, alerts
 ├── environments/
-│   ├── docker-compose.dev.yml      # Override dla development
-│   ├── docker-compose.prod.yml     # Override dla produkcji
-│   └── docker-compose.test.yml     # Środowisko testowe
+│   ├── development/                       # Dev overrides with hot reload
+│   └── production/                        # Prod overrides with limits
 ├── features/
-│   ├── docker-compose.observability.yml  # Monitoring stack
-│   ├── docker-compose.gpu.yml           # GPU support
-│   └── docker-compose.ha.yml            # High Availability
-└── README.md                             # Dokumentacja użycia
+│   ├── gpu/                              # GPU-enabled AI services
+│   ├── redis-ha/                         # Redis Sentinel HA setup
+│   └── ai-services/                      # LLM, gesture, audio services
+└── README.md                             # Comprehensive usage guide
 ```
 
-#### 3.2 Użycie przez zmienne środowiskowe
+#### 3.2 Convenience Scripts ✅
 
 ```bash
-# Development (default)
-docker compose up
+# Development - hot reload, debug tools
+./docker/dev.sh up -d
 
-# Production
-COMPOSE_FILE=docker/base/docker-compose.yml:docker/base/docker-compose.services.yml:docker/environments/docker-compose.prod.yml:docker/features/docker-compose.observability.yml
-docker compose up
+# Production - optimized, resource limits
+./docker/prod.sh up -d
 
-# Test
-COMPOSE_FILE=docker/environments/docker-compose.test.yml
-docker compose up
+# Test runner
+./docker/test.sh rtsp-capture pytest
+
+# Migration from old structure
+./scripts/migrate-docker-compose.sh
 ```
 
-#### 3.3 Standaryzacja obrazów
+#### 3.3 Rezultaty ✅
 
-```yaml
-# Wzorzec dla wszystkich serwisów
-services:
-  service-name:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/detektr}/${SERVICE_NAME:-service-name}:${TAG:-latest}
-    build:
-      context: ${BUILD_CONTEXT:-.}
-      dockerfile: services/${SERVICE_NAME}/Dockerfile
-    environment:
-      - SERVICE_NAME=${SERVICE_NAME}
-      - SERVICE_VERSION=${TAG:-latest}
-```
+- **Przed**: 16+ plików docker-compose bez hierarchii
+- **Po**: 8 dobrze zorganizowanych plików w logicznej strukturze
+- **Migracja**: Skrypt automatycznej migracji ze starych plików
+- **Dokumentacja**: Kompletny README z przykładami użycia
 
 ### FAZA 4: CLEANUP GHCR (Priorytet: ŚREDNI)
 
