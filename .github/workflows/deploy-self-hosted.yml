@@ -29,7 +29,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: hretheum/bezrobocie-detektor
+  IMAGE_PREFIX: hretheum/detektr
 
 jobs:
   detect-changes:

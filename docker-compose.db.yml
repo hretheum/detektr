@@ -1,7 +1,7 @@
 services:
   # PostgreSQL with TimescaleDB from registry
   postgres:
-    image: ghcr.io/hretheum/bezrobocie-detektor/timescaledb:latest
+    image: ghcr.io/hretheum/detektr/timescaledb:latest
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -30,7 +30,7 @@ services:
 
   # PgBouncer for connection pooling from registry
   pgbouncer:
-    image: ghcr.io/hretheum/bezrobocie-detektor/pgbouncer:latest
+    image: ghcr.io/hretheum/detektr/pgbouncer:latest
     restart: unless-stopped
     ports:
       - "6432:5432"
@@ -65,7 +65,7 @@ services:
 
   # Database migration runner (one-time job)
   db-migrate:
-    image: ghcr.io/hretheum/bezrobocie-detektor/timescaledb:latest
+    image: ghcr.io/hretheum/detektr/timescaledb:latest
     command: |
       bash -c "
         echo 'Waiting for database to be ready...'

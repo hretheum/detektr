@@ -10,7 +10,6 @@ Testy dla podstawowych wymagań RTSP service:
 import asyncio
 import subprocess
 import sys
-from unittest.mock import Mock, patch
 
 import av
 import pytest
@@ -205,11 +204,13 @@ class TestRTSPPrerequisites:
 
         # Test async Redis (if available)
         try:
-            import aioredis
+            import redis.asyncio as aioredis
 
-            assert hasattr(aioredis, "from_url"), "aioredis should have from_url"
+            assert hasattr(aioredis, "from_url"), "redis.asyncio should have from_url"
         except ImportError:
-            pytest.skip("aioredis not available, will be needed for frame buffering")
+            pytest.skip(
+                "redis[async] not available, will be needed for frame buffering"
+            )
 
     def test_performance_baseline_dependencies(self):
         """Test dependencies for performance baseline measurement"""

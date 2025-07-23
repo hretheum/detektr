@@ -16,6 +16,6 @@
 #     - name: Security scan
 #       uses: aquasecurity/trivy-action@master
 #       with:
-#         image-ref: 'ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest'
+#         image-ref: 'ghcr.io/hretheum/detektr/rtsp-capture:latest'
 #         format: 'table'
 #         exit-code: '0'

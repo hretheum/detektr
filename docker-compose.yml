@@ -15,7 +15,7 @@ services:
       retries: 5
 
   postgres:
-    image: ghcr.io/hretheum/bezrobocie-detektor/timescaledb:${IMAGE_TAG:-latest}
+    image: ghcr.io/hretheum/detektr/timescaledb:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
       - "5432:5432"
@@ -35,7 +35,7 @@ services:
       start_period: 30s
 
   example-otel:
-    image: example-otel:simple
+    image: ghcr.io/hretheum/detektr/example-otel:latest
     restart: unless-stopped
     ports:
       - "8009:8000"
@@ -57,7 +57,7 @@ services:
       - redis
 
   frame-tracking:
-    image: ghcr.io/hretheum/bezrobocie-detektor/frame-tracking:latest
+    image: ghcr.io/hretheum/detektr/frame-tracking:latest
     build:
       context: .
       dockerfile: services/frame-tracking/Dockerfile
@@ -83,7 +83,7 @@ services:
       - postgres
 
   echo-service:
-    image: ghcr.io/hretheum/bezrobocie-detektor/echo-service:latest
+    image: ghcr.io/hretheum/detektr/echo-service:latest
     build:
       context: .
       dockerfile: services/echo-service/Dockerfile
@@ -107,7 +107,7 @@ services:
       - redis
 
   gpu-demo:
-    image: ghcr.io/hretheum/bezrobocie-detektor/gpu-demo:latest
+    image: ghcr.io/hretheum/detektr/gpu-demo:latest
     restart: unless-stopped
     ports:
       - "8008:8008"
@@ -124,7 +124,7 @@ services:
       start_period: 40s
 
   rtsp-capture:
-    image: ghcr.io/hretheum/bezrobocie-detektor/rtsp-capture:latest
+    image: ghcr.io/hretheum/detektr/rtsp-capture:latest
     restart: unless-stopped
     ports:
       - "8001:8001"
@@ -147,7 +147,7 @@ services:
       - redis
 
   frame-buffer:
-    image: ghcr.io/hretheum/bezrobocie-detektor/frame-buffer:latest
+    image: ghcr.io/hretheum/detektr/frame-buffer:latest
     restart: unless-stopped
     ports:
       - "8002:8002"
@@ -173,7 +173,7 @@ services:
       - redis
 
   metadata-storage:
-    image: ghcr.io/hretheum/bezrobocie-detektor/metadata-storage:latest
+    image: ghcr.io/hretheum/detektr/metadata-storage:latest
     container_name: metadata-storage
     restart: unless-stopped
     ports:

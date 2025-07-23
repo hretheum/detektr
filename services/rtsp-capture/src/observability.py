@@ -10,7 +10,6 @@ import time
 from contextlib import contextmanager
 from typing import Any, Dict, Optional
 
-from frame_buffer import CircularFrameBuffer
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.redis import RedisInstrumentor
@@ -19,6 +18,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import Status, StatusCode
 from prometheus_client import Counter, Gauge, Histogram
+
+from .frame_buffer import CircularFrameBuffer
 
 
 # Initialize tracer - will use global provider
@@ -49,48 +50,84 @@ def _init_metrics_once():
     if _metrics_initialized:
         return
 
-    frame_counter = Counter(
-        "frames_processed_total",
-        "Total number of frames processed",
-        ["camera_id", "status"],
-    )
+    try:
+        frame_counter = Counter(
+            "frames_processed_total",
+            "Total number of frames processed",
+            ["camera_id", "status"],
+        )
 
-    frame_processing_time = Histogram(
-        "frame_processing_duration_seconds",
-        "Time spent processing frames",
-        ["camera_id", "operation"],
-        buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
-    )
+        frame_processing_time = Histogram(
+            "frame_processing_duration_seconds",
+            "Time spent processing frames",
+            ["camera_id", "operation"],
+            buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+        )
 
-    frame_drops_counter = Counter(
-        "frame_drops_total",
-        "Total number of dropped frames",
-        ["camera_id", "reason"],
-    )
+        frame_drops_counter = Counter(
+            "frame_drops_total",
+            "Total number of dropped frames",
+            ["camera_id", "reason"],
+        )
 
-    active_connections_gauge = Gauge(
-        "active_rtsp_connections",
-        "Number of active RTSP connections",
-        ["camera_id"],
-    )
+        active_connections_gauge = Gauge(
+            "active_rtsp_connections",
+            "Number of active RTSP connections",
+            ["camera_id"],
+        )
 
-    buffer_size_gauge = Gauge(
-        "frame_buffer_size",
-        "Current number of frames in buffer",
-        ["camera_id"],
-    )
+        buffer_size_gauge = Gauge(
+            "frame_buffer_size",
+            "Current number of frames in buffer",
+            ["camera_id"],
+        )
 
-    redis_queue_size_gauge = Gauge(
-        "redis_queue_size",
-        "Approximate size of Redis frame queue",
-        ["stream_key"],
-    )
+        redis_queue_size_gauge = Gauge(
+            "redis_queue_size",
+            "Approximate size of Redis frame queue",
+            ["stream_key"],
+        )
+    except ValueError as e:
+        if "Duplicated timeseries" in str(e):
+            # Metrics already exist in registry, get references
+            from prometheus_client import REGISTRY
+
+            # Find existing metrics by name
+            for collector, names in REGISTRY._collector_to_names.items():
+                if "frames_processed_total" in names:
+                    frame_counter = collector
+                elif "frame_processing_duration_seconds" in names:
+                    frame_processing_time = collector
+                elif "frame_drops_total" in names:
+                    frame_drops_counter = collector
+                elif "active_rtsp_connections" in names:
+                    active_connections_gauge = collector
+                elif "frame_buffer_size" in names:
+                    buffer_size_gauge = collector
+                elif "redis_queue_size" in names:
+                    redis_queue_size_gauge = collector
+        else:
+            raise
 
     _metrics_initialized = True
 
 
-# Initialize metrics on module load
-_init_metrics_once()
+# Don't initialize metrics on module load - wait for explicit init
+# This prevents issues with duplicate metrics in tests
+# _init_metrics_once()
+
+
+def init_metrics():
+    """Initialize and return Prometheus metrics (for testing)."""
+    _init_metrics_once()
+    return {
+        "frame_counter": frame_counter,
+        "frame_processing_time": frame_processing_time,
+        "frame_drops_counter": frame_drops_counter,
+        "active_connections_gauge": active_connections_gauge,
+        "buffer_size_gauge": buffer_size_gauge,
+        "redis_queue_size_gauge": redis_queue_size_gauge,
+    }
 
 
 def init_telemetry(
@@ -139,10 +176,7 @@ def init_telemetry(
     return provider
 
 
-def init_metrics():
-    """Initialize Prometheus metrics registry."""
-    _init_metrics_once()
-    return frame_counter, frame_processing_time, frame_drops_counter
+# Removed duplicate init_metrics() - using the one from line 96
 
 
 @contextmanager
@@ -206,6 +240,8 @@ class TracedFrameBuffer(CircularFrameBuffer):
         """Initialize TracedFrameBuffer with capacity and camera ID."""
         super().__init__(capacity)
         self.camera_id = camera_id
+        # Ensure metrics are initialized
+        _init_metrics_once()
 
     def put(self, frame_id: str, frame_data: Any, timestamp: float) -> None:
         """Put frame with tracing."""
@@ -223,11 +259,12 @@ class TracedFrameBuffer(CircularFrameBuffer):
             super().put(frame_id, frame_data, timestamp)
 
             # Update metrics
-            buffer_size_gauge.labels(camera_id=self.camera_id).set(self.size)
+            if buffer_size_gauge:
+                buffer_size_gauge.labels(camera_id=self.camera_id).set(self.size)
 
             # Check if frame was dropped
             stats = self.get_statistics()
-            if stats["total_frames_dropped"] > 0:
+            if stats["total_frames_dropped"] > 0 and frame_drops_counter:
                 frame_drops_counter.labels(
                     camera_id=self.camera_id, reason="buffer_full"
                 ).inc()
@@ -249,7 +286,8 @@ class TracedFrameBuffer(CircularFrameBuffer):
                 span.set_attribute("frame.id", frame_id)
 
             # Update metrics
-            buffer_size_gauge.labels(camera_id=self.camera_id).set(self.size)
+            if buffer_size_gauge:
+                buffer_size_gauge.labels(camera_id=self.camera_id).set(self.size)
 
             return result
 
@@ -284,9 +322,10 @@ class TracedRedisQueue:
             span.set_attribute("publish.duration_ms", publish_time * 1000)
 
             # Update metrics
-            frame_processing_time.labels(
-                camera_id=metadata.get("camera_id", "unknown"), operation="publish"
-            ).observe(publish_time)
+            if frame_processing_time:
+                frame_processing_time.labels(
+                    camera_id=metadata.get("camera_id", "unknown"), operation="publish"
+                ).observe(publish_time)
 
             return message_id
 
@@ -326,9 +365,16 @@ def async_timed_operation(operation: str, camera_id: str):
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
+            # Ensure metrics are initialized
+            _init_metrics_once()
+
             labels = get_metrics_labels(camera_id, operation)
 
-            with frame_processing_time.labels(**labels).time():
+            if frame_processing_time:
+                with frame_processing_time.labels(**labels).time():
+                    return await func(*args, **kwargs)
+            else:
+                # Metrics not available, just run the function
                 return await func(*args, **kwargs)
 
         return wrapper

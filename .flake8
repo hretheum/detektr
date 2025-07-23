@@ -18,3 +18,5 @@ per-file-ignores =
     src/shared/telemetry/decorators.py:E501
     src/shared/telemetry/correlation.py:B010
     src/shared/telemetry/frame_tracking.py:D202
+    test_*.py:D100,D101,D102,D103,D104,D105,D106,D107,D200,D202,D204,D205,D210,D211,D300,D301,D400,D401,D402,D403,D404,B007,F541,F841
+    */tests/*.py:D100,D101,D102,D103,D104,D105,D106,D107,D200,D202,D204,D205,D210,D211,D300,D301,D400,D401,D402,D403,D404,B007,F541,F841

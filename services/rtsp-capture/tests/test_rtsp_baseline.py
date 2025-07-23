@@ -9,8 +9,13 @@ Ustanawia baseline dla RTSP operations zgodnie z wymaganiami Phase 2:
 
 import asyncio
 import sys
+import time
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, Optional
 
+import numpy as np
 import pytest
 
 # Add src to path for imports
@@ -21,10 +26,61 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 
 # Mock implementations for now
+@dataclass
+class PerformanceBaseline:
+    operation: str
+    p50_ms: float
+    p95_ms: float
+    p99_ms: float
+    throughput_rps: float
+    timestamp: datetime
+    iterations: int
+    metadata: Optional[Dict[str, Any]] = None
+
+
 class BaselineManager:
     def __init__(self, filepath):
         self.filepath = filepath
         self.baselines = {}
+
+    async def measure_operation(
+        self,
+        name: str,
+        operation,
+        iterations: int = 100,
+        warmup: int = 10,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> PerformanceBaseline:
+        """Mock implementation of measure_operation"""
+        # Warmup
+        for _ in range(warmup):
+            await operation()
+
+        # Measure
+        latencies = []
+        start_time = time.time()
+
+        for _ in range(iterations):
+            op_start = time.perf_counter()
+            await operation()
+            latencies.append((time.perf_counter() - op_start) * 1000)
+
+        total_time = time.time() - start_time
+        latencies_sorted = sorted(latencies)
+
+        baseline = PerformanceBaseline(
+            operation=name,
+            p50_ms=np.percentile(latencies_sorted, 50),
+            p95_ms=np.percentile(latencies_sorted, 95),
+            p99_ms=np.percentile(latencies_sorted, 99),
+            throughput_rps=iterations / total_time,
+            timestamp=datetime.now(),
+            iterations=iterations,
+            metadata=metadata,
+        )
+
+        self.baselines[name] = baseline
+        return baseline
 
     def update_baseline(self, name, value):
         self.baselines[name] = value

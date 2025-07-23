@@ -3,7 +3,7 @@
 
 services:
   gpu-demo:
-    image: ghcr.io/hretheum/bezrobocie-detektor/gpu-demo:latest
+    image: ghcr.io/hretheum/detektr/gpu-demo:latest
     container_name: gpu-demo
     ports:
       - "8008:8008"

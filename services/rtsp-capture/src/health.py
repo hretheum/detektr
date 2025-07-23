@@ -189,9 +189,10 @@ async def prometheus_metrics():
     Exposes all service metrics in Prometheus format.
     """
     # Ensure metrics are initialized
-    from observability import _init_metrics_once
-    from observability import active_connections_gauge as acg
     from prometheus_client import REGISTRY
+
+    from .observability import _init_metrics_once
+    from .observability import active_connections_gauge as acg
 
     # Initialize metrics if needed
     _init_metrics_once()
@@ -241,7 +242,10 @@ class ServiceMetrics:
         """Handle frame received event from camera."""
         update_last_frame(camera_id, time.time())
         # Ensure metrics are initialized
-        from .observability import frame_counter as fc
+        from .observability import init_metrics
+
+        metrics = init_metrics()
+        fc = metrics.get("frame_counter")
 
         if fc is not None:
             fc.labels(camera_id=camera_id, status="success").inc()
@@ -249,8 +253,11 @@ class ServiceMetrics:
     def on_frame_error(self, camera_id: str, error: str):
         """Handle frame processing error."""
         # Ensure metrics are initialized
-        from .observability import frame_counter as fc
-        from .observability import frame_drops_counter as fdc
+        from .observability import init_metrics
+
+        metrics = init_metrics()
+        fc = metrics.get("frame_counter")
+        fdc = metrics.get("frame_drops_counter")
 
         if fc is not None:
             fc.labels(camera_id=camera_id, status="error").inc()
@@ -267,7 +274,10 @@ class ServiceMetrics:
             _health_state["rtsp_connections"][camera_id]["connected"] = connected
 
         # Ensure metrics are initialized
-        from .observability import active_connections_gauge as acg
+        from .observability import init_metrics
+
+        metrics = init_metrics()
+        acg = metrics.get("active_connections_gauge")
 
         if acg is not None:
             if connected:
@@ -278,7 +288,10 @@ class ServiceMetrics:
     def set_buffer_size(self, camera_id: str, size: int):
         """Update buffer size metric."""
         # Ensure metrics are initialized
-        from .observability import buffer_size_gauge as bsg
+        from .observability import init_metrics
+
+        metrics = init_metrics()
+        bsg = metrics.get("buffer_size_gauge")
 
         if bsg is not None:
             bsg.labels(camera_id=camera_id).set(size)
@@ -286,7 +299,10 @@ class ServiceMetrics:
     def record_processing_time(self, camera_id: str, operation: str, duration: float):
         """Record processing time for an operation."""
         # Ensure metrics are initialized
-        from .observability import frame_processing_time as fpt
+        from .observability import init_metrics
+
+        metrics = init_metrics()
+        fpt = metrics.get("frame_processing_time")
 
         if fpt is not None:
             fpt.labels(camera_id=camera_id, operation=operation).observe(duration)

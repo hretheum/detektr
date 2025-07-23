@@ -16,7 +16,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/bezrobocie-detektor
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/detektr
 
 jobs:
   build-timescaledb:
@@ -89,7 +89,7 @@ jobs:
             CMD pg_isready -h localhost -p 5432 || exit 1
 
           # Labels
-          LABEL org.opencontainers.image.source="https://github.com/hretheum/bezrobocie-detektor"
+          LABEL org.opencontainers.image.source="https://github.com/hretheum/detektr"
           LABEL org.opencontainers.image.description="PgBouncer connection pooler for Detektor"
           EOF
 

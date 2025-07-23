@@ -119,6 +119,7 @@ class SimpleRedisFrameQueue:
                 self.stream_key,
                 group_name,
                 id=start_id,
+                mkstream=True,  # Create stream if it doesn't exist
             )
             return True
         except redis.ResponseError as e:

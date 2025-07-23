@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: hretheum/bezrobocie-detektor/gpu-base
+  IMAGE_NAME: hretheum/detektr/gpu-base
 
 jobs:
   build-base:
