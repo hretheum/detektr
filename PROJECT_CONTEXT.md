@@ -179,11 +179,25 @@ git push origin main  # → Automatyczny build i deploy
 - Skrypt migracji: scripts/migrate-workflows.sh
 - Dokumentacja: docs/WORKFLOW_CONSOLIDATION_PLAN.md
 
-### ⏳ Faza 3: Reorganizacja Docker Compose (W TRAKCIE)
-- Cel: Struktura hierarchiczna dla lepszego zarządzania
-- Plan: docker/base, docker/environments, docker/features
-- ✅ Secrets management (SOPS z age)
-- ✅ Health monitoring (scripts/health-check-all.sh)
+### ✅ Faza 3: Reorganizacja Docker Compose (COMPLETED)
+- Reorganizacja 16+ plików → 8 plików w hierarchicznej strukturze
+- Nowa struktura: docker/base, docker/environments, docker/features
+- Convenience scripts: docker/dev.sh, docker/prod.sh, docker/test.sh
+- Skrypt migracji: scripts/migrate-docker-compose.sh
+- Pełna dokumentacja: docker/README.md
+
+### ✅ Faza 4: GHCR Cleanup (COMPLETED)
+- Migracja 5 brakujących obrazów do ghcr.io/hretheum/detektr/*
+- Usunięcie przestarzałych obrazów consensus/*
+- Automatyczny cleanup workflow (co niedzielę 4:00 UTC)
+- Retention policy: 30 dni / 5 ostatnich wersji
+- Workflow: .github/workflows/ghcr-cleanup.yml
+- Raport: docs/PHASE4_GHCR_CLEANUP_REPORT.md
+
+### ⏳ Faza 5: Deployment Automation (NASTĘPNA)
+- Unified deployment script
+- GitHub Actions integration
+- Environment-specific configs
 
 ### Dokumentacja zaktualizowana:
 - ✅ CLAUDE.md - zawiera pełne CI/CD guidelines
