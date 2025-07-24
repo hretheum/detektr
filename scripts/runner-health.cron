@@ -1,0 +1,8 @@
+# GitHub Runner Health Check Cron Job
+# Install with: sudo crontab -u runner runner-health.cron
+
+# Run health check every minute for Prometheus metrics
+* * * * * /opt/detektor-clean/scripts/runner-health-check.sh >/dev/null 2>&1
+
+# Clean up old logs daily at 2 AM
+0 2 * * * find /var/log/github-runner -name "*.log" -mtime +7 -delete

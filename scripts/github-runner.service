@@ -1,0 +1,36 @@
+[Unit]
+Description=GitHub Actions Runner for Detektor
+After=network.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=runner
+Group=docker
+WorkingDirectory=/opt/github-runner
+ExecStart=/opt/github-runner/run.sh
+ExecStop=/opt/github-runner/stop.sh
+
+# Restart configuration
+Restart=always
+RestartSec=30
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Environment
+Environment="RUNNER_ALLOW_RUNASROOT=0"
+Environment="DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1"
+
+# Notifications on failure
+OnFailure=notify-admin@%n.service
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

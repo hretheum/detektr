@@ -1,0 +1,10 @@
+[Unit]
+Description=Notify admin on %i failure
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash -c 'echo "Service %i failed on $(hostname) at $(date)" | mail -s "Service Failure: %i" admin@example.com || echo "Service %i failed at $(date)" >> /var/log/service-failures.log'
+
+[Install]
+WantedBy=multi-user.target

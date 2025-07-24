@@ -1,0 +1,47 @@
+groups:
+  - name: github_runner
+    interval: 30s
+    rules:
+      # Runner is down
+      - alert: GitHubRunnerDown
+        expr: github_runner_up == 0
+        for: 3m
+        labels:
+          severity: critical
+          service: github-runner
+        annotations:
+          summary: "GitHub Runner is down"
+          description: "GitHub Runner process is not running on {{ $labels.instance }}"
+
+      # Runner not connected to GitHub
+      - alert: GitHubRunnerDisconnected
+        expr: github_runner_connected == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: github-runner
+        annotations:
+          summary: "GitHub Runner disconnected"
+          description: "GitHub Runner cannot connect to GitHub API on {{ $labels.instance }}"
+
+      # No jobs processed recently
+      - alert: GitHubRunnerIdle
+        expr: github_runner_last_job_seconds > 3600
+        for: 30m
+        labels:
+          severity: info
+          service: github-runner
+        annotations:
+          summary: "GitHub Runner idle"
+          description: "No jobs processed in the last {{ $value | humanizeDuration }} on {{ $labels.instance }}"
+
+      # Health check stale
+      - alert: GitHubRunnerHealthCheckStale
+        expr: time() - github_runner_health_check_timestamp > 300
+        for: 5m
+        labels:
+          severity: warning
+          service: github-runner
+        annotations:
+          summary: "GitHub Runner health check stale"
+          description: "Health check hasn't run in {{ $value | humanizeDuration }} on {{ $labels.instance }}"

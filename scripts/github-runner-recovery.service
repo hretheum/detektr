@@ -1,0 +1,19 @@
+[Unit]
+Description=GitHub Runner Auto-Recovery Monitor
+After=github-runner.service
+Requires=github-runner.service
+
+[Service]
+Type=simple
+User=runner
+ExecStart=/opt/detektor-clean/scripts/runner-auto-recovery.sh
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=github-runner-recovery
+
+[Install]
+WantedBy=multi-user.target
