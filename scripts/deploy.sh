@@ -159,7 +159,26 @@ action_deploy() {
         }
     fi
 
+    # Remove old images to ensure we use fresh ones
+    log "Removing old images to ensure fresh deployment..."
     if [[ "$TARGET_HOST" == "localhost" ]]; then
+        # Stop services that will be redeployed
+        if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
+            for service in $DEPLOY_SERVICES; do
+                docker compose "${COMPOSE_FILES[@]}" stop "$service" 2>/dev/null || true
+                docker compose "${COMPOSE_FILES[@]}" rm -f "$service" 2>/dev/null || true
+            done
+        else
+            docker compose "${COMPOSE_FILES[@]}" down
+        fi
+
+        # Option to remove images too if FORCE_IMAGE_CLEANUP is set
+        if [[ "${FORCE_IMAGE_CLEANUP:-false}" == "true" ]]; then
+            log "Force removing old images..."
+            docker compose "${COMPOSE_FILES[@]}" down --rmi local 2>/dev/null || true
+        fi
+
+        # Pull fresh images
         docker compose "${COMPOSE_FILES[@]}" pull
     else
         # Copy necessary files first
@@ -173,7 +192,28 @@ action_deploy() {
             scp "$PROJECT_ROOT/.env" "$TARGET_HOST:$TARGET_DIR/.env"
         fi
 
-        # Pull on remote
+        # Stop and remove old containers on remote
+        log "Removing old containers on remote host..."
+        if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
+            for service in $DEPLOY_SERVICES; do
+                # shellcheck disable=SC2029
+                ssh "$TARGET_HOST" "cd $TARGET_DIR && docker compose ${COMPOSE_FILES[*]} stop $service 2>/dev/null || true"
+                # shellcheck disable=SC2029
+                ssh "$TARGET_HOST" "cd $TARGET_DIR && docker compose ${COMPOSE_FILES[*]} rm -f $service 2>/dev/null || true"
+            done
+        else
+            # shellcheck disable=SC2029
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && docker compose ${COMPOSE_FILES[*]} down"
+        fi
+
+        # Option to remove images too if FORCE_IMAGE_CLEANUP is set
+        if [[ "${FORCE_IMAGE_CLEANUP:-false}" == "true" ]]; then
+            log "Force removing old images..."
+            # shellcheck disable=SC2029
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && docker compose ${COMPOSE_FILES[*]} down --rmi local 2>/dev/null || true"
+        fi
+
+        # Pull fresh images on remote
         # shellcheck disable=SC2029
         ssh "$TARGET_HOST" "cd $TARGET_DIR && docker compose ${COMPOSE_FILES[*]} pull"
     fi
