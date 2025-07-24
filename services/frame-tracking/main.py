@@ -6,6 +6,7 @@ This service implements:
 - TimescaleDB for time-series data
 - Full observability with OpenTelemetry
 - RESTful API for frame management
+- Fixed database configuration
 """
 
 import os

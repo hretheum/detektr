@@ -54,4 +54,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 EXPOSE 8005
 
 # Start service
+# Force rebuild - fixed CMD path
 CMD ["python", "src/main.py"]
