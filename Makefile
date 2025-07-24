@@ -387,6 +387,15 @@ info: ## Show project information
 	@echo "Images:"
 	@docker images | grep detektr || echo "No images built yet"
 
+.PHONY: reset-circuit-breaker
+reset-circuit-breaker: ## Reset deployment circuit breaker
+	@echo "🔄 Resetting circuit breaker..."
+	@./scripts/deployment-circuit-breaker.sh reset
+
+.PHONY: circuit-breaker-status
+circuit-breaker-status: ## Show circuit breaker status
+	@./scripts/deployment-circuit-breaker.sh status
+
 # =============================================================================
 # MONITORING & OBSERVABILITY
 # =============================================================================

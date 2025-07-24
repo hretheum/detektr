@@ -137,6 +137,15 @@ get_compose_command() {
 action_deploy() {
     log "Deploying to $ENVIRONMENT environment..."
 
+    # Check circuit breaker
+    if [[ -x "$PROJECT_ROOT/scripts/deployment-circuit-breaker.sh" ]]; then
+        if ! "$PROJECT_ROOT/scripts/deployment-circuit-breaker.sh" check; then
+            error "Deployment blocked by circuit breaker"
+            "$PROJECT_ROOT/scripts/deployment-circuit-breaker.sh" status
+            exit 1
+        fi
+    fi
+
     check_prerequisites
 
     # Pull latest images
@@ -182,7 +191,20 @@ action_deploy() {
     sleep 5
 
     # Verify deployment
-    action_verify
+    if action_verify; then
+        # Record success if circuit breaker is enabled
+        if [[ -x "$PROJECT_ROOT/scripts/deployment-circuit-breaker.sh" ]]; then
+            "$PROJECT_ROOT/scripts/deployment-circuit-breaker.sh" success
+        fi
+        log "Deployment completed successfully"
+    else
+        # Record failure if circuit breaker is enabled
+        if [[ -x "$PROJECT_ROOT/scripts/deployment-circuit-breaker.sh" ]]; then
+            "$PROJECT_ROOT/scripts/deployment-circuit-breaker.sh" failure
+        fi
+        error "Deployment verification failed"
+        exit 1
+    fi
 }
 
 action_status() {
