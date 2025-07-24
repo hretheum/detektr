@@ -17,19 +17,20 @@
 
 ### Problem: Services nie startują
 
-**Objawy**: `docker compose up` zawiesza się lub serwisy restartują się w pętli
+**Objawy**: Services nie startują lub restartują się w pętli
 
 **Rozwiązanie**:
 ```bash
-# 1. Sprawdź logi
-docker compose logs -f [service-name]
+# 1. Sprawdź logi (użyj Make)
+make logs SERVICE=[service-name]
 
 # 2. Sprawdź zależności
-docker compose ps
+make ps
 
 # 3. Restart z clean state
-docker compose down -v
-docker compose up -d
+make down
+make clean-docker
+make up
 
 # 4. Sprawdź porty
 netstat -tulpn | grep -E "(8001|8005|8006|9090|3000)"
@@ -42,8 +43,8 @@ netstat -tulpn | grep -E "(8001|8005|8006|9090|3000)"
 **Rozwiązanie**:
 ```bash
 # 1. Sprawdź czy Redis działa
-docker compose ps redis
-docker compose logs redis
+make ps | grep redis
+make logs SERVICE=redis
 
 # 2. Test połączenia
 docker exec -it detektor-redis-1 redis-cli ping
@@ -53,7 +54,7 @@ docker exec -it detektor-redis-1 redis-cli ping
 docker exec -it [service-name] env | grep REDIS
 
 # 4. Restart Redis
-docker compose restart redis
+./scripts/deploy.sh local restart redis
 ```
 
 ### Problem: Health check failing
@@ -464,23 +465,22 @@ curl http://localhost:16686/api/traces?service=[service-name]
 # emergency-restart.sh
 
 # 1. Stop wszystko
-docker compose down
+make down
 
 # 2. Clean up
-docker system prune -f
-docker volume prune -f
+make clean-all
 
 # 3. Restart Docker
 sudo systemctl restart docker
 
 # 4. Start core services only
-docker compose up -d redis postgres
+./docker/dev.sh up -d redis postgres
 
 # 5. Wait for ready
 sleep 10
 
 # 6. Start pozostałe
-docker compose up -d
+make up
 ```
 
 ### Rollback deployment
@@ -489,20 +489,21 @@ docker compose up -d
 #!/bin/bash
 # rollback.sh
 
+# 1. Use deployment script rollback
+./scripts/deploy.sh production rollback
+
+# Or manually:
 # 1. Stop current
-docker compose down
+make down
 
 # 2. Checkout previous version
 git checkout HEAD~1
 
-# 3. Rebuild
-docker compose build
+# 3. Deploy
+make deploy
 
-# 4. Deploy
-docker compose up -d
-
-# 5. Verify
-./scripts/health-check-all.sh
+# 4. Verify
+make prod-verify
 ```
 
 ### Data recovery

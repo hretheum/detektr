@@ -1,53 +1,64 @@
 # Analiza GitHub Workflows - Projekt Detektor
 
-## 1. Przegląd Istniejących Workflows
+## 1. Przegląd Istniejących Workflows (Po konsolidacji - 5 workflowów)
 
 ### Główne Workflows (Aktywne)
 
-#### 🚀 deploy-self-hosted.yml
-**Cel**: Główny workflow CI/CD - budowanie i deployment
+#### 🚀 main-pipeline.yml
+**Cel**: Główny workflow CI/CD - budowanie i/lub deployment
 **Triggery**:
-- Push na main
-- workflow_dispatch z opcjami:
-  - force_all: buduj wszystkie serwisy
-  - services: wybór konkretnych serwisów
-  - skip_deploy: tylko build
-  - skip_build: tylko deploy
+- Push na main (automatyczny build + deploy)
+- workflow_dispatch z parametrami:
+  - action: build-only, deploy-only, build-and-deploy
+  - services: all lub lista serwisów
+  - environment: production, staging, development
 **Funkcjonalność**:
 - Inteligentna detekcja zmian (tylko zmienione serwisy)
-- Budowanie obrazów Docker
+- Budowanie obrazów Docker z cache
 - Push do GitHub Container Registry
-- Deploy na Nebula (self-hosted runner)
-
-#### 🔧 deploy-only.yml
-**Cel**: Szybki deployment bez budowania
-**Triggery**: workflow_dispatch
-**Funkcjonalność**:
-- Pull istniejących obrazów
-- Restart serwisów
-- Health check
-
-#### 🏗️ manual-service-build.yml
-**Cel**: Ręczne budowanie pojedynczego serwisu
-**Triggery**: workflow_dispatch z wyborem serwisu
-**Funkcjonalność**:
-- Wybór serwisu z dropdown
-- Custom tagi
-- Opcjonalny deploy
+- Deploy przez unified deployment script
+- Health checks i weryfikacja
 
 #### ✅ pr-checks.yml
-**Cel**: Walidacja Pull Requests
+**Cel**: Walidacja Pull Requests + testy
 **Triggery**: pull_request
 **Funkcjonalność**:
 - Walidacja tytułu PR (semantic)
 - Dodawanie etykiet rozmiaru
 - Review zależności
+- Testy jednostkowe i integracyjne
+- Security scanning
+- Code quality checks
 
-#### 🧪 ci.yml
-**Cel**: Testy jednostkowe i integracyjne
-**Triggery**: push/PR na paths: services/**
+#### 🔧 manual-operations.yml
+**Cel**: Ręczne operacje utrzymaniowe
+**Triggery**: workflow_dispatch z parametrami:
+  - operation: cleanup-docker, restart-services, backup-data, diagnostic-report
+  - target: all, specific-service
 **Funkcjonalność**:
-- Testy Python dla rtsp-capture
+- Czyszczenie Docker resources
+- Restart serwisów
+- Backup danych
+- Generowanie raportów diagnostycznych
+
+#### 📅 scheduled-tasks.yml
+**Cel**: Zadania cykliczne i automatyczne
+**Triggery**:
+- schedule (cron)
+- workflow_dispatch
+**Funkcjonalność**:
+- Daily: cleanup logs, health checks
+- Weekly: GHCR cleanup, dependency updates
+- Monthly: security audit, performance report
+
+#### 🏷️ release.yml
+**Cel**: Tworzenie release’ów
+**Triggery**: push tagów v*
+**Funkcjonalność**:
+- Budowanie wszystkich serwisów
+- Tagowanie obrazów wersją
+- Tworzenie GitHub Release
+- Generowanie changelog
 - Test build Docker
 
 ### Workflows Pomocnicze

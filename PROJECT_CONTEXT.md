@@ -119,28 +119,60 @@ git push origin main  # → Automatyczny build i deploy
 
 ## Gdzie szukać czego
 
-- **Jak coś zrobić**: `/CLAUDE.md` (zawiera CI/CD guidelines!)
+### Główna dokumentacja (NEW!)
+- **Architektura**: `/docs/ARCHITECTURE.md` - jak działa system
+- **Development**: `/docs/DEVELOPMENT.md` - jak rozwijać projekt
+- **Troubleshooting**: `/docs/TROUBLESHOOTING.md` - rozwiązywanie problemów
+- **Makefile Guide**: `/docs/MAKEFILE_GUIDE.md` - wszystkie komendy
+
+### Deployment & Operations
+- **Unified Deployment**: `/docs/deployment/unified-deployment.md` ⭐
+- **Deployment Script**: `/scripts/deploy.sh` - jeden skrypt dla wszystkich środowisk
+- **Runbooks**: `/docs/runbooks/` - procedury dla typowych operacji
+
+### Konfiguracja
+- **Environment configs**: `/docker/environments/` - konfiguracje per środowisko
+- **CI/CD workflows**: `/.github/workflows/` - 5 zoptymalizowanych workflows
+- **Secrets**: `.env.sops` - zaszyfrowane SOPS
+
+### Legacy (do wygaszenia)
+- **Stare deployment docs**: `/docs/deployment/README.md`
+- **Jak coś zrobić**: `/CLAUDE.md`
 - **Co zrobić**: `/architektura_systemu.md`
-- **Szczegóły zadania**: `/docs/faza-*/`
-- **Szablon nowego zadania**: `/docs/TASK_TEMPLATE.md`
-- **DEPLOYMENT DOCS**: `/docs/deployment/README.md` ⭐ (unified workflows)
-- **Add new service**: `/docs/deployment/guides/new-service.md`
-- **CI/CD troubleshooting**: `/docs/deployment/troubleshooting/`
-- **Deployment scripts**: `/scripts/deploy-to-nebula.sh`
 
 ## Komendy projektu
 
-### Development
-- `/nakurwiaj <blok>` - automatyczne wykonanie bloku zadań
-- `docker-compose up -d` - start lokalnego stacku
-- `docker-compose logs -f service-name` - logi serwisu
-- `curl http://localhost:800X/health` - health check
+### Quick Start (NEW!)
+- `make setup` - inicjalizacja projektu dla nowego developera
+- `make up` - start development environment
+- `make deploy` - deploy to production
+- `make help` - pokazuje wszystkie dostępne komendy
 
-### CI/CD & Deployment
-- `git push origin main` - trigger CI/CD pipeline
-- `./scripts/deploy-to-nebula.sh` - manual deployment
-- `ssh nebula "/opt/detektor/scripts/health-check-all.sh"` - verify deployment
+### Development
+- `make dev-up` - start z hot reload
+- `make dev-logs SERVICE=name` - logi konkretnego serwisu
+- `make dev-shell SVC=name` - shell do kontenera
+- `make test` - uruchom wszystkie testy
+- `make lint` - sprawdź jakość kodu
+- `make format` - formatuj kod
+
+### Production
+- `make prod-deploy` - deploy na produkcję
+- `make prod-status` - sprawdź status
+- `make prod-verify` - weryfikuj health checks
+- `make prod-logs` - pokaż logi produkcyjne
+
+### Deployment (NEW!)
+- `./scripts/deploy.sh production deploy` - unified deployment
+- `./scripts/deploy.sh production status` - check status
+- `./scripts/deploy.sh production verify` - health checks
+- `./scripts/deploy.sh production rollback` - rollback
+
+### Utilities
 - `make secrets-edit` - edycja sekretów SOPS
+- `make db-shell` - PostgreSQL CLI
+- `make redis-cli` - Redis CLI
+- `make clean-all` - wyczyść wszystko
 
 ## Na co uważać
 
@@ -160,7 +192,7 @@ git push origin main  # → Automatyczny build i deploy
 - ✅ Deployment automation (scripts/deploy-to-nebula.sh)
 - ✅ Example service z pełnym observability (example-otel)
 
-## Status transformacji projektu (2025-07-23)
+## Status transformacji projektu (2025-07-24)
 
 ### ✅ Faza 1: Unifikacja nazewnictwa (COMPLETED)
 - Zmiana nazwy projektu: bezrobocie-detektor → detektr
@@ -194,10 +226,29 @@ git push origin main  # → Automatyczny build i deploy
 - Workflow: .github/workflows/ghcr-cleanup.yml
 - Raport: docs/PHASE4_GHCR_CLEANUP_REPORT.md
 
-### ⏳ Faza 5: Deployment Automation (NASTĘPNA)
-- Unified deployment script
-- GitHub Actions integration
-- Environment-specific configs
+### ✅ Faza 5: Deployment Automation (COMPLETED)
+- Unified deployment script: scripts/deploy.sh
+- Wsparcie dla 3 środowisk: production, staging, local
+- 7 akcji: deploy, status, logs, restart, stop, verify, cleanup
+- Environment-specific configs w docker/environments/
+- Integracja z GitHub Actions (main-pipeline.yml)
+- Dokumentacja: docs/deployment/unified-deployment.md
+
+### ✅ Faza 6: Documentation (COMPLETED)
+- Nowy README.md z 3 kluczowymi linkami
+- docs/ARCHITECTURE.md - pełna architektura systemu
+- docs/DEVELOPMENT.md - przewodnik developera
+- docs/TROUBLESHOOTING.md - rozwiązywanie problemów
+- Runbooks w docs/runbooks/ dla typowych operacji
+- docs/MAKEFILE_GUIDE.md - dokumentacja Makefile
+
+### ✅ Faza 7: Makefile Unification (COMPLETED)
+- Unified Makefile z 50+ komendami
+- Kategorie: Quick Start, Development, Production, Testing, etc.
+- Inteligentna selekcja środowisk (ENV variable)
+- User-friendly help z opisami
+- Aliasy dla popularnych komend (make up, make deploy)
+- Pełna integracja z CI/CD
 
 ### Dokumentacja zaktualizowana:
 - ✅ CLAUDE.md - zawiera pełne CI/CD guidelines
