@@ -83,6 +83,7 @@ services:
   # Infrastructure services with production limits
   postgres:
     <<: *production-defaults
+    image: timescale/timescaledb:latest-pg15
     environment:
       - POSTGRES_MAX_CONNECTIONS=200
       - POSTGRES_SHARED_BUFFERS=256MB
@@ -103,6 +104,7 @@ services:
 
   redis:
     <<: *production-defaults
+    image: redis:7-alpine
     command: >
       redis-server
       --maxmemory 1gb
@@ -123,6 +125,7 @@ services:
   # Monitoring with retention policies
   prometheus:
     <<: *production-defaults
+    image: prom/prometheus:latest
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -141,6 +144,7 @@ services:
 
   grafana:
     <<: *production-defaults
+    image: grafana/grafana:latest
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
