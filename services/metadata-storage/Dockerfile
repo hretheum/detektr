@@ -54,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
 EXPOSE 8005
 
 # Start service
-CMD ["python", "main.py"]
+CMD ["python", "src/main.py"]
