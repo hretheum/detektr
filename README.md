@@ -1,292 +1,185 @@
-# Detektor - System Detekcji i Automatyzacji Wizyjnej
+# Detektor - System Monitoringu Wizyjnego
 
-[![CI](https://github.com/hretheum/detektr/actions/workflows/ci.yml/badge.svg)](https://github.com/hretheum/detektr/actions/workflows/ci.yml)
-[![Deploy](https://github.com/hretheum/detektr/actions/workflows/deploy-self-hosted.yml/badge.svg)](https://github.com/hretheum/detektr/actions/workflows/deploy-self-hosted.yml)
+[![CI/CD Pipeline](https://github.com/hretheum/detektr/actions/workflows/main-pipeline.yml/badge.svg)](https://github.com/hretheum/detektr/actions/workflows/main-pipeline.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Registry](https://img.shields.io/badge/registry-ghcr.io%2Fhretheum%2Fdetektr-blue)](https://github.com/hretheum/detektr/packages)
 
-Hobbystyczny system przechwytywania obrazu z kamery IP z wykorzystaniem AI do rozpoznawania i automatyzacji Home Assistant.
+System przechwytywania obrazu z kamer IP z wykorzystaniem AI do rozpoznawania obiektów i automatyzacji Home Assistant.
 
-## 🚨 **DOKUMENTACJA DEPLOYMENT - NOWA LOKALIZACJA**
+## 🚀 Quick Start
 
-### **📍 DLA WSZYSTKICH LLM - ZACZNIJ TUTAJ:**
-**Wszystkie aktualne dokumentacje deploymentu** przeniesione do: `docs/deployment/`
+1. **[Architektura Systemu](docs/ARCHITECTURE.md)** - Zrozum strukturę projektu
+2. **[Development Setup](docs/DEVELOPMENT.md)** - Zacznij lokalnie
+3. **[Deployment Guide](docs/deployment/unified-deployment.md)** - Deploy na produkcję
 
-### **🔗 Kluczowe Linki:**
-- **[Przewodnik Deploymentu](docs/deployment/README.md)** - Główny przewodnik
-- **[Szybki Start](docs/deployment/quick-start.md)** - 30-sekundowe wdrożenie
-- **[RTSP Capture Service](docs/deployment/services/rtsp-capture.md)** - Konkretna usługa
-- **[Szablon Nowej Usługi](docs/deployment/templates/service-template.md)** - Kopiuj i użyj
+## 📋 TL;DR dla nowego developera
 
-### **🤖 Instrukcje dla LLM:**
-1. **Zawsze zacznij od**: `docs/deployment/README.md`
-2. **Dla nowych usług**: Użyj szablonu `service-template.md`
-3. **Deployment**: Tylko `git push origin main` (CI/CD)
-4. **Problemy**: `docs/deployment/troubleshooting/common-issues.md`
+```bash
+# Clone & setup
+git clone https://github.com/hretheum/detektr.git
+cd detektr
+make setup
+
+# Run locally
+make up
+
+# Deploy to production
+make deploy ENV=production
+```
+
+## 🎯 Co to jest Detektor?
+
+Detektor to hobbystyczny system monitoringu wizyjnego który:
+- 📹 Przechwytuje strumień RTSP z kamer IP (np. Reolink)
+- 🤖 Rozpoznaje twarze, gesty i obiekty używając AI (YOLO v8, MediaPipe)
+- 🏠 Integruje się z Home Assistant dla automatyzacji
+- 🎤 Obsługuje interakcję głosową z LLM (OpenAI/Anthropic)
+- 📊 Zapewnia pełną observability (Prometheus, Grafana, Jaeger)
+
+## 🏗️ Architektura
+
+System wykorzystuje:
+- **Infrastruktura**: Docker, Kubernetes-ready, GPU support (NVIDIA)
+- **Backend**: Python 3.11+, FastAPI, Clean Architecture
+- **AI/ML**: YOLO v8, MediaPipe, InsightFace, Whisper
+- **Message Bus**: Redis Streams
+- **Storage**: PostgreSQL/TimescaleDB
+- **Monitoring**: Prometheus, Grafana, Jaeger, OpenTelemetry
+- **CI/CD**: GitHub Actions + GitHub Container Registry
+
+Szczegóły: [Architecture Documentation](docs/ARCHITECTURE.md)
 
 ## 📊 Dashboard Links
 
 | Dashboard | URL | Opis |
 |-----------|-----|------|
-| Grafana - Main | http://192.168.1.193:3000 | Dashboard główny Grafana |
-| Message Broker Metrics | http://192.168.1.193:3000/d/broker-metrics/message-broker-metrics | Metryki Redis (throughput, latency, memory) |
-| Prometheus | http://192.168.1.193:9090 | Prometheus metrics explorer |
-| Jaeger UI | http://192.168.1.193:16686 | Distributed tracing |
-| Redis Exporter | http://192.168.1.193:9121/metrics | Raw Redis metrics |
+| Grafana | http://nebula:3000 | Główny dashboard z metrykami |
+| Prometheus | http://nebula:9090 | Metrics explorer |
+| Jaeger | http://nebula:16686 | Distributed tracing |
 
-## Cel Projektu
+## 🛠️ Development
 
-Stworzenie kompletnego systemu który:
+### Prerequisites
 
-- Przechwytuje strumień RTSP z kamer IP
-- Rozpoznaje twarze, gesty i obiekty za pomocą AI
-- Integruje się z Home Assistant dla automatyzacji
-- Obsługuje interakcję głosową z LLM
-- Zapewnia pełną observability od początku
+- Docker & Docker Compose
+- Python 3.11+
+- NVIDIA GPU (opcjonalnie, dla AI features)
+- Make
 
-## Stack Technologiczny
-
-- **Serwer**: Ubuntu z GTX 4070 Super (16GB VRAM), i7, 64GB RAM (hostname: nebula)
-- **Infrastruktura**: Docker, Docker Compose, container-first
-- **CI/CD**: GitHub Actions + Self-hosted Runner + GHCR
-- **Języki**: Python 3.11+, FastAPI
-- **AI/ML**: YOLO v8, MediaPipe, InsightFace, Whisper
-- **LLM**: OpenAI/Anthropic API
-- **Observability**: Jaeger, Prometheus, Grafana
-- **Architektura**: Clean Architecture, DDD, Event Sourcing, TDD
-- **Secrets**: SOPS z age encryption
-
-## Architektura
-
-System składa się z 7 faz implementacji:
-
-```
-Faza 0: Dokumentacja i planowanie          ✅ [UKOŃCZONA]
-Faza 1: Fundament z observability          ✅ [UKOŃCZONA + CI/CD]
-  ✅ Docker & NVIDIA setup
-  ✅ Git repository & struktura
-  ✅ Observability stack (Jaeger, Prometheus, Grafana, Loki)
-  ✅ OpenTelemetry SDK
-  ✅ Frame tracking design
-  ✅ TDD setup
-  ✅ Monitoring dashboard
-  ✅ CI/CD Pipeline (GitHub Actions + Self-hosted Runner)
-  ✅ Automated deployment (push to main = auto deploy)
-  ✅ Example services z pełnym observability
-  ✅ GPU demo service (YOLO v8)
-Faza 2: Akwizycja i storage                🚧 [W TRAKCIE]
-  ✅ RTSP Capture Service (Bloki 0-5 ukończone, deployed on Nebula)
-    - Service running: http://nebula:8001
-    - Reolink camera configured with /Preview_01_main
-    - Status: "degraded" (Redis not initialized - expected)
-  ✅ Frame Buffer Service (Blok 5 ukończony, deployed on Nebula)
-    - Service running: http://nebula:8002
-    - Redis Streams backend with persistence
-    - Full observability (Prometheus + OpenTelemetry)
-    - DLQ support, 80k fps, 0.01ms latency
-  ✅ Redis/RabbitMQ Configuration (Blok 0 ukończony)
-    - Disk space optimized (cleaned 22GB, extended by 100GB)
-    - LVM volumes created for data persistence
-    - Docker networks unified (fixed multi-network issue)
-    - Telegram monitoring deployed (disk, Redis alerts)
-  ⏳ PostgreSQL/TimescaleDB
-  ⏳ Frame tracking implementation
-Faza 3: AI services podstawy               ⏳ [ZAPLANOWANA]
-Faza 4: Integracja z Home Assistant        ⏳ [ZAPLANOWANA]
-Faza 5: Zaawansowane AI i voice            ⏳ [ZAPLANOWANA]
-Faza 6: Optymalizacja i refinement         ⏳ [ZAPLANOWANA]
-
-Transformacja systemu (2025-07-23):
-✅ Faza 1: Unifikacja nazewnictwa           [UKOŃCZONA]
-✅ Faza 2: Konsolidacja workflows (14→5)    [UKOŃCZONA]
-✅ Faza 3: Reorganizacja Docker Compose     [UKOŃCZONA]
-  - 16+ plików → 8 w hierarchicznej strukturze
-  - Convenience scripts: docker/dev.sh, docker/prod.sh
-  - Skrypt migracji: scripts/migrate-docker-compose.sh
-✅ Faza 4: Cleanup GHCR                     [UKOŃCZONA]
-  - Migracja 5 serwisów do detektr/*
-  - Usunięcie starych consensus/* images
-  - Automatyczny cleanup co tydzień
-⏳ Faza 5: Deployment Automation            [NASTĘPNA]
-```
-
-## Quick Start
-
-### Lokalne development (Nowa Struktura Docker Compose)
+### Local Setup
 
 ```bash
-# Klonowanie
-git clone git@github.com:hretheum/detektr.git
-cd detektr
-
 # Setup environment
-make secrets-init
-make secrets-edit  # Dodaj swoje klucze API
+make setup
 
-# Uruchomienie stacku lokalnie - NOWE KOMENDY
-./docker/dev.sh up -d        # Development z hot reload
-# lub
-make dev-up                  # Alias w Makefile
-
-# Monitoring
-open http://localhost:3000    # Grafana
-open http://localhost:16686   # Jaeger
-open http://localhost:9090    # Prometheus
-
-# Logi
-./docker/dev.sh logs -f rtsp-capture
-# lub
-make dev-logs
-
-# Zatrzymanie
-./docker/dev.sh down
-# lub
-make dev-down
-```
-
-### Deployment na produkcję (Nebula)
-
-```bash
-# Automatyczny deployment przy push!
-git push origin main
-
-# GitHub Actions automatycznie:
-# 1. Buduje obrazy Docker
-# 2. Pushuje do GitHub Container Registry
-# 3. Self-hosted runner deployuje na Nebula
-
-# Sprawdzenie statusu
-ssh nebula "cd /opt/detektor && docker compose ps"
-
-# Health check wszystkich serwisów
-ssh nebula "curl -s http://localhost:8001/health | jq"  # rtsp-capture (✅ deployed)
-ssh nebula "curl -s http://localhost:8005/health | jq"  # example-otel
-ssh nebula "curl -s http://localhost:8006/health | jq"  # frame-tracking
-ssh nebula "curl -s http://localhost:8007/health | jq"  # echo-service
-ssh nebula "curl -s http://localhost:8010/health | jq"  # base-template
-```
-
-## 📋 **NOWA DOKUMENTACJA - STRUKTURA HYBRYDOWA**
-
-### **Dla Developerów:**
-- **[Przewodnik Deploymentu](docs/deployment/README.md)** - Kompletny przewodnik
-- **[Szybki Start](docs/deployment/quick-start.md)** - 30-sekundowe wdrożenie
-- **[Szablony Usług](docs/deployment/templates/)** - Gotowe do kopiowania
-
-### **Dla Usług:**
-- **[RTSP Capture Service](docs/deployment/services/rtsp-capture.md)** - Szczegółowa dokumentacja
-- **[Frame Tracking Service](docs/deployment/services/frame-tracking.md)** - Szczegółowa dokumentacja
-- **[Szablon Nowej Usługi](docs/deployment/templates/service-template.md)** - Kopiuj i użyj
-
-### **Dla Rozwiązywania Problemów:**
-- **[Problemy i Rozwiązania](docs/deployment/troubleshooting/common-issues.md)** - 15+ problemów
-- **[Procedury Awaryjne](docs/deployment/troubleshooting/emergency.md)** - Krok-po-kroku
-
-## 🚨 **DOKUMENTACJA PRZESTARZAŁA - IGNORUJ**
-- `docs/CI_CD_*.md` - PRZESTARZAŁE
-- `docs/DEPLOYMENT_*.md` - PRZESTARZAŁE
-- `docs/MANUAL_DEPLOYMENT.md` - PRZESTARZAŁE
-- **Wszystkie aktualne dokumentacje**: `docs/deployment/`
-
-## Kluczowe Zasady
-
-1. **🚨 ZASADA ZERO**: NIGDY nie hardkoduj sekretów (używaj SOPS!)
-2. **TDD**: Test-driven development od początku
-3. **Observability First**: Tracing i metryki w każdym serwisie
-4. **Clean Architecture**: Separacja warstw, DDD patterns
-5. **Container First**: Wszystko w Docker
-6. **CI/CD First**: Build w GitHub Actions, deploy z registry (NIGDY build na produkcji!)
-
-## Zarządzanie Sekretami
-
-Projekt wykorzystuje **SOPS + age** dla bezpiecznego zarządzania sekretami:
-
-```bash
-# Edycja sekretów
-make secrets-edit
-
-# Automatyczne uruchomienie z odszyfrowaniem
+# Start development stack
 make up
 
-# Status
+# Run tests
+make test
+
+# Check code quality
+make lint
+
+# View logs
+make logs SERVICE=rtsp-capture
+```
+
+Więcej: [Development Guide](docs/DEVELOPMENT.md)
+
+## 🚀 Deployment
+
+### Używając unified deployment script
+
+```bash
+# Deploy to production
+./scripts/deploy.sh production deploy
+
+# Check status
+./scripts/deploy.sh production status
+
+# View logs
+./scripts/deploy.sh production logs
+```
+
+### Automatyczny deployment
+
+```bash
+# Push to main = auto deploy via CI/CD
+git push origin main
+```
+
+Więcej: [Deployment Documentation](docs/deployment/unified-deployment.md)
+
+## 📦 Serwisy
+
+| Serwis | Port | Status | Opis |
+|--------|------|--------|------|
+| rtsp-capture | 8001 | ✅ Production | Przechwytywanie RTSP |
+| frame-tracking | 8006 | ✅ Production | Tracking ramek |
+| example-otel | 8005 | ✅ Production | Przykład z OpenTelemetry |
+| face-recognition | 8002 | 🚧 Development | Rozpoznawanie twarzy |
+| object-detection | 8003 | 🚧 Development | Detekcja obiektów |
+| ha-bridge | 8004 | 📅 Planned | Integracja z Home Assistant |
+
+## 🔐 Zarządzanie sekretami
+
+Projekt używa SOPS z age encryption:
+
+```bash
+# Edit secrets
+make secrets-edit
+
+# Decrypt for local use
+make secrets-decrypt
+
+# Check status
 make secrets-status
 ```
 
-## Development Workflow
+## 📈 Status Projektu
 
-```bash
-# Wybierz fazę w architektura_systemu.md
-# Znajdź zadanie [ ] (nieukończone)
-# Otwórz dekompozycję (link "Szczegóły →")
-# Wykonaj blok:
-/nakurwiaj <numer_bloku>
+### ✅ Ukończone fazy
 
-# Po każdym bloku:
-make test     # Uruchom testy
-make lint     # Sprawdź kod
-git commit    # Zapisz zmiany
-```
+1. **Dokumentacja i planowanie** - Kompletna architektura
+2. **Fundament z observability** - CI/CD, monitoring, tracing
+3. **Unified deployment** - Jeden skrypt dla wszystkich środowisk
+4. **Docker reorganization** - Hierarchiczna struktura
+5. **GHCR cleanup** - Uporządkowane obrazy
 
-## 📚 Documentation
+### 🚧 W trakcie
 
-- **[Deployment Guide](docs/deployment/README.md)** - Start here for deployment
-- **[Adding New Service](docs/deployment/guides/new-service.md)** - Step-by-step guide
-- **[Troubleshooting](docs/deployment/troubleshooting/)** - Common issues and solutions
-- **[Project Context](PROJECT_CONTEXT.md)** - Architecture and decisions
+- **Akwizycja i storage** - RTSP capture, frame buffering
+- **AI services** - Face recognition, object detection
 
-## Porty Serwisów
+### 📅 Zaplanowane
 
-- **8001**: rtsp-capture ✅ (deployed on Nebula, status: degraded)
-- **8002**: face-recognition
-- **8003**: object-detection
-- **8004**: ha-bridge
-- **8005**: example-otel ✅ (działający przykład)
-- **8006**: frame-tracking ✅
-- **8007**: echo-service ✅
-- **8008**: gpu-demo ✅
-- **8010**: base-template ✅
-- **9090**: Prometheus ✅
-- **16686**: Jaeger ✅
-- **3000**: Grafana ✅
+- **Home Assistant integration**
+- **Voice interaction with LLM**
+- **Advanced AI features**
 
-## Status Projektu
+## 🤝 Contributing
 
-**Aktualny stan**: Faza 1 COMPLETED ✅ - Faza 2 w trakcie
+1. Przeczytaj [Architecture](docs/ARCHITECTURE.md)
+2. Setup lokalnie według [Development Guide](docs/DEVELOPMENT.md)
+3. Używaj TDD - test first, code second
+4. Zapewnij observability w każdym serwisie
+5. Dokumentuj zmiany
 
-**Faza 1 - Ukończone komponenty**:
-- ✅ Infrastruktura observability (Prometheus, Jaeger, Grafana)
-- ✅ CI/CD pipeline (GitHub Actions + GHCR)
-- ✅ Deployment automation (scripts/deploy-to-nebula.sh)
-- ✅ Example service z pełnym observability (example-otel)
-- ✅ Secrets management (SOPS z age)
-- ✅ Health monitoring (scripts/health-check-all.sh)
-- ✅ **NOWA DOKUMENTACJA**: Unified deployment docs ([`docs/deployment/`](docs/deployment/README.md))
+## 📚 Dokumentacja
 
-**Faza 2 - W trakcie**:
-- ✅ Frame Buffer (80k fps, 0.01ms latency, DLQ)
-- ✅ RTSP Capture Service (Bloki 0-5 ukończone, deployed on Nebula)
-  - Deployment successful via CI/CD pipeline
-  - Reolink camera properly configured (rtsp://192.168.1.195:554/Preview_01_main)
-  - Service health: "degraded" (Redis not initialized - expected at this stage)
-- ✅ **NOWA DOKUMENTACJA**: Hybrydowa struktura deploymentu
+- [Architecture](docs/ARCHITECTURE.md) - Jak działa system
+- [Development](docs/DEVELOPMENT.md) - Jak rozwijać projekt
+- [Deployment](docs/deployment/unified-deployment.md) - Jak deployować
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Rozwiązywanie problemów
+- [API Reference](docs/api/) - Dokumentacja API
 
-## Kontrybuowanie
+## 📝 License
 
-Ten projekt realizuje podejście **observability-first** i **TDD**.
-
-**Dla LLM - zawsze zacznij od**: `docs/deployment/README.md`
-
-Przed rozpoczęciem pracy:
-1. Przeczytaj **NOWĄ dokumentację**: `docs/deployment/README.md`
-2. Sprawdź **szablon usługi**: `docs/deployment/templates/service-template.md`
-3. Użyj `/nakurwiaj` dla automatycznego wykonania bloków zadań
-
-## Licencja
-
-MIT License - projekt hobbystyczny/edukacyjny.
+MIT License - projekt hobbystyczny/edukacyjny
 
 ---
 
-🤖 **Projekt realizowany z Claude Code** - [claude.ai/code](https://claude.ai/code)
+🤖 **Developed with [Claude Code](https://claude.ai/code)**
