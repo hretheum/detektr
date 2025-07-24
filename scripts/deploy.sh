@@ -234,11 +234,9 @@ action_verify() {
 
     # Define services and their health endpoints
     declare -A services=(
-        ["example-otel"]="8005"
-        ["frame-tracking"]="8006"
-        ["echo-service"]="8007"
-        ["gpu-demo"]="8008"
         ["rtsp-capture"]="8001"
+        ["frame-tracking"]="8006"
+        ["metadata-storage"]="8005"
         ["base-template"]="8010"
     )
 
