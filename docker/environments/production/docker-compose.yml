@@ -61,6 +61,8 @@ services:
   base-template:
     <<: *production-defaults
     image: ghcr.io/hretheum/detektr/base-template:${IMAGE_TAG:-latest}
+    ports:
+      - "8000:8000"
     environment:
       - LOG_LEVEL=INFO
       - METRICS_ENABLED=true

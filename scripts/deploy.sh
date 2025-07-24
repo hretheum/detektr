@@ -302,7 +302,7 @@ action_verify() {
         ["rtsp-capture"]="8001"
         ["frame-tracking"]="8006"
         ["metadata-storage"]="8005"
-        ["base-template"]="8010"
+        ["base-template"]="8000"
     )
 
     declare -A infrastructure=(
