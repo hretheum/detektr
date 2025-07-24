@@ -51,7 +51,7 @@ jobs:
               --cache-from type=gha \
               --cache-to type=gha,mode=max \
               -f services/$service/Dockerfile \
-              . || echo "Failed to build $service, continuing..."
+              services/$service/ || echo "Failed to build $service, continuing..."
           done
 
   # Deploy on self-hosted runner (Nebula)
