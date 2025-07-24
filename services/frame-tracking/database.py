@@ -17,6 +17,10 @@ DATABASE_URL = os.getenv(
     "postgresql+asyncpg://detektor:detektor_pass@postgres:5432/detektor",
 )
 
+# If DATABASE_URL contains localhost, replace with postgres for container networking
+if "localhost" in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("localhost", "postgres")
+
 # Create async engine
 engine = create_async_engine(
     DATABASE_URL,
