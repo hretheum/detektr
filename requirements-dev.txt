@@ -28,7 +28,7 @@ types-pyyaml==6.0.12.12
 opentelemetry-instrumentation-requests==0.43b0
 opentelemetry-instrumentation-fastapi==0.43b0
 opentelemetry-instrumentation-sqlalchemy==0.43b0
-opentelemetry-instrumentation-asyncpg==0.43b0
+opentelemetry-instrumentation-asyncpg==0.56b0
 opentelemetry-instrumentation-redis==0.43b0
 opentelemetry-instrumentation-aiohttp-client==0.43b0
 opentelemetry-instrumentation-psycopg2==0.43b0
