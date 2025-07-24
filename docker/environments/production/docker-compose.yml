@@ -66,6 +66,7 @@ services:
     environment:
       - LOG_LEVEL=INFO
       - METRICS_ENABLED=true
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
 
   metadata-storage:
     <<: *production-defaults
@@ -184,24 +185,12 @@ services:
           memory: 1G
           cpus: "1.0"
 
-# Production volumes with backup labels
+# Production volumes
 volumes:
   postgres_data:
-    labels:
-      backup: "daily"
-      retention: "7"
   redis_data:
-    labels:
-      backup: "daily"
-      retention: "3"
   prometheus_data:
-    labels:
-      backup: "weekly"
-      retention: "4"
   grafana_data:
-    labels:
-      backup: "weekly"
-      retention: "2"
 
 # Production network configuration
 networks:
