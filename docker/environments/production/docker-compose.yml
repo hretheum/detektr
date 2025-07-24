@@ -41,7 +41,7 @@ services:
       - LOG_LEVEL=INFO
       - METRICS_ENABLED=true
       - TRACE_ENABLED=true
-      - DATABASE_URL=postgresql://detektor:${POSTGRES_PASSWORD:-detektor_pass}@postgres:5432/detektor
+      - DATABASE_URL=postgresql+asyncpg://detektor:${POSTGRES_PASSWORD:-detektor_pass}@postgres:5432/detektor
 
   echo-service:
     <<: *production-defaults

@@ -1,0 +1,104 @@
+name: Simple Deploy to Nebula
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/detektr
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build wszystkich serwisów
+      - name: Build and push images
+        run: |
+          SERVICES=(
+            "rtsp-capture"
+            "frame-tracking"
+            "frame-buffer"
+            "metadata-storage"
+            "base-template"
+            "echo-service"
+            "example-otel"
+            "gpu-demo"
+          )
+
+          for service in "${SERVICES[@]}"; do
+            echo "Building $service..."
+            docker buildx build \
+              --push \
+              --platform linux/amd64 \
+              --tag ${{ env.IMAGE_PREFIX }}/$service:latest \
+              --tag ${{ env.IMAGE_PREFIX }}/$service:${{ github.sha }} \
+              --cache-from type=gha \
+              --cache-to type=gha,mode=max \
+              -f services/$service/Dockerfile \
+              . || echo "Failed to build $service, continuing..."
+          done
+
+      # Deploy na Nebula
+      - name: Deploy to Nebula
+        run: |
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "${{ secrets.NEBULA_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.NEBULA_HOST_KEY }}" >> ~/.ssh/known_hosts
+
+          # Copy files
+          scp -r docker/ ${{ secrets.NEBULA_USER }}@${{ secrets.NEBULA_HOST }}:/opt/detektor-deploy/
+          scp .env.sops ${{ secrets.NEBULA_USER }}@${{ secrets.NEBULA_HOST }}:/opt/detektor-deploy/
+
+          # Deploy
+          ssh ${{ secrets.NEBULA_USER }}@${{ secrets.NEBULA_HOST }} << 'EOF'
+            cd /opt/detektor-deploy
+
+            # Login to registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Stop old containers
+            docker compose -f docker/base/docker-compose.yml \
+              -f docker/base/docker-compose.storage.yml \
+              -f docker/base/docker-compose.observability.yml \
+              -f docker/environments/production/docker-compose.yml \
+              down --remove-orphans || true
+
+            # Pull and start new containers
+            export IMAGE_TAG=latest
+            export COMPOSE_PROJECT_NAME=detektor
+            export POSTGRES_PASSWORD=detektor_pass
+            export GRAFANA_PASSWORD=admin
+
+            docker compose -f docker/base/docker-compose.yml \
+              -f docker/base/docker-compose.storage.yml \
+              -f docker/base/docker-compose.observability.yml \
+              -f docker/environments/production/docker-compose.yml \
+              pull
+
+            docker compose -f docker/base/docker-compose.yml \
+              -f docker/base/docker-compose.storage.yml \
+              -f docker/base/docker-compose.observability.yml \
+              -f docker/environments/production/docker-compose.yml \
+              up -d
+
+            # Check status
+            sleep 10
+            docker ps
+          EOF

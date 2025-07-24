@@ -328,7 +328,7 @@ jobs:
       always() &&
       github.event_name != 'pull_request' &&
       needs.detect-changes.outputs.should_deploy == 'true' &&
-      (needs.build.result == 'success' || needs.build.result == 'skipped') &&
+      needs.build.result == 'success' &&
       (needs.security.result == 'success' || needs.security.result == 'skipped')
     runs-on: self-hosted
     environment:
@@ -342,16 +342,40 @@ jobs:
             .env.sops
           sparse-checkout-cone-mode: false
 
+      - name: Wait for images to be available
+        run: |
+          echo "Waiting for images to be available in registry..."
+          sleep 30
+
       - name: Deploy services
         run: |
           ENVIRONMENT="${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
 
-          export IMAGE_TAG="${{ github.ref == 'refs/heads/main' && 'latest' || github.sha }}"
+          export IMAGE_TAG="main-${{ github.sha }}"
           export DEPLOY_SERVICES="${{ needs.detect-changes.outputs.services }}"
           export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
           export GITHUB_ACTOR="${{ github.actor }}"
 
-          ./scripts/deploy.sh "$ENVIRONMENT" deploy
+          # Retry logic for network issues
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if ./scripts/deploy.sh "$ENVIRONMENT" deploy; then
+              echo "✅ Deployment successful"
+              exit 0
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "⚠️ Deployment failed, attempt $RETRY_COUNT of $MAX_RETRIES"
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "Waiting 60 seconds before retry..."
+                sleep 60
+              fi
+            fi
+          done
+
+          echo "❌ Deployment failed after $MAX_RETRIES attempts"
+          exit 1
 
   # =================================
   # 7. SUMMARY
