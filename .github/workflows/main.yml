@@ -1,0 +1,403 @@
+name: Main Pipeline
+# Consolidated workflow combining:
+# - main-pipeline.yml (build/deploy)
+# - pr-checks.yml (validation)
+# - ci.yml (quality checks)
+# - security.yml (vulnerability scanning)
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full          # All checks + build + deploy
+          - build-only    # Only build
+          - deploy-only   # Only deploy
+          - security-only # Only security scan
+      services:
+        description: 'Services to process (comma-separated or "all")'
+        default: 'changed'
+        required: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/hretheum/detektr
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # =================================
+  # 1. PR VALIDATION (from pr-checks.yml)
+  # =================================
+  validate-pr:
+    name: Validate PR
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      valid: ${{ steps.check.outputs.valid }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PR title
+        id: check
+        run: |
+          title="${{ github.event.pull_request.title }}"
+          valid="true"
+
+          # Check conventional commit format
+          if ! echo "$title" | grep -qE '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .+$'; then
+            echo "❌ PR title must follow conventional commits format"
+            echo "Example: feat(services): add new monitoring endpoint"
+            valid="false"
+          fi
+
+          echo "valid=$valid" >> $GITHUB_OUTPUT
+
+      - name: Label PR
+        if: steps.check.outputs.valid == 'true'
+        uses: actions/labeler@v4
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+
+  # =================================
+  # 2. CODE QUALITY (from ci.yml)
+  # =================================
+  quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    if: |
+      github.event.inputs.action != 'deploy-only' &&
+      github.event.inputs.action != 'security-only'
+    strategy:
+      matrix:
+        python-version: ['3.11']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black mypy bandit
+
+      - name: Run linters
+        run: |
+          echo "🔍 Running code quality checks..."
+
+          # Find Python files
+          python_files=$(find services -name "*.py" -type f 2>/dev/null || true)
+
+          if [ -n "$python_files" ]; then
+            echo "📝 Running Black..."
+            black --check $python_files || true
+
+            echo "🔍 Running Ruff..."
+            ruff check $python_files || true
+
+            echo "🔍 Running MyPy..."
+            mypy $python_files || true
+          else
+            echo "No Python files found to check"
+          fi
+
+      - name: Run ShellCheck
+        run: |
+          echo "🔍 Running ShellCheck..."
+          find scripts -name "*.sh" -type f -exec shellcheck {} + || true
+
+  # =================================
+  # 3. SECURITY SCANNING (from security.yml)
+  # =================================
+  security:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    if: |
+      github.event.inputs.action != 'deploy-only' &&
+      github.event.inputs.action != 'build-only'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Python security check with Bandit
+        run: |
+          pip install bandit
+          bandit -r services/ -f json -o bandit-results.json || true
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  # =================================
+  # 4. DETECT CHANGES
+  # =================================
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action != 'security-only'
+    outputs:
+      services: ${{ steps.determine-services.outputs.services }}
+      matrix: ${{ steps.determine-services.outputs.matrix }}
+      should_build: ${{ steps.determine-services.outputs.should_build }}
+      should_deploy: ${{ steps.determine-services.outputs.should_deploy }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect changed files
+        id: changes
+        if: github.event.inputs.services == 'changed' || github.event.inputs.services == ''
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            rtsp-capture:
+              - 'services/rtsp-capture/**'
+            frame-tracking:
+              - 'services/frame-tracking/**'
+            frame-buffer:
+              - 'services/frame-buffer/**'
+            telegram-alerts:
+              - 'services/telegram-alerts/**'
+            metadata-storage:
+              - 'services/metadata-storage/**'
+            webhook-monitor:
+              - 'monitoring/webhook-monitor/**'
+
+      - name: Determine services to build
+        id: determine-services
+        run: |
+          # [Previous logic from main-pipeline.yml]
+          services=()
+
+          if [[ "${{ github.event.inputs.services }}" == "all" ]]; then
+            services=(
+              "rtsp-capture"
+              "frame-tracking"
+              "frame-buffer"
+              "telegram-alerts"
+              "metadata-storage"
+              "webhook-monitor"
+            )
+          elif [[ -n "${{ github.event.inputs.services }}" ]] && [[ "${{ github.event.inputs.services }}" != "changed" ]]; then
+            IFS=',' read -ra services <<< "${{ github.event.inputs.services }}"
+          else
+            # Use detected changes
+            changes='${{ toJSON(steps.changes.outputs.changes) }}'
+            if [[ "$changes" != "{}" && "$changes" != "null" ]]; then
+              for service in rtsp-capture frame-tracking frame-buffer telegram-alerts metadata-storage webhook-monitor; do
+                if [[ $(echo "$changes" | jq -r ".$service // false") == "true" ]]; then
+                  services+=("$service")
+                fi
+              done
+            fi
+          fi
+
+          # Determine actions
+          should_build="true"
+          should_deploy="true"
+
+          if [[ "${{ github.event.inputs.action }}" == "build-only" ]]; then
+            should_deploy="false"
+          elif [[ "${{ github.event.inputs.action }}" == "deploy-only" ]]; then
+            should_build="false"
+          fi
+
+          # Output results
+          if [ ${#services[@]} -eq 0 ]; then
+            echo "services=" >> $GITHUB_OUTPUT
+            echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+          else
+            echo "services=${services[*]}" >> $GITHUB_OUTPUT
+
+            # Create matrix
+            matrix_json='{"include":['
+            first=true
+            for service in "${services[@]}"; do
+              if [ "$first" = true ]; then
+                first=false
+              else
+                matrix_json+=','
+              fi
+              matrix_json+="{\"service\":\"$service\"}"
+            done
+            matrix_json+=']}'
+            echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+          fi
+
+          echo "should_build=$should_build" >> $GITHUB_OUTPUT
+          echo "should_deploy=$should_deploy" >> $GITHUB_OUTPUT
+
+  # =================================
+  # 5. BUILD SERVICES
+  # =================================
+  build:
+    name: Build ${{ matrix.service }}
+    needs: [quality, detect-changes]
+    if: |
+      needs.detect-changes.outputs.services != '' &&
+      needs.detect-changes.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.detect-changes.outputs.matrix) }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service == 'webhook-monitor' && 'monitoring/webhook-monitor' || format('services/{0}', matrix.service) }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+  # =================================
+  # 6. DEPLOY TO ENVIRONMENT
+  # =================================
+  deploy:
+    name: Deploy to ${{ github.ref == 'refs/heads/main' && 'Production' || 'Staging' }}
+    needs: [detect-changes, build, security]
+    if: |
+      always() &&
+      github.event_name != 'pull_request' &&
+      needs.detect-changes.outputs.should_deploy == 'true' &&
+      (needs.build.result == 'success' || needs.build.result == 'skipped') &&
+      (needs.security.result == 'success' || needs.security.result == 'skipped')
+    runs-on: self-hosted
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/
+            docker/
+            .env.sops
+          sparse-checkout-cone-mode: false
+
+      - name: Deploy services
+        run: |
+          ENVIRONMENT="${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
+
+          export IMAGE_TAG="${{ github.sha }}"
+          export DEPLOY_SERVICES="${{ needs.detect-changes.outputs.services }}"
+          export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          export GITHUB_ACTOR="${{ github.actor }}"
+
+          ./scripts/deploy.sh "$ENVIRONMENT" deploy
+
+  # =================================
+  # 7. SUMMARY
+  # =================================
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [validate-pr, quality, security, detect-changes, build, deploy]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 🚀 Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Status table
+          echo "### Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "| PR Validation | ${{ needs.validate-pr.result }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "| Code Quality | ${{ needs.quality.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "| Deploy | ${{ needs.deploy.result }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Services
+          if [[ -n "${{ needs.detect-changes.outputs.services }}" ]]; then
+            echo "### Services Processed" >> $GITHUB_STEP_SUMMARY
+            echo "${{ needs.detect-changes.outputs.services }}" | tr ' ' '\n' | while read service; do
+              echo "- $service" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
+          # Overall status
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.deploy.result }}" == "success" || "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "✅ **Pipeline completed successfully**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Pipeline failed**" >> $GITHUB_STEP_SUMMARY
+          fi

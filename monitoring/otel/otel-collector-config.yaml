@@ -1,0 +1,115 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "github-runner"
+          static_configs:
+            - targets: ["node-exporter:9100"]
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: "github_runner_.*"
+              action: keep
+
+        - job_name: "webhook-monitor"
+          static_configs:
+            - targets: ["webhook-monitor:8888"]
+
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+      disk:
+      filesystem:
+      load:
+      memory:
+      network:
+      process:
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  resource:
+    attributes:
+      - key: service.namespace
+        value: detektor
+        action: insert
+      - key: deployment.environment
+        from_attribute: deployment_environment
+        action: insert
+
+  attributes:
+    actions:
+      - key: github.workflow
+        from_attribute: workflow_name
+        action: insert
+      - key: github.run_id
+        from_attribute: run_id
+        action: insert
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: detektor
+    const_labels:
+      environment: production
+
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    labels:
+      attributes:
+        service.name: service_name
+        service.namespace: service_namespace
+        deployment.environment: deployment_environment
+
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+  pprof:
+    endpoint: 0.0.0.0:1777
+
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, pprof, zpages]
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource, attributes]
+      exporters: [jaeger, debug]
+
+    metrics:
+      receivers: [otlp, prometheus, hostmetrics]
+      processors: [memory_limiter, batch, resource]
+      exporters: [prometheus]
+
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [loki, debug]
