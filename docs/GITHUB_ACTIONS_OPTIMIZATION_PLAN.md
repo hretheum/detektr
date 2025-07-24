@@ -204,10 +204,48 @@ Możliwa dalsza redukcja do **3-4 workflow**:
 
 ## 📈 Metryki Sukcesu
 
-1. **Availability**: 99.9% uptime dla CI/CD pipeline
-2. **Performance**: Build time < 5 min, Deploy time < 2 min
-3. **Reliability**: Success rate > 95%
-4. **Recovery**: MTTR < 15 min
+### 1. **Availability**: 99.9% uptime dla CI/CD pipeline
+- **Metoda walidacji**:
+  - Prometheus query: `avg_over_time(github_runner_up[24h]) * 100`
+  - Uptime robot monitoring endpoint `/health`
+- **Guardrails**:
+  - Alert gdy uptime < 99.5% w ostatniej godzinie
+  - Auto-restart po 3 minutach downtime
+- **Quality Gate**:
+  - Deployment blocked gdy uptime < 98% w ostatnich 24h
+
+### 2. **Performance**: Build time < 5 min, Deploy time < 2 min
+- **Metoda walidacji**:
+  - GitHub API: `workflow_run.conclusion_time - workflow_run.start_time`
+  - Grafana dashboard z percentylami (p50, p95, p99)
+- **Guardrails**:
+  - Timeout: build 10 min, deploy 5 min
+  - Alert gdy p95 > target + 50%
+- **Quality Gate**:
+  - PR blocked gdy build time > 7 min
+  - Rollback gdy deploy > 3 min
+
+### 3. **Reliability**: Success rate > 95%
+- **Metoda walidacji**:
+  - `sum(workflow_success) / sum(workflow_total) * 100` over 7d
+  - Breakdown per workflow type
+- **Guardrails**:
+  - Circuit breaker po 3 consecutive failures
+  - Fallback na manual deployment < 90%
+- **Quality Gate**:
+  - No auto-deploy gdy success rate < 85% (last 24h)
+  - Manual approval required < 90%
+
+### 4. **Recovery**: MTTR < 15 min
+- **Metoda walidacji**:
+  - Time from alert to resolution (PagerDuty/AlertManager)
+  - Automated recovery success rate
+- **Guardrails**:
+  - Max 3 auto-recovery attempts
+  - Escalation to on-call after 10 min
+- **Quality Gate**:
+  - Post-mortem required gdy MTTR > 30 min
+  - Architecture review gdy MTTR > 60 min
 
 ## 🚀 Harmonogram Implementacji
 
