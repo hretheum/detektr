@@ -5,14 +5,16 @@
 set -euo pipefail
 
 # Configuration
-STATE_FILE="/var/lib/detektor/circuit-breaker.state"
-LOG_FILE="/var/log/detektor/circuit-breaker.log"
+STATE_FILE="${CIRCUIT_BREAKER_STATE_FILE:-/tmp/detektor-circuit-breaker.state}"
+LOG_FILE="${CIRCUIT_BREAKER_LOG_FILE:-/tmp/detektor-circuit-breaker.log}"
 MAX_FAILURES=3
 RESET_TIMEOUT=3600  # 1 hour in seconds
 ALERT_EMAIL="${ALERT_EMAIL:-admin@example.com}"
 
-# Ensure directories exist
-mkdir -p "$(dirname "$STATE_FILE")" "$(dirname "$LOG_FILE")"
+# Ensure directories exist (only if we have permissions)
+if [[ -w "$(dirname "$STATE_FILE")" ]]; then
+    mkdir -p "$(dirname "$STATE_FILE")" "$(dirname "$LOG_FILE")" 2>/dev/null || true
+fi
 
 # Helper functions
 log() {
