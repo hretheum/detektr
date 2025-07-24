@@ -158,19 +158,15 @@ services:
   jaeger:
     <<: *production-defaults
     environment:
-      - SPAN_STORAGE_TYPE=badger
-      - BADGER_EPHEMERAL=false
-      - BADGER_DIRECTORY_VALUE=/badger/data
-      - BADGER_DIRECTORY_KEY=/badger/key
+      - SPAN_STORAGE_TYPE=memory
       - COLLECTOR_QUEUE_SIZE=10000
       - METRICS_STORAGE_TYPE=prometheus
+      - MEMORY_MAX_TRACES=100000
     deploy:
       resources:
         limits:
           memory: 1G
           cpus: "1.0"
-    volumes:
-      - jaeger_data:/badger
 
 # Production volumes with backup labels
 volumes:
@@ -187,10 +183,6 @@ volumes:
       backup: "weekly"
       retention: "4"
   grafana_data:
-    labels:
-      backup: "weekly"
-      retention: "2"
-  jaeger_data:
     labels:
       backup: "weekly"
       retention: "2"

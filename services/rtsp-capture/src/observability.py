@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from typing import Any, Dict, Optional
 
+from frame_buffer import CircularFrameBuffer
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.redis import RedisInstrumentor
@@ -18,8 +19,6 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import Status, StatusCode
 from prometheus_client import Counter, Gauge, Histogram
-
-from .frame_buffer import CircularFrameBuffer
 
 
 # Initialize tracer - will use global provider
