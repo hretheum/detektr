@@ -10,8 +10,9 @@ env:
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/detektr
 
 jobs:
-  build-and-deploy:
-    name: Build and Deploy
+  # Build on GitHub runners
+  build:
+    name: Build Images
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,52 +54,58 @@ jobs:
               . || echo "Failed to build $service, continuing..."
           done
 
-      # Deploy na Nebula
-      - name: Deploy to Nebula
+  # Deploy on self-hosted runner (Nebula)
+  deploy:
+    name: Deploy to Nebula
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docker/
+            scripts/
+            .env.sops
+          sparse-checkout-cone-mode: false
+
+      - name: Deploy Services
         run: |
-          # Setup SSH
-          mkdir -p ~/.ssh
-          echo "${{ secrets.NEBULA_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          echo "${{ secrets.NEBULA_HOST_KEY }}" >> ~/.ssh/known_hosts
+          # We're already on Nebula, no SSH needed
+          cd /opt/detektor-clean
 
-          # Copy files
-          scp -r docker/ ${{ secrets.NEBULA_USER }}@${{ secrets.NEBULA_HOST }}:/opt/detektor-deploy/
-          scp .env.sops ${{ secrets.NEBULA_USER }}@${{ secrets.NEBULA_HOST }}:/opt/detektor-deploy/
+          # Pull latest changes
+          git pull origin main || true
 
-          # Deploy
-          ssh ${{ secrets.NEBULA_USER }}@${{ secrets.NEBULA_HOST }} << 'EOF'
-            cd /opt/detektor-deploy
+          # Login to registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Login to registry
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          # Export variables
+          export IMAGE_TAG=latest
+          export COMPOSE_PROJECT_NAME=detektor
+          export POSTGRES_PASSWORD=detektor_pass
+          export GRAFANA_PASSWORD=admin
 
-            # Stop old containers
-            docker compose -f docker/base/docker-compose.yml \
-              -f docker/base/docker-compose.storage.yml \
-              -f docker/base/docker-compose.observability.yml \
-              -f docker/environments/production/docker-compose.yml \
-              down --remove-orphans || true
+          # Stop old containers
+          docker compose -f docker/base/docker-compose.yml \
+            -f docker/base/docker-compose.storage.yml \
+            -f docker/base/docker-compose.observability.yml \
+            -f docker/environments/production/docker-compose.yml \
+            down --remove-orphans || true
 
-            # Pull and start new containers
-            export IMAGE_TAG=latest
-            export COMPOSE_PROJECT_NAME=detektor
-            export POSTGRES_PASSWORD=detektor_pass
-            export GRAFANA_PASSWORD=admin
+          # Pull new images
+          docker compose -f docker/base/docker-compose.yml \
+            -f docker/base/docker-compose.storage.yml \
+            -f docker/base/docker-compose.observability.yml \
+            -f docker/environments/production/docker-compose.yml \
+            pull
 
-            docker compose -f docker/base/docker-compose.yml \
-              -f docker/base/docker-compose.storage.yml \
-              -f docker/base/docker-compose.observability.yml \
-              -f docker/environments/production/docker-compose.yml \
-              pull
+          # Start services
+          docker compose -f docker/base/docker-compose.yml \
+            -f docker/base/docker-compose.storage.yml \
+            -f docker/base/docker-compose.observability.yml \
+            -f docker/environments/production/docker-compose.yml \
+            up -d
 
-            docker compose -f docker/base/docker-compose.yml \
-              -f docker/base/docker-compose.storage.yml \
-              -f docker/base/docker-compose.observability.yml \
-              -f docker/environments/production/docker-compose.yml \
-              up -d
-
-            # Check status
-            sleep 10
-            docker ps
-          EOF
+          # Check status
+          sleep 10
+          docker ps --format "table {{.Names}}\t{{.Status}}" | grep -E "detektor|NAME"

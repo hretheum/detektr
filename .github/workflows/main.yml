@@ -351,10 +351,12 @@ jobs:
         run: |
           ENVIRONMENT="${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
 
-          export IMAGE_TAG="main-${{ github.sha }}"
+          export IMAGE_TAG="latest"
           export DEPLOY_SERVICES="${{ needs.detect-changes.outputs.services }}"
           export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
           export GITHUB_ACTOR="${{ github.actor }}"
+          export TARGET_HOST="localhost"
+          export TARGET_DIR="/opt/detektor-clean"
 
           # Retry logic for network issues
           MAX_RETRIES=3
