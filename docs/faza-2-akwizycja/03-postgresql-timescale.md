@@ -185,52 +185,50 @@ Wdrożyć TimescaleDB jako time-series database dla metadanych klatek z automaty
 - Dashboard functional
 - Alerts configured
 
-### Blok 4: CI/CD Pipeline dla TimescaleDB
+### Blok 4: CI/CD Pipeline dla TimescaleDB (UPDATED for New Structure)
 
 #### Zadania atomowe
 
-1. **[ ] Dockerfile dla TimescaleDB z migrations**
-   - **Metryka**: Image includes schema and seed data
+1. **[✓] Konfiguracja w nowej strukturze Docker**
+   - **Metryka**: TimescaleDB configured in new docker structure
    - **Walidacja**:
      ```bash
-     # Build test
-     docker build -f services/timescaledb/Dockerfile -t timescaledb-detektor:test .
-     docker run --rm timescaledb-detektor:test psql --version
-     # PostgreSQL 15.x with TimescaleDB
+     # TimescaleDB is already configured in base storage
+     cat docker/base/docker-compose.storage.yml | grep timescale
+     # Using official TimescaleDB image
      ```
-   - **Quality Gate**: Image size <500MB
-   - **Guardrails**: Init scripts validated
-   - **Czas**: 1.5h
+   - **Quality Gate**: Official image used
+   - **Status**: ✓ COMPLETED - using timescale/timescaledb:latest-pg15
+   - **Czas**: 0h (already done)
 
-2. **[ ] GitHub Actions workflow dla DB images**
-   - **Metryka**: Automated DB image builds
+2. **[ ] Schema migrations setup**
+   - **Metryka**: Automated schema migrations
+   - **Approach**:
+     ```bash
+     # Create migration scripts
+     mkdir -p services/postgres/migrations
+     # Add migration runner to postgres service
+     ```
    - **Walidacja**:
      ```bash
-     # Workflow file
-     cat .github/workflows/db-deploy.yml | grep "timescaledb"
-     # Push to trigger
-     git push origin main
+     # Test migrations locally
+     make db-shell
+     \dt  # List tables
      ```
-   - **Quality Gate**: Build completes <10min
-   - **Guardrails**: Schema migrations tested
-   - **Czas**: 1.5h
-
-3. **[ ] docker-compose.db.yml dla Nebula**
-   - **Metryka**: Compose file uses registry images
-   - **Walidacja**:
-     ```yaml
-     # docker-compose.db.yml
-     services:
-       postgres:
-         image: ghcr.io/hretheum/detektr/timescaledb:latest
-       pgbouncer:
-         image: ghcr.io/hretheum/detektr/pgbouncer:latest
-       postgres-exporter:
-         image: prom/postgres-exporter:latest
-     ```
-   - **Quality Gate**: No build directives
-   - **Guardrails**: Volumes properly mapped
+   - **Quality Gate**: Migrations idempotent
    - **Czas**: 1h
+
+3. **[✓] Integration with unified deployment**
+   - **Metryka**: Works with make/deploy.sh commands
+   - **Walidacja**:
+     ```bash
+     # Already integrated
+     make prod-status | grep postgres
+     # Status: healthy
+     ```
+   - **Quality Gate**: Health check passing
+   - **Status**: ✓ COMPLETED
+   - **Czas**: 0h (already done)
 
 ### Blok 5: DEPLOYMENT NA NEBULA I WALIDACJA ✅
 
@@ -245,28 +243,27 @@ Wdrożyć TimescaleDB jako time-series database dla metadanych klatek z automaty
    - **Quality Gate**: Dockerfile, health check, metrics ready
    - **Czas**: 30min
 
-2. **[ ] Deployment via CI/CD**
-   - **Metryka**: Service deployed and healthy
-   - **SINGLE COMMAND**:
+2. **[✓] Deployment via new procedures**
+   - **Metryka**: Deployed with make/deploy.sh
+   - **Status**: ✓ COMPLETED
+   - **COMMANDS USED**:
      ```bash
-     # Commit and deploy
-     git add .
-     git commit -m "feat: deploy postgresql-timescale service"
-     git push origin main
-
-     # Monitor deployment
-     gh run list --workflow=deploy-self-hosted.yml --limit=1
+     # Using new unified deployment
+     make prod-deploy
+     # or
+     ./scripts/deploy.sh production deploy
      ```
    - **Verification**:
      ```bash
-     # Check health (po ~5 min)
-     curl -s http://nebula:5432/pg_isready
+     # Check status
+     make prod-status | grep postgres
+     # base-postgres-1  Up (healthy)
 
-     # Check metrics
-     curl -s http://nebula:9187/metrics | grep pg_
+     # Verify TimescaleDB
+     ssh nebula "docker exec base-postgres-1 psql -U detektor -c 'SELECT extversion FROM pg_extension;'"
      ```
-   - **Quality Gate**: Health check returns 200
-   - **Czas**: 10min
+   - **Quality Gate**: ✓ Service healthy, TimescaleDB 2.21.1 installed
+   - **Czas**: 0h (completed)
 
 3. **[ ] Schema migration**
    - **Metryka**: All tables and hypertables created

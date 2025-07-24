@@ -51,7 +51,7 @@ case "$ENVIRONMENT" in
             "-f" "$PROJECT_ROOT/docker/environments/production/docker-compose.yml"
         )
         TARGET_HOST="nebula"
-        TARGET_DIR="/opt/detektor"
+        TARGET_DIR="/opt/detektor-clean"
         ENABLE_GPU=true
         ;;
     staging)

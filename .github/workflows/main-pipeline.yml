@@ -255,42 +255,59 @@ jobs:
           docker system prune -f || true
 
       - uses: actions/checkout@v4
-
-      - name: Fix ownership
-        run: |
-          sudo chown -R $USER:$USER ${{ github.workspace }}
+        with:
+          sparse-checkout: |
+            scripts/deploy.sh
+            docker/
+            .env.sops
+          sparse-checkout-cone-mode: false
 
       - name: Deploy using unified script
         run: |
           echo "🚀 Deploying to Nebula using unified deployment script..."
 
-          # Copy deployment script to workspace
-          cp ${{ github.workspace }}/scripts/deploy.sh /tmp/deploy.sh
-          chmod +x /tmp/deploy.sh
+          # Copy only deployment files to clean directory
+          DEPLOY_DIR="/opt/detektor-clean"
 
-          # Determine environment based on branch/tag
+          # Ensure clean directory exists and is clean
+          sudo rm -rf $DEPLOY_DIR/docker $DEPLOY_DIR/scripts
+          sudo mkdir -p $DEPLOY_DIR
+          sudo chown -R $USER:$USER $DEPLOY_DIR
+
+          # Copy only necessary files
+          cp -r ${{ github.workspace }}/docker $DEPLOY_DIR/
+          cp -r ${{ github.workspace }}/scripts $DEPLOY_DIR/
+          if [ -f "${{ github.workspace }}/.env.sops" ]; then
+            cp ${{ github.workspace }}/.env.sops $DEPLOY_DIR/
+          fi
+
+          # Change to deployment directory
+          cd $DEPLOY_DIR
+
+          # Determine environment
           ENVIRONMENT="production"
           if [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
             ENVIRONMENT="staging"
           fi
 
-          # Run deployment
+          # Run deployment from clean directory
           export IMAGE_TAG="${{ github.event.inputs.tag || 'latest' }}"
           export DEPLOY_SERVICES="${{ needs.detect-changes.outputs.services }}"
 
           echo "📦 Environment: $ENVIRONMENT"
           echo "📦 Services: $DEPLOY_SERVICES"
           echo "📦 Tag: $IMAGE_TAG"
+          echo "📦 Deploy Directory: $DEPLOY_DIR"
 
           # Execute deployment
-          /tmp/deploy.sh "$ENVIRONMENT" deploy || {
+          ./scripts/deploy.sh "$ENVIRONMENT" deploy || {
             echo "❌ Deployment failed"
             exit 1
           }
 
           # Verify deployment
           echo "🔍 Verifying deployment..."
-          /tmp/deploy.sh "$ENVIRONMENT" verify || {
+          ./scripts/deploy.sh "$ENVIRONMENT" verify || {
             echo "⚠️ Some services may not be healthy"
             # Don't fail here, just warn
           }
@@ -299,9 +316,16 @@ jobs:
         if: always()
         run: |
           echo "🧹 Post-deployment cleanup..."
-          rm -f /tmp/deploy.sh
+          # Clean runner workspace - NO source code should remain
           sudo rm -rf ${{ github.workspace }}/* || true
           sudo rm -rf ${{ github.workspace }}/.* 2>/dev/null || true
+
+          # Verify deployment directory has no source code
+          echo "📁 Contents of deployment directory:"
+          ls -la /opt/detektor-clean/ || true
+
+          # Old contaminated directory - to be removed later
+          echo "⚠️ WARNING: /opt/detektor contains source code and should be removed!"
 
   # =================================
   # 4. SUMMARY
