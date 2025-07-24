@@ -121,7 +121,7 @@ check_prerequisites() {
     # Check for .env.sops
     if [[ -f "$PROJECT_ROOT/.env.sops" ]] && command -v sops &> /dev/null; then
         info "Decrypting secrets..."
-        sops -d "$PROJECT_ROOT/.env.sops" > "$PROJECT_ROOT/.env"
+        sops --input-type dotenv --output-type dotenv -d "$PROJECT_ROOT/.env.sops" > "$PROJECT_ROOT/.env"
     fi
 }
 
