@@ -157,6 +157,7 @@ services:
 
   jaeger:
     <<: *production-defaults
+    image: jaegertracing/all-in-one:latest
     environment:
       - SPAN_STORAGE_TYPE=memory
       - COLLECTOR_QUEUE_SIZE=10000
