@@ -346,7 +346,7 @@ jobs:
         run: |
           ENVIRONMENT="${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
 
-          export IMAGE_TAG="${{ github.sha }}"
+          export IMAGE_TAG="${{ github.ref == 'refs/heads/main' && 'latest' || github.sha }}"
           export DEPLOY_SERVICES="${{ needs.detect-changes.outputs.services }}"
           export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
           export GITHUB_ACTOR="${{ github.actor }}"
