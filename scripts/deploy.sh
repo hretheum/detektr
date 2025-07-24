@@ -141,6 +141,15 @@ action_deploy() {
 
     # Pull latest images
     log "Pulling latest images..."
+
+    # Login to GitHub Container Registry if we have a token
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+        log "Logging in to GitHub Container Registry..."
+        echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin || {
+            warning "Failed to login to ghcr.io - continuing anyway"
+        }
+    fi
+
     if [[ "$TARGET_HOST" == "localhost" ]]; then
         docker compose "${COMPOSE_FILES[@]}" pull
     else

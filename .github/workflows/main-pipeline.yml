@@ -293,6 +293,8 @@ jobs:
           # Run deployment from clean directory
           export IMAGE_TAG="${{ github.event.inputs.tag || 'latest' }}"
           export DEPLOY_SERVICES="${{ needs.detect-changes.outputs.services }}"
+          export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          export GITHUB_ACTOR="${{ github.actor }}"
 
           echo "📦 Environment: $ENVIRONMENT"
           echo "📦 Services: $DEPLOY_SERVICES"
