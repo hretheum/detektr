@@ -50,7 +50,12 @@ case "$ENVIRONMENT" in
             "-f" "$PROJECT_ROOT/docker/base/docker-compose.observability.yml"
             "-f" "$PROJECT_ROOT/docker/environments/production/docker-compose.yml"
         )
-        TARGET_HOST="nebula"
+        # If running on GitHub Actions self-hosted runner, use localhost
+        if [[ "${GITHUB_ACTIONS:-false}" == "true" ]] || [[ "$(hostname)" == "nebula" ]]; then
+            TARGET_HOST="localhost"
+        else
+            TARGET_HOST="nebula"
+        fi
         TARGET_DIR="/opt/detektor-clean"
         ENABLE_GPU=true
         ;;
