@@ -19,6 +19,7 @@ echo -e "${GREEN}Starting PostgreSQL migrations...${NC}"
 
 # Create migrations tracking table if not exists
 psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" <<EOF
+CREATE SCHEMA IF NOT EXISTS detektor;
 CREATE TABLE IF NOT EXISTS detektor.schema_migrations (
     migration_id VARCHAR(255) PRIMARY KEY,
     applied_at TIMESTAMPTZ DEFAULT NOW(),
@@ -76,10 +77,10 @@ for migration_file in "$MIGRATIONS_DIR"/*.sql; do
 
         if is_migration_applied "$migration_id"; then
             echo -e "⏭️  Skipping (already applied): $migration_id"
-            ((skipped_count++))
+            skipped_count=$((skipped_count + 1))
         else
             apply_migration "$migration_file"
-            ((applied_count++))
+            applied_count=$((applied_count + 1))
         fi
     fi
 done
