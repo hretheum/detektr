@@ -157,7 +157,7 @@ jobs:
               done
             fi
 
-            if [[ "$changes" != "{}" && "$changes" != "null" ]]; then
+            if [[ "$changes" != "{}" && "$changes" != "null" && "$changes" != "[]" ]]; then
               # Parse JSON and extract service names that changed
               for service in rtsp-capture frame-tracking frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
                 # Check from path-filter output directly
@@ -168,11 +168,47 @@ jobs:
                   "sample-processor") service_changed="${{ steps.changes.outputs.sample-processor }}" ;;
                   "rtsp-capture") service_changed="${{ steps.changes.outputs.rtsp-capture }}" ;;
                   "frame-tracking") service_changed="${{ steps.changes.outputs.frame-tracking }}" ;;
-                  *) service_changed=$(echo "$changes" | jq -r ".\"$service\" // false") ;;
+                  "frame-buffer") service_changed="${{ steps.changes.outputs.frame-buffer }}" ;;
+                  "telegram-alerts") service_changed="${{ steps.changes.outputs.telegram-alerts }}" ;;
+                  "metadata-storage") service_changed="${{ steps.changes.outputs.metadata-storage }}" ;;
+                  "example-otel") service_changed="${{ steps.changes.outputs.example-otel }}" ;;
+                  "echo-service") service_changed="${{ steps.changes.outputs.echo-service }}" ;;
+                  "gpu-demo") service_changed="${{ steps.changes.outputs.gpu-demo }}" ;;
+                  "timescaledb") service_changed="${{ steps.changes.outputs.timescaledb }}" ;;
+                  "base-template") service_changed="${{ steps.changes.outputs.base-template }}" ;;
+                  "face-recognition") service_changed="${{ steps.changes.outputs.face-recognition }}" ;;
+                  "object-detection") service_changed="${{ steps.changes.outputs.object-detection }}" ;;
+                  "ha-bridge") service_changed="${{ steps.changes.outputs.ha-bridge }}" ;;
+                  "llm-intent") service_changed="${{ steps.changes.outputs.llm-intent }}" ;;
+                  *)
+                    # For any service not explicitly handled, try to parse from JSON
+                    if [[ "$changes" != "null" ]] && [[ "$changes" != "[]" ]] && [[ "$changes" != "{}" ]]; then
+                      service_changed=$(echo "$changes" | jq -r ".\"$service\" // false" 2>/dev/null || echo "false")
+                    else
+                      service_changed="false"
+                    fi
+                    ;;
                 esac
 
                 if [[ "$service_changed" == "true" ]]; then
                   echo "DEBUG: Service $service has changes"
+                  services+=("$service")
+                fi
+              done
+            fi
+
+            # If only workflow files changed, check recent changes
+            if [[ ${#services[@]} -eq 0 ]] && echo "$changed_files" | grep -qE '^\.(github/workflows|github/actions)'; then
+              echo "Only workflow files changed, checking recent service changes..."
+              # Look at last 10 commits for service changes
+              recent_changes=$(git diff --name-only HEAD~10 HEAD | grep -E '^(services|examples)/' | sort -u)
+              for service in rtsp-capture frame-tracking sample-processor; do
+                service_path="services/$service"
+                if [[ "$service" == "sample-processor" ]]; then
+                  service_path="examples/sample-processor"
+                fi
+                if echo "$recent_changes" | grep -q "$service_path"; then
+                  echo "Service $service had recent changes"
                   services+=("$service")
                 fi
               done
