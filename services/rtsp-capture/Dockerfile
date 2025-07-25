@@ -13,8 +13,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create wheels directory
 WORKDIR /wheels
 
-# Copy requirements and build wheels
+# Copy requirements
 COPY services/rtsp-capture/requirements.txt .
+COPY services/rtsp-capture/requirements-docker.txt .
+
+# Build wheels for dependencies
 RUN pip install --upgrade pip setuptools wheel && \
     pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
@@ -29,16 +32,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create non-root user
 RUN useradd -m -u 1000 -s /bin/bash appuser
 
-# Copy requirements and install
+# Copy wheels from builder
+COPY --from=builder /wheels /wheels
+
+# Copy requirements
 COPY services/rtsp-capture/requirements.txt .
+COPY services/rtsp-capture/requirements-docker.txt .
+
+# Install dependencies from wheels
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir --no-index --find-links /wheels -r requirements.txt && \
+    rm -rf /wheels
 
 # Set working directory
 WORKDIR /app
 
-# Copy application code - copy entire src directory to /app (includes shared)
+# Copy application code
 COPY --chown=appuser:appuser services/rtsp-capture/src/ ./
+
+# Copy frame-tracking source
+COPY --chown=appuser:appuser services/shared/frame-tracking /app/services/shared/frame-tracking
+
+# Install frame-tracking in development mode
+RUN pip install -e /app/services/shared/frame-tracking
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1 \

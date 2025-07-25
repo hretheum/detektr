@@ -4,11 +4,11 @@
 
 Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline z wykorzystaniem OpenTelemetry, zapewniając 100% observability.
 
-## Blok 0: Prerequisites check NA SERWERZE NEBULA ⚠️
+## Blok 0: Prerequisites check NA SERWERZE NEBULA ⚠️ ✅
 
 #### Zadania atomowe
 
-1. **[ ] Weryfikacja OpenTelemetry setup na Nebuli**
+1. **[x] Weryfikacja OpenTelemetry setup na Nebuli**
    - **Metryka**: OTEL SDK zainstalowane, Jaeger dostępny
    - **Walidacja NA SERWERZE**:
 
@@ -25,7 +25,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
    - **Guardrails**: OTEL collector accepting traces
    - **Czas**: 0.5h
 
-2. **[ ] Test trace propagation na Nebuli**
+2. **[x] Test trace propagation na Nebuli**
    - **Metryka**: Context propagation między serwisami działa
    - **Walidacja NA SERWERZE**:
 
@@ -41,7 +41,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
    - **Guardrails**: No orphaned spans
    - **Czas**: 0.5h
 
-3. **[ ] Weryfikacja storage dla traces**
+3. **[x] Weryfikacja storage dla traces**
    - **Metryka**: Sufficient space for trace data
    - **Walidacja NA SERWERZE**:
      ```bash
@@ -57,11 +57,11 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 
 ## Dekompozycja na bloki zadań
 
-### Blok 1: Frame ID i metadata model
+### Blok 1: Frame ID i metadata model ✅
 
 #### Zadania atomowe
 
-1. **[ ] Implementacja FrameID generator**
+1. **[x] Implementacja FrameID generator**
    - **Metryka**: Unique IDs, sortable by time
    - **Walidacja**:
 
@@ -74,7 +74,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 
    - **Czas**: 1.5h
 
-2. **[ ] Frame metadata dataclass**
+2. **[x] Frame metadata dataclass**
    - **Metryka**: Serializable, version-compatible
    - **Walidacja**:
 
@@ -87,7 +87,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 
    - **Czas**: 2h
 
-3. **[ ] Trace context injection**
+3. **[x] Trace context injection**
    - **Metryka**: Every frame has trace_id, span_id
    - **Walidacja**:
 
@@ -105,11 +105,11 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 - Metadata model complete
 - Trace context embedded
 
-### Blok 2: Trace instrumentation
+### Blok 2: Trace instrumentation ✅
 
 #### Zadania atomowe
 
-1. **[ ] Auto-instrumentation dla capture service**
+1. **[x] Auto-instrumentation dla capture service**
    - **Metryka**: Every operation creates span
    - **Walidacja**:
 
@@ -122,7 +122,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 
    - **Czas**: 2h
 
-2. **[ ] Custom span attributes**
+2. **[x] Custom span attributes**
    - **Metryka**: Frame size, camera ID, processing time tracked
    - **Walidacja**:
 
@@ -135,7 +135,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 
    - **Czas**: 1.5h
 
-3. **[ ] Trace propagation przez queue**
+3. **[x] Trace propagation przez queue**
    - **Metryka**: Trace context survives Redis/RabbitMQ
    - **Walidacja**:
 

@@ -1,0 +1,6 @@
+# Docker-specific requirements
+# Include all base requirements except frame-tracking
+-r requirements.txt
+
+# Frame tracking with Docker-compatible path
+frame-tracking @ file:///app/services/shared/frame-tracking

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import aioredis
 from aioredis.exceptions import ConnectionError, ResponseError
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 
 class RedisFrameQueue:
@@ -62,6 +63,10 @@ class RedisFrameQueue:
                     fields[key] = json.dumps(value)
                 else:
                     fields[key] = str(value)
+
+            # Inject trace context for propagation
+            propagator = TraceContextTextMapPropagator()
+            propagator.inject(fields)
 
             # Add to stream with automatic trimming
             message_id = await self.redis_client.xadd(
@@ -185,6 +190,13 @@ class RedisFrameQueue:
                             decoded_fields[key] = json.loads(value)
                         except (json.JSONDecodeError, TypeError):
                             decoded_fields[key] = value
+
+                    # Extract trace context from message
+                    propagator = TraceContextTextMapPropagator()
+                    ctx = propagator.extract(decoded_fields)
+
+                    # Store context for consumer use
+                    decoded_fields["_trace_context"] = ctx
 
                     result.append(
                         (
