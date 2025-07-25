@@ -155,11 +155,11 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 - Context propagates correctly
 - No orphaned spans
 
-### Blok 3: Tracking dashboard i analytics
+### Blok 3: Tracking dashboard i analytics ✅
 
 #### Zadania atomowe
 
-1. **[ ] Frame journey visualization**
+1. **[x] Frame journey visualization**
    - **Metryka**: Grafana panel shows frame path
    - **Walidacja**:
 
@@ -172,7 +172,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 
    - **Czas**: 2h
 
-2. **[ ] Trace search by frame ID**
+2. **[x] Trace search by frame ID**
    - **Metryka**: Find any frame's journey in <1s
    - **Walidacja**:
 

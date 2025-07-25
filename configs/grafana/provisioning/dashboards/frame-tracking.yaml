@@ -1,0 +1,14 @@
+apiVersion: 1
+
+providers:
+  - name: "frame-tracking"
+    orgId: 1
+    folder: "Detektor"
+    folderUid: "detektor"
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/frame-tracking
+      foldersFromFilesStructure: false
