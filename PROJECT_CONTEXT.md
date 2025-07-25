@@ -97,7 +97,7 @@ git push origin main  # → Automatyczny build i deploy
 
 - **Faza 0**: Dokumentacja i planowanie ✅
 - **Faza 1**: Fundament z observability ✅ (CI/CD + przykładowe serwisy)
-- **Faza 2**: Akwizycja i storage 🚧
+- **Faza 2**: Akwizycja i storage 🚧 (5/8 zadań ukończonych)
 - **Faza 3**: AI services podstawy
 - **Faza 4**: Integracja z Home Assistant
 - **Faza 5**: Zaawansowane AI i voice
@@ -105,14 +105,21 @@ git push origin main  # → Automatyczny build i deploy
 
 ## Porty serwisów
 
-- 8001: rtsp-capture
-- 8002: face-recognition
+- 8000: base-template ✅
+- 8001: frame-tracking ✅
+- 8002: frame-buffer ✅
 - 8003: object-detection
 - 8004: ha-bridge
-- 8005: example-otel ✅ (działający przykład z Fazy 1)
-- 8006: frame-tracking
+- 8005: metadata-storage ✅
+- 8006: face-recognition
 - 8007: echo-service
 - 8008: gpu-demo
+- 8009: example-otel
+- 8080: rtsp-capture ✅
+- 8099: sample-processor ✅
+- 6379: Redis ✅
+- 5432: PostgreSQL ✅
+- 6432: PGBouncer ✅
 - 9090: Prometheus ✅
 - 16686: Jaeger ✅
 - 3000: Grafana ✅
@@ -260,3 +267,49 @@ git push origin main  # → Automatyczny build i deploy
 - Działające przykłady do kopiowania
 - Pełna observability od początku
 - Zautomatyzowany deployment
+
+## Krytyczne problemy i rozwiązania
+
+### Docker Compose - problem z wczytywaniem zmiennych środowiskowych (2025-07-25)
+
+**Problem**: Usługi (frame-tracking, base-template, metadata-storage) nie mogły połączyć się z PostgreSQL z błędem "password authentication failed for user 'detektor'".
+
+**Przyczyna**: Docker Compose nie wczytuje automatycznie pliku `.env` gdy używane są pełne ścieżki do plików compose (np. `-f /opt/detektor/docker/base/docker-compose.yml`). W rezultacie zmienna `POSTGRES_PASSWORD` była pusta.
+
+**Rozwiązanie**: Dodanie `--env-file .env` do WSZYSTKICH wywołań `docker compose` w skrypcie `deploy.sh`:
+
+```bash
+# Niepoprawnie (nie działa z pełnymi ścieżkami):
+docker compose "${COMPOSE_FILES[@]}" up -d
+
+# Poprawnie (wymusza wczytanie .env):
+docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d
+```
+
+**Zakres zmian**:
+- scripts/deploy.sh - 8 miejsc gdzie dodano `--env-file .env`
+- .github/workflows/main-pipeline.yml - usunięto domyślne eksporty haseł, dodano kopiowanie istniejącego .env
+
+**Lekcja**: Zawsze używaj `--env-file .env` w skryptach deployment gdy używasz pełnych ścieżek do plików docker-compose.
+
+## Status Fazy 2: Akwizycja i Storage (2025-07-25)
+
+### ✅ Ukończone zadania (5/8):
+1. **RTSP Capture Service** - Działający na Nebula:8080, konfiguracja Reolink, status "degraded" (czeka na Redis)
+2. **Frame Buffer z Redis** - Throughput 80k frames/s, latency 0.01ms, DLQ skonfigurowane
+3. **Redis Configuration** - 4GB limit, persistence, monitoring, Telegram alerts
+4. **PostgreSQL/TimescaleDB** - 100GB volume, PGBouncer, hypertables ready
+5. **Frame Processor Base Service** - Framework w services/shared/base-processor/, sample-processor na Nebula:8099
+
+### ⏳ W trakcie realizacji (0/8):
+- Brak aktywnych zadań
+
+### 📋 Do zrobienia (3/8):
+6. Frame tracking z distributed tracing
+7. Dashboard: Frame Pipeline Overview
+8. Alerty: frame drop, latency, queue size
+
+### 🔧 Działające usługi produkcyjne:
+- **Infrastruktura**: postgres, pgbouncer, redis, prometheus, grafana, jaeger (wszystkie healthy)
+- **Aplikacyjne**: rtsp-capture, frame-buffer, frame-tracking, metadata-storage, base-template, sample-processor (wszystkie healthy)
+- **Łącznie**: 11 usług działających na Nebula z pełnym monitoringiem

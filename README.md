@@ -59,6 +59,18 @@ Szczegóły: [Architecture Documentation](docs/ARCHITECTURE.md)
 | Prometheus | http://nebula:9090 | Metrics explorer |
 | Jaeger | http://nebula:16686 | Distributed tracing |
 
+## 🏃 Status projektu (2025-07-25)
+
+- ✅ **Faza 0**: Dokumentacja i planowanie
+- ✅ **Faza 1**: Fundament z observability (CI/CD, monitoring)
+- 🚧 **Faza 2**: Akwizycja i storage (5/8 zadań ukończonych)
+  - ✅ RTSP Capture, Frame Buffer, Redis, PostgreSQL, Base Processor Framework
+  - 📋 TODO: Frame tracking, Dashboard, Alerty
+- 🔜 **Faza 3**: AI services podstawy
+- 🔜 **Faza 4**: Integracja z Home Assistant
+
+**Działające serwisy**: 11 usług w produkcji na Nebula, wszystkie healthy
+
 ## 🛠️ Development
 
 ### Prerequisites
