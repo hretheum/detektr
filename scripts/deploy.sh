@@ -173,6 +173,9 @@ action_deploy() {
             for service in $DEPLOY_SERVICES; do
                 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" stop "$service" 2>/dev/null || true
                 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" rm -f "$service" 2>/dev/null || true
+                # Remove old image to ensure fresh pull
+                docker rmi "ghcr.io/hretheum/detektr/$service:latest" 2>/dev/null || true
+                log "Removed old image for $service"
             done
         else
             COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down
