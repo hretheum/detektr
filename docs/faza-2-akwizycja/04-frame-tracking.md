@@ -191,45 +191,93 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 - Search/analytics working
 - Performance acceptable
 
-### Blok 4: CI/CD Pipeline dla Frame Tracking (LIBRARY ONLY) ⚠️
+### Blok 4: Integracja Frame Tracking w Serwisach 🔧
 
-> **UWAGA**: Frame-tracking to biblioteka, nie serwis. Nie potrzebuje własnego deploymentu.
+> **AKTUALIZACJA**: Blok 4 teraz skupia się na integracji biblioteki frame-tracking we wszystkich serwisach przetwarzających klatki.
 
 #### Zadania atomowe
 
-1. **[ ] Utworzenie shared library package**
-   - **Metryka**: frame-tracking jako reusable package
+1. **[x] Integracja w rtsp-capture** ✅
+   - **Status**: Już zrobione w Bloku 2
+   - **Metryka**: Generuje FrameID i TraceContext dla każdej klatki
+
+2. **[ ] Integracja w frame-buffer**
+   - **Metryka**: Propaguje trace context przez Redis
    - **Walidacja**:
      ```bash
-     # Build and test package
-     cd services/shared/frame-tracking
-     python -m build
-     pip install dist/frame_tracking-*.whl
-     python -c "from frame_tracking import FrameID; print(FrameID.generate())"
+     # Test propagacji trace
+     curl -X POST http://nebula:8002/test-frame -d '{"frame_id": "test123", "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"}'
+
+     # Sprawdź logi
+     docker logs frame-buffer 2>&1 | grep "trace_id"
+
+     # Weryfikuj w Jaeger
+     curl "http://nebula:16686/api/traces?service=frame-buffer&limit=1" | jq '.'
      ```
-   - **Quality Gate**: Package installable
-   - **Guardrails**: All tests passing
+   - **Quality Gate**:
+     - Trace context jest ekstraktowany z wiadomości Redis
+     - Nowe spany są dodawane do istniejącego trace
+     - Context jest propagowany do kolejnych serwisów
+   - **Czas**: 2h
+
+3. **[ ] Integracja w base-processor**
+   - **Metryka**: Wszystkie procesory dziedziczą frame tracking
+   - **Walidacja**:
+     ```bash
+     # Test w sample-processor (dziedziczy z base)
+     docker logs sample-processor 2>&1 | grep "frame_tracking"
+
+     # Sprawdź span hierarchy
+     curl "http://nebula:16686/api/traces?service=sample-processor&limit=1" | \
+       jq '.[0].spans[] | {service: .process.serviceName, operation: .operationName}'
+     ```
+   - **Quality Gate**:
+     - BaseProcessor automatycznie tworzy span dla każdego przetwarzania
+     - Procesory mogą dodawać własne atrybuty
+     - Trace ID jest zachowany przez cały pipeline
+   - **Czas**: 2h
+
+4. **[ ] Integracja w metadata-storage**
+   - **Metryka**: Przechowuje trace_id i span_id w bazie
+   - **Walidacja**:
+     ```bash
+     # Sprawdź schema bazy
+     docker exec postgres psql -U detektor -d detektor_db -c "\d frame_metadata"
+
+     # Query po trace_id
+     docker exec postgres psql -U detektor -d detektor_db -c \
+       "SELECT frame_id, trace_id, span_id FROM frame_metadata LIMIT 5;"
+
+     # API test
+     curl "http://nebula:8005/frames?trace_id=<trace_id>" | jq '.'
+     ```
+   - **Quality Gate**:
+     - Nowe kolumny trace_id, span_id w tabeli
+     - API endpoint do query po trace_id
+     - Pełny trace context zapisany jako JSON
    - **Czas**: 1.5h
 
-2. **[x] ~~Dockerfile dla frame-tracking service~~ SKIPPED**
-   - **Powód**: Frame-tracking to biblioteka, nie serwis
-   - **Zamiast tego**: Każdy serwis instaluje bibliotekę lokalnie
-   - **Przykład**: Zobacz `services/rtsp-capture/Dockerfile`
-
-3. **[ ] Weryfikacja testów biblioteki w CI**
-   - **Metryka**: Testy biblioteki uruchamiane przy każdym PR
+5. **[ ] Integracja w sample-processor (przykład)**
+   - **Metryka**: Demonstracja użycia w konkretnym procesorze
    - **Walidacja**:
      ```bash
-     # Sprawdź czy testy są włączone w pr-checks.yml
-     grep -n "frame-tracking" .github/workflows/pr-checks.yml
+     # Wyślij testową klatkę
+     ./scripts/send-test-frame.sh
 
-     # Uruchom testy lokalnie
-     cd services/shared/frame-tracking
-     pytest tests/ -v
+     # Śledź w Jaeger
+     open "http://nebula:16686/search?service=sample-processor"
      ```
-   - **Quality Gate**: 80%+ code coverage
-   - **Guardrails**: Testy przechodzą w CI
+   - **Quality Gate**:
+     - Procesor dodaje własne span attributes
+     - Widoczny pełny flow: capture → buffer → processor → storage
    - **Czas**: 0.5h
+
+#### Metryki sukcesu całego bloku
+
+- 100% serwisów przetwarzających klatki ma frame-tracking
+- Pełna ciągłość trace przez cały pipeline
+- <1ms overhead na serwis
+- Zero lost traces
 
 ### Blok 5: WALIDACJA BIBLIOTEKI W SERWISACH 🔄
 
