@@ -40,10 +40,10 @@ COPY --chown=appuser:appuser services/shared/frame-tracking /app/services/shared
 # Install Python packages from wheels
 COPY --from=builder /wheels /wheels
 COPY services/frame-buffer/requirements.txt .
-RUN pip install --no-cache-dir --no-index --find-links /wheels \
-    $(grep -v "^frame-tracking" requirements.txt) && \
+RUN grep -v "^frame-tracking\|^#\|^$" requirements.txt > /tmp/requirements_filtered.txt && \
+    pip install --no-cache-dir --no-index --find-links /wheels -r /tmp/requirements_filtered.txt && \
     pip install -e /app/services/shared/frame-tracking && \
-    rm -rf /wheels
+    rm -rf /wheels /tmp/requirements_filtered.txt
 
 # Copy application code
 COPY --chown=appuser:appuser services/frame-buffer/src/ ./
