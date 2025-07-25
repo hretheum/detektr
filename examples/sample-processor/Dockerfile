@@ -55,4 +55,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8099}/health || exit 1
 
 # Run the processor
-CMD ["python", "-m", "sample_processor.main"]
+CMD ["python", "-m", "sample_processor"]
