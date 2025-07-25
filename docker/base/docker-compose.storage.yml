@@ -135,7 +135,11 @@ services:
     depends_on:
       - postgres
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 6432 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h localhost -p 6432 -U ${POSTGRES_USER:-detektor} || exit 1",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
