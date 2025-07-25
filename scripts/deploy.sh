@@ -168,6 +168,13 @@ action_deploy() {
     # Remove old images to ensure we use fresh ones
     log "Removing old images to ensure fresh deployment..."
     if [[ "$TARGET_HOST" == "localhost" ]]; then
+        # First, clean up ANY containers with detektor prefix to avoid conflicts
+        log "Cleaning up all detektor containers to avoid conflicts..."
+        docker ps -a --format "{{.Names}}" | grep "^detektor-" | while read -r container; do
+            docker stop "$container" 2>/dev/null || true
+            docker rm -f "$container" 2>/dev/null || true
+        done
+
         # Stop and remove services that will be redeployed
         if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
             for service in $DEPLOY_SERVICES; do
@@ -180,6 +187,13 @@ action_deploy() {
                     log "Removing stale container: $container"
                     docker stop "$container" 2>/dev/null || true
                     docker rm -f "$container" 2>/dev/null || true
+                done
+
+                # Extra aggressive cleanup - remove any container using the service image
+                docker ps -a --format "{{.ID}} {{.Image}}" | grep "ghcr.io/hretheum/detektr/${service}:" | awk '{print $1}' | while read -r container_id; do
+                    log "Removing container by image: $container_id"
+                    docker stop "$container_id" 2>/dev/null || true
+                    docker rm -f "$container_id" 2>/dev/null || true
                 done
                 # Remove old image to ensure fresh pull
                 docker rmi "ghcr.io/hretheum/detektr/$service:latest" 2>/dev/null || true
@@ -202,6 +216,12 @@ action_deploy() {
         # Handle volume conflicts by removing orphans
         log "Cleaning up any orphaned resources..."
         COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down --remove-orphans 2>/dev/null || true
+
+        # Remove conflicting volumes if they exist (be careful with data!)
+        if [[ "${FORCE_VOLUME_RECREATE:-false}" == "true" ]]; then
+            log "Force removing volumes (WARNING: Data will be lost!)"
+            docker volume ls -q | grep "^detektor_" | xargs -r docker volume rm 2>/dev/null || true
+        fi
 
         # Pull fresh images with force
         log "Pulling images with --pull always flag..."
@@ -275,7 +295,7 @@ action_deploy() {
         log "Deploying specific services: $DEPLOY_SERVICES"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
             # shellcheck disable=SC2086
-            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --force-recreate $DEPLOY_SERVICES
+            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --renew-anon-volumes $DEPLOY_SERVICES
         else
             # shellcheck disable=SC2029,SC2086
             ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans $DEPLOY_SERVICES"
