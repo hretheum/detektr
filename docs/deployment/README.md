@@ -1,8 +1,6 @@
-# 🚀 Deployment Guide - RZECZYWISTA DOKUMENTACJA
+# 🚀 Deployment Guide - Unified Pipeline
 
-> **WAŻNE**: Ta dokumentacja odzwierciedla FAKTYCZNY stan deployment na Nebula (self-hosted runner + Docker Compose)
-
-> **🆕 NOWE**: Wprowadziliśmy [Unified Deployment System](./unified-deployment.md) który upraszcza deployment we wszystkich środowiskach!
+> **✅ AKTUALIZACJA**: Ta dokumentacja odzwierciedla aktualny stan po konsolidacji workflows (Faza 2) i migracji GHCR (Faza 4)
 
 ## 📋 Spis treści
 
@@ -11,21 +9,16 @@
 3. [Workflows CI/CD](#workflows-cicd)
 4. [Zarządzanie Sekretami](#zarządzanie-sekretami)
 5. [Monitoring i Troubleshooting](#monitoring-i-troubleshooting)
+6. [Dodawanie Nowego Serwisu](#dodawanie-nowego-serwisu)
 
 ## 🚀 Quick Start
 
-### Stara metoda (legacy)
+### Unified Deployment (ZALECANE)
 ```bash
-# Deploy wszystkiego
+# Deploy produkcyjny - automatyczny przy push do main
 git push origin main
 
-# Sprawdź status
-ssh nebula "cd /opt/detektor && docker compose ps"
-```
-
-### NOWA metoda (unified deployment script)
-```bash
-# Deploy produkcyjny
+# Lub użyj skryptu pomocniczego
 ./scripts/deploy.sh production deploy
 
 # Sprawdź status
@@ -36,9 +29,21 @@ ssh nebula "cd /opt/detektor && docker compose ps"
 
 # Weryfikuj health wszystkich serwisów
 ./scripts/deploy.sh production verify
+```
 
-# Alternatywa - bezpośrednio na serwerze
-ssh nebula "cd /opt/detektor && ./docker/prod.sh up -d"
+### Manualne wywołanie workflow
+```bash
+# Build i deploy wszystkich serwisów
+gh workflow run main-pipeline.yml
+
+# Tylko build
+gh workflow run main-pipeline.yml -f action=build-only
+
+# Tylko deploy
+gh workflow run main-pipeline.yml -f action=deploy-only
+
+# Konkretny serwis
+gh workflow run main-pipeline.yml -f services=rtsp-capture,frame-buffer
 ```
 
 ## 🏗️ Architektura Deployment
@@ -46,13 +51,13 @@ ssh nebula "cd /opt/detektor && ./docker/prod.sh up -d"
 ### Infrastruktura
 - **Serwer**: Nebula (self-hosted)
 - **Container Runtime**: Docker + Docker Compose
-- **Registry**: GitHub Container Registry (ghcr.io)
+- **Registry**: GitHub Container Registry (ghcr.io/hretheum/detektr/*)
 - **CI/CD**: GitHub Actions z self-hosted runner
 
-### Struktura na serwerze
+### Struktura na serwerze (po Fazie 3)
 ```
 /opt/detektor/
-├── docker/                      # NOWA struktura hierarchiczna
+├── docker/                      # Hierarchiczna struktura
 │   ├── base/                    # Podstawowe definicje
 │   │   ├── docker-compose.yml
 │   │   ├── docker-compose.storage.yml
@@ -60,55 +65,73 @@ ssh nebula "cd /opt/detektor && ./docker/prod.sh up -d"
 │   ├── environments/            # Override dla środowisk
 │   │   ├── development/
 │   │   └── production/
-│   └── features/                # Opcjonalne funkcje
-│       ├── gpu/
-│       ├── redis-ha/
-│       └── ai-services/
-├── docker-compose.yml           # Legacy (dla kompatybilności)
+│   ├── features/                # Opcjonalne funkcje
+│   │   ├── gpu/
+│   │   ├── redis-ha/
+│   │   └── ai-services/
+│   ├── dev.sh                   # Skrypt pomocniczy dev
+│   └── prod.sh                  # Skrypt pomocniczy prod
 ├── .env (encrypted with SOPS)   # Sekrety
 └── scripts/                     # Skrypty pomocnicze
-    └── migrate-docker-compose.sh # Migracja do nowej struktury
 ```
 
-## 📦 Workflows CI/CD
+## 📦 Workflows CI/CD (Po konsolidacji - Faza 2)
 
-### Główne Workflows (PO KONSOLIDACJI - Faza 2)
+### 1. **main-pipeline.yml** - Główny pipeline CI/CD
+- **Trigger**: Push do main, manual dispatch
+- **Funkcje**:
+  - Smart detection - buduje tylko zmienione serwisy
+  - Trzy tryby: build-and-deploy (domyślnie), build-only, deploy-only
+  - Równoległe budowanie dla wydajności
+- **Użycie**:
+  ```bash
+  # Automatycznie przy push
+  git push origin main
 
-#### 1. `main-pipeline.yml` - Zunifikowany CI/CD
-- **Trigger**: Push do main, PR, manual
-- **Funkcja**: Buduje i deployuje na podstawie zmian
-- **Możliwości**:
-  - build-and-deploy (domyślnie)
-  - build-only
-  - deploy-only
-- **Smart detection**: Buduje tylko zmienione serwisy
+  # Manualnie
+  gh workflow run main-pipeline.yml -f action=build-only
+  ```
 
-#### 2. `pr-checks.yml` - Walidacja PR
+### 2. **pr-checks.yml** - Walidacja Pull Requests
 - **Trigger**: Pull requests
-- **Funkcja**: Linting, testy, security scan
-- **Rozszerzone**: Testy Python, Docker build validation
+- **Funkcje**:
+  - Linting (black, isort, flake8, mypy)
+  - Testy jednostkowe Python
+  - Security scanning
+  - Docker build validation
+- **Rozszerzone**: Automatyczne komentarze z wynikami
 
-#### 3. `manual-operations.yml` - Operacje manualne
+### 3. **manual-operations.yml** - Operacje manualne
 - **Trigger**: workflow_dispatch
-- **Funkcja**: Cleanup, diagnostyka, rebuild
-- **Konsoliduje**: cleanup-runner, test-runner, diagnostic
+- **Funkcje**:
+  - cleanup-docker: Czyszczenie nieużywanych obrazów
+  - diagnostic: Diagnostyka środowiska
+  - backup: Backup danych
+  - restore: Przywracanie z backup
+- **Użycie**:
+  ```bash
+  gh workflow run manual-operations.yml -f operation=cleanup-docker
+  ```
 
-#### 4. `scheduled-tasks.yml` - Zadania cykliczne
-- **Trigger**: Cron schedule
-- **Funkcja**:
-  - Daily cleanup (2 AM UTC)
-  - Weekly rebuild (Sunday 3 AM)
-  - Monthly security scan (1st day 4 AM)
+### 4. **scheduled-tasks.yml** - Zadania cykliczne
+- **Trigger**: Schedule (cron)
+- **Harmonogram**:
+  - Daily cleanup: 2:00 UTC
+  - Weekly rebuild: Niedziela 3:00 UTC
+  - Monthly security scan: 1. dzień miesiąca 4:00 UTC
+  - GHCR cleanup: Niedziela 4:00 UTC (zintegrowane)
+- **Użycie manulane**:
+  ```bash
+  gh workflow run scheduled-tasks.yml -f task=ghcr-cleanup
+  ```
 
-#### 5. `release.yml` - Zarządzanie wersjami
-- **Trigger**: Tag push (v*)
-- **Funkcja**: Tworzenie release, changelog, deployment
-
-#### 6. `ghcr-cleanup.yml` - Czyszczenie rejestru (NOWE)
-- **Trigger**: Weekly (Sunday 4 AM) lub manual
-- **Funkcja**: Cleanup starych wersji obrazów
-- **Retention**: 30 dni, zachowuj ostatnie 5 wersji
-- **Chroni**: Wersje z tagami v*.*.*
+### 5. **release.yml** - Zarządzanie wersjami
+- **Trigger**: Tag push (v*.*.*)
+- **Funkcje**:
+  - Tworzenie GitHub Release
+  - Generowanie changelog
+  - Deployment wersji stable
+  - Archiwizacja artefaktów
 
 ## 🔐 Zarządzanie Sekretami
 
@@ -117,97 +140,150 @@ ssh nebula "cd /opt/detektor && ./docker/prod.sh up -d"
 # Edytuj sekrety
 make secrets-edit
 
-# Deploy z sekretami
-make deploy  # Automatycznie odszyfrowuje
+# Deploy z sekretami (automatyczne odszyfrowanie)
+make deploy
 
 # Ręczne odszyfrowanie
-sops -d .env > .env.decrypted
+sops -d .env.sops > .env.decrypted
 ```
 
-### Sekrety w .env
-```
-POSTGRES_PASSWORD
-REDIS_PASSWORD
-GRAFANA_ADMIN_PASSWORD
-OPENAI_API_KEY
-RTSP_CAMERA_PASSWORD
-```
+### Kluczowe sekrety
+- `POSTGRES_PASSWORD` - Hasło do PostgreSQL
+- `REDIS_PASSWORD` - Hasło do Redis
+- `GRAFANA_ADMIN_PASSWORD` - Hasło admina Grafana
+- `OPENAI_API_KEY` - Klucz API OpenAI
+- `RTSP_CAMERA_PASSWORD` - Hasło do kamer RTSP
 
 ## 📊 Monitoring i Troubleshooting
 
-### Endpoints
-- **Grafana**: http://nebula:3000 (admin/admin)
-- **Prometheus**: http://nebula:9090
-- **Jaeger**: http://nebula:16686
+### Endpoints monitoringu
+| Serwis | URL | Opis |
+|--------|-----|------|
+| Grafana | http://nebula:3000 | Dashboardy i wizualizacje |
+| Prometheus | http://nebula:9090 | Metryki i zapytania |
+| Jaeger | http://nebula:16686 | Distributed tracing |
 
-### Health Checks
+### Health Checks serwisów
 ```bash
 # Sprawdź wszystkie serwisy
-curl http://nebula:8001/health  # rtsp-capture
-curl http://nebula:8002/health  # frame-buffer
-curl http://nebula:8006/health  # frame-tracking
-curl http://nebula:9187/metrics  # postgres-exporter
-```
-
-### Logi
-```bash
-# Wszystkie logi
-ssh nebula "cd /opt/detektor && docker compose logs -f"
+for port in 8080 8081 8082 8083 8084 8085 8086 8087 8088 8089; do
+  echo "Checking port $port..."
+  curl -s http://nebula:$port/health || echo "No service on $port"
+done
 
 # Konkretny serwis
-ssh nebula "cd /opt/detektor && docker compose logs -f [service-name]"
+curl http://nebula:8080/health  # rtsp-capture
+curl http://nebula:8081/health  # frame-tracking
+curl http://nebula:8082/health  # frame-buffer
 ```
 
-### Restart serwisu
+### Diagnostyka
 ```bash
-ssh nebula "cd /opt/detektor && docker compose restart [service-name]"
+# Status wszystkich serwisów
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Logi konkretnego serwisu
+docker logs -f --tail 100 [service-name]
+
+# Zasoby systemowe
+docker stats --no-stream
+
+# GHCR status
+gh api "/users/hretheum/packages?package_type=container" | jq -r '.[].name' | grep detektr
 ```
 
-### GHCR Status
+## 🆕 Dodawanie Nowego Serwisu
+
+### 1. Sprawdź przed rozpoczęciem
+- [ ] Przeczytaj [PORT_ALLOCATION.md](./PORT_ALLOCATION.md) - lista zajętych portów
+- [ ] Zobacz [Service Template](./templates/service-template.md) - wzorzec dokumentacji
+- [ ] Zapoznaj się z [Troubleshooting Guide](./troubleshooting/common-issues.md)
+
+### 2. Kroki implementacji
 ```bash
-# Sprawdź obrazy w rejestrze
-gh api "/user/packages?package_type=container" | jq -r '.[].name' | grep detektr
+# 1. Stwórz strukturę serwisu
+mkdir -p services/my-new-service
+cd services/my-new-service
 
-# Sprawdź wersje konkretnego obrazu
-gh api "/users/hretheum/packages/container/detektr%2Frtsp-capture/versions" | jq '.[0:5] | .[] | .metadata.container.tags'
+# 2. Dodaj Dockerfile i kod
+# ... implementacja ...
 
-# Manualne czyszczenie
-gh workflow run ghcr-cleanup.yml -f dry_run=true
+# 3. Dodaj do docker-compose
+# Edytuj odpowiedni plik w docker/base/ lub docker/features/
+
+# 4. Stwórz dokumentację
+cp docs/deployment/templates/service-template.md \
+   docs/deployment/services/my-new-service.md
+
+# 5. Deploy
+git add .
+git commit -m "feat: add my-new-service"
+git push origin main
 ```
 
-## ⚠️ Znane Problemy
+### 3. Weryfikacja
+```bash
+# Sprawdź build w GitHub Actions
+# https://github.com/hretheum/detektr/actions
 
-1. **GitHub Runner permissions** - czasem trzeba naprawić:
-   ```bash
-   ssh nebula "sudo chown -R github-runner:github-runner /opt/detektor"
-   ```
+# Sprawdź deployment
+curl http://nebula:[assigned-port]/health
 
-2. **Image pull errors** - sprawdź czy runner ma dostęp do registry:
-   ```bash
-   ssh nebula "docker pull ghcr.io/hretheum/detektr/[service]:latest"
-   ```
+# Sprawdź metryki
+curl http://nebula:[assigned-port]/metrics
+```
 
-3. **SOPS decryption** - upewnij się że age key jest na miejscu:
-   ```bash
-   ssh nebula "ls -la /home/github-runner/.config/sops/age/keys.txt"
-   ```
+## ⚠️ Znane Problemy i Rozwiązania
+
+### 1. GitHub Runner permissions
+```bash
+ssh nebula "sudo chown -R github-runner:github-runner /opt/detektor"
+```
+
+### 2. Image pull errors
+```bash
+# Sprawdź dostęp do registry
+docker pull ghcr.io/hretheum/detektr/[service]:latest
+
+# Login do GHCR jeśli potrzebny
+echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+```
+
+### 3. SOPS decryption
+```bash
+# Sprawdź age key
+ssh nebula "ls -la /home/github-runner/.config/sops/age/keys.txt"
+
+# Regeneruj jeśli brak
+age-keygen -o keys.txt
+```
 
 ## 📚 Dokumentacja Serwisów
 
-- [RTSP Capture](services/rtsp-capture.md)
-- [Frame Buffer](services/frame-buffer.md)
-- [Frame Tracking](services/frame-tracking.md)
-- [PostgreSQL/TimescaleDB](services/postgresql-timescale.md)
-- [Message Broker](services/message-broker.md)
-- [PgBouncer](services/pgbouncer.md)
+### Podstawowe serwisy
+- [RTSP Capture](services/rtsp-capture.md) - Port 8080
+- [Frame Tracking](services/frame-tracking.md) - Port 8081
+- [Frame Buffer](services/frame-buffer.md) - Port 8082
+- [Metadata Storage](services/metadata-storage.md) - Port 8085
+- [Base Template](services/base-template.md) - Port 8000
+- [Echo Service](services/echo-service.md) - Port 8007
 
-## 🔧 Dodawanie Nowego Serwisu
+### Storage i Messaging
+- [PostgreSQL/TimescaleDB](services/postgresql-timescale.md) - Port 5432
+- [PgBouncer](services/pgbouncer.md) - Port 6432
+- [Redis](services/redis.md) - Port 6379
 
-**⚠️ WAŻNE**: Przed dodaniem nowej usługi przeczytaj:
-- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - **Rozwiązania znanych problemów**
-- [PORT_ALLOCATION.md](./PORT_ALLOCATION.md) - **Lista zajętych portów**
-- [New Service Guide](guides/new-service.md) - Szczegółowy przewodnik
+### Observability
+- [Prometheus](services/prometheus.md) - Port 9090
+- [Grafana](services/grafana.md) - Port 3000
+- [Jaeger](services/jaeger.md) - Port 16686
+
+## 🔗 Przydatne linki
+
+- [GitHub Actions](https://github.com/hretheum/detektr/actions) - Status CI/CD
+- [GitHub Packages](https://github.com/hretheum/detektr/packages) - Registry obrazów
+- [Project Board](https://github.com/users/hretheum/projects/X) - Status zadań
 
 ---
 
-**UWAGA**: Ignoruj wszelkie wzmianki o Kubernetes, kubectl, helm - używamy Docker Compose!
+**📌 UWAGA**: Ta dokumentacja jest aktualizowana wraz z rozwojem projektu. W razie wątpliwości sprawdź najnowsze commity lub zapytaj na Slacku #detektor-dev

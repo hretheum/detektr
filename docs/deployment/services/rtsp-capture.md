@@ -1,52 +1,58 @@
 # Service: RTSP Capture
 
-## 🚀 Quick Deploy (30 seconds)
+## 🚀 Quick Deploy (Unified Pipeline)
+
+### Automatyczny deployment
 ```bash
+# Deploy przy push do main
 git push origin main
-# Watch GitHub Actions deploy automatically
 ```
 
-## 📋 Detailed Steps (5 minutes)
+### Manualny deployment
+```bash
+# Deploy tylko tego serwisu
+gh workflow run main-pipeline.yml -f services=rtsp-capture
 
-### 1. Prerequisites
-- [x] Service code in `services/rtsp-capture/`
-- [x] Dockerfile exists
-- [x] GitHub Actions workflow exists (`.github/workflows/rtsp-capture-deploy.yml`)
-- [x] SOPS encrypted secrets configured
+# Lub użyj skryptu pomocniczego
+./scripts/deploy.sh production deploy
+```
 
-### 2. Configuration
+## 📋 Configuration
+
+### Podstawowe informacje
 - **Service Name**: `rtsp-capture`
-- **Port**: `8080`
+- **Port**: `8080` (zobacz [PORT_ALLOCATION.md](../PORT_ALLOCATION.md))
+- **Registry**: `ghcr.io/hretheum/detektr/rtsp-capture`
 - **Health Check**: `http://localhost:8080/health`
 - **Metrics**: `http://localhost:8080/metrics`
-- **Tracing**: Jaeger integration via OpenTelemetry
+- **Specific Endpoints**:
+  - Stream status: `http://localhost:8080/stream/status`
+  - Stream info: `http://localhost:8080/stream/info`
 
-### 3. Deploy
-```bash
-# 1. Commit your changes
-git add .
-git commit -m "feat: deploy rtsp-capture service"
-
-# 2. Push to trigger deployment
-git push origin main
-
-# 3. Monitor deployment
-# Watch GitHub Actions at: https://github.com/hretheum/detektr/actions
-```
-
-### 4. Verify Deployment
-```bash
-# Check service health
-curl http://localhost:8080/health
-
-# Check metrics
-curl http://localhost:8080/metrics
-
-# Check RTSP stream status
-curl http://localhost:8080/stream/status
-
-# Check logs
-docker logs rtsp-capture
+### Docker Compose Entry
+```yaml
+# W pliku docker/base/docker-compose.yml
+services:
+  rtsp-capture:
+    image: ghcr.io/hretheum/detektr/rtsp-capture:latest
+    container_name: rtsp-capture
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVICE_NAME=rtsp-capture
+      - PORT=8080
+      - RTSP_URL=${RTSP_URL}
+      - STREAM_QUALITY=${STREAM_QUALITY:-high}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    volumes:
+      - ./recordings:/app/recordings
+    networks:
+      - detektor-network
 ```
 
 ## ⚙️ Configuration Options
@@ -67,19 +73,36 @@ RECORDING_ENABLED=false
 STREAM_QUALITY=high
 ```
 
-### Docker Compose Override
-```yaml
-services:
-  rtsp-capture:
-    image: ghcr.io/hretheum/detektr/rtsp-capture:latest
-    ports:
-      - "8080:8080"
-    environment:
-      - RTSP_URL=rtsp://user:pass@camera-ip:554/stream
-      - SERVICE_NAME=rtsp-capture
-      - PORT=8080
-    volumes:
-      - ./recordings:/app/recordings
+## 🔧 Deployment Methods
+
+### 1. Production deployment (ZALECANE)
+```bash
+# Automatyczny deployment przy push do main
+git add .
+git commit -m "feat: update rtsp-capture configuration"
+git push origin main
+```
+
+### 2. Manual deployment via workflow
+```bash
+# Build i deploy
+gh workflow run main-pipeline.yml -f services=rtsp-capture
+
+# Tylko build
+gh workflow run main-pipeline.yml -f action=build-only -f services=rtsp-capture
+
+# Tylko deploy (używa latest z registry)
+gh workflow run main-pipeline.yml -f action=deploy-only -f services=rtsp-capture
+```
+
+### 3. Local development
+```bash
+# Development environment
+cd /opt/detektor
+./docker/dev.sh up rtsp-capture
+
+# Logi
+./docker/dev.sh logs -f rtsp-capture
 ```
 
 ## 🔧 Troubleshooting

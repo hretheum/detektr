@@ -1,49 +1,57 @@
 # Service: [SERVICE_NAME]
 
-## 🚀 Quick Deploy (30 seconds)
+## 🚀 Quick Deploy (Unified Pipeline)
+
+### Automatyczny deployment
 ```bash
+# Deploy przy push do main
 git push origin main
-# Watch GitHub Actions deploy automatically
 ```
 
-## 📋 Detailed Steps (5 minutes)
+### Manualny deployment
+```bash
+# Deploy tylko tego serwisu
+gh workflow run main-pipeline.yml -f services=[service-name]
 
-### 1. Prerequisites
+# Lub użyj skryptu pomocniczego
+./scripts/deploy.sh production deploy
+```
+
+## 📋 Configuration
+
+### Podstawowe informacje
+- **Service Name**: `[service-name]`
+- **Port**: `[allocated-port]` (zobacz [PORT_ALLOCATION.md](../PORT_ALLOCATION.md))
+- **Registry**: `ghcr.io/hretheum/detektr/[service-name]`
+- **Health Check**: `http://localhost:[port]/health`
+- **Metrics**: `http://localhost:[port]/metrics`
+
+### Prerequisites
 - [ ] Service code in `services/[service-name]/`
 - [ ] Dockerfile exists
-- [ ] GitHub Actions workflow exists (`.github/workflows/[service-name]-deploy.yml`)
-- [ ] SOPS encrypted secrets configured
+- [ ] Entry in docker-compose (base lub features)
+- [ ] Port allocated in PORT_ALLOCATION.md
 
-### 2. Configuration
-- **Service Name**: `[SERVICE_NAME]`
-- **Port**: `[PORT]`
-- **Health Check**: `http://localhost:[PORT]/health`
-- **Metrics**: `http://localhost:[PORT]/metrics`
-- **Tracing**: Jaeger integration via OpenTelemetry
-
-### 3. Deploy
-```bash
-# 1. Commit your changes
-git add .
-git commit -m "feat: deploy [SERVICE_NAME] service"
-
-# 2. Push to trigger deployment
-git push origin main
-
-# 3. Monitor deployment
-# Watch GitHub Actions logs
-```
-
-### 4. Verify Deployment
-```bash
-# Check service health
-curl http://localhost:[PORT]/health
-
-# Check metrics
-curl http://localhost:[PORT]/metrics
-
-# Check logs
-docker logs [service-name]
+### Docker Compose Entry
+```yaml
+# W pliku docker/base/docker-compose.yml lub odpowiednim feature
+services:
+  [service-name]:
+    image: ghcr.io/hretheum/detektr/[service-name]:latest
+    container_name: [service-name]
+    ports:
+      - "[allocated-port]:[allocated-port]"
+    environment:
+      - SERVICE_NAME=[service-name]
+      - PORT=[allocated-port]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:[port]/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - detektor-network
 ```
 
 ## ⚙️ Configuration Options
@@ -61,16 +69,36 @@ METRICS_ENABLED=true
 TRACING_ENABLED=true
 ```
 
-### Docker Compose Override
-```yaml
-services:
-  [service-name]:
-    image: ghcr.io/hretheum/detektr/[service-name]:latest
-    ports:
-      - "[port]:[port]"
-    environment:
-      - SERVICE_NAME=[service-name]
-      - PORT=[port]
+## 🔧 Deployment Methods
+
+### 1. Production deployment (ZALECANE)
+```bash
+# Automatyczny deployment przy push do main
+git add .
+git commit -m "feat: update [service-name]"
+git push origin main
+```
+
+### 2. Manual deployment via workflow
+```bash
+# Build i deploy
+gh workflow run main-pipeline.yml -f services=[service-name]
+
+# Tylko build
+gh workflow run main-pipeline.yml -f action=build-only -f services=[service-name]
+
+# Tylko deploy (używa latest z registry)
+gh workflow run main-pipeline.yml -f action=deploy-only -f services=[service-name]
+```
+
+### 3. Local development
+```bash
+# Development environment
+cd /opt/detektor
+./docker/dev.sh up [service-name]
+
+# Logi
+./docker/dev.sh logs -f [service-name]
 ```
 
 ## 🔧 Troubleshooting
@@ -125,25 +153,26 @@ docker logs [service-name] | grep jaeger
 
 ### Quick Rollback
 ```bash
-# Revert last commit
+# Poprzez Git
 git revert HEAD
 git push origin main
 
-# Manual rollback
-docker-compose -f docker-compose.[service-name].yml down
-docker-compose -f docker-compose.[service-name].yml up -d [previous-version]
+# Poprzez Docker (emergency)
+docker pull ghcr.io/hretheum/detektr/[service-name]:[previous-tag]
+docker stop [service-name]
+docker run -d --name [service-name] ghcr.io/hretheum/detektr/[service-name]:[previous-tag]
 ```
 
-### Emergency Procedures
+### Weryfikacja po rollback
 ```bash
-# Stop service immediately
-docker stop [service-name]
-
-# Rollback to last known good
-docker-compose -f docker-compose.[service-name].yml up -d [previous-tag]
-
-# Verify rollback
+# Health check
 curl http://localhost:[PORT]/health
+
+# Logi
+docker logs [service-name] --tail 50
+
+# Metryki
+curl http://localhost:[PORT]/metrics
 ```
 
 ## 📊 Monitoring

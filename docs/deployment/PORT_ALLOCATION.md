@@ -19,25 +19,26 @@
 | **6432** | PgBouncer | All | docker-compose.storage.yml | ✅ Active |
 | **6831/udp** | Jaeger (Thrift compact) | All | docker-compose.observability.yml | ✅ Active |
 | **6832/udp** | Jaeger (Thrift binary) | All | docker-compose.observability.yml | ✅ Active |
-| **8000** | Base Template | Production | production/docker-compose.yml | ✅ Active |
-| **8001** | RTSP Capture | All | docker-compose.yml | ✅ Active |
-| **8002** | Frame Buffer | All | docker-compose.yml | ✅ Active |
-| **8003** | Face Recognition | GPU | gpu/docker-compose.gpu.yml | 🔄 Optional |
-| **8004** | Object Detection | GPU | gpu/docker-compose.gpu.yml | 🔄 Optional |
-| **8005** | Metadata Storage | All | docker-compose.yml | ✅ Active |
-| **8006** | Frame Tracking | All | docker-compose.yml | ✅ Active |
-| **8007** | Echo Service | Examples | docker-compose.yml | 🔄 Optional |
-| **8008** | GPU Demo | GPU | gpu/docker-compose.gpu.yml | 🔄 Optional |
-| **8009** | Example OTEL | All | docker-compose.yml | ✅ Active |
+| **8000** | Base Template | All | base/docker-compose.yml | ✅ Active |
+| **8001** | Frame Tracking | All | base/docker-compose.yml | ✅ Active |
+| **8002** | Frame Buffer | All | base/docker-compose.yml | ✅ Active |
+| **8003** | Face Recognition | GPU | features/gpu/docker-compose.gpu.yml | 🔄 Optional |
+| **8004** | Object Detection | GPU | features/gpu/docker-compose.gpu.yml | 🔄 Optional |
+| **8005** | Metadata Storage | All | base/docker-compose.yml | ✅ Active |
+| **8006** | Reserved | - | - | 🔮 Future |
+| **8007** | Echo Service | Dev | base/docker-compose.yml | 🔄 Optional |
+| **8008** | GPU Demo | GPU | features/gpu/docker-compose.gpu.yml | 🔄 Optional |
+| **8009** | Example OTEL | All | base/docker-compose.yml | ✅ Active |
+| **8080** | RTSP Capture | All | base/docker-compose.yml | ✅ Active |
+| **8081** | cAdvisor | Monitoring | base/docker-compose.observability.yml | ✅ Active |
+| **8082** | Reserved | - | - | 🔮 Future |
+| **8083** | Adminer | Dev | environments/development/docker-compose.yml | 🔧 Dev |
 | **8010** | LLM Intent | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
 | **8011** | Gesture Detection | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
 | **8012** | Audio Analysis | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
 | **8013** | Scene Understanding | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
 | **8014** | HA Bridge | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
 | **8015** | Telegram Alerts | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
-| **8080** | cAdvisor | Monitoring | docker-compose.observability.yml | ✅ Active |
-| **8081** | Redis Commander | Dev | development/docker-compose.yml | 🔧 Dev |
-| **8083** | Adminer | Dev | development/docker-compose.yml | 🔧 Dev |
 | **8404** | Redis HAProxy Stats | HA | redis-ha/docker-compose.redis-ha.yml | 🔄 Optional |
 | **9090** | Prometheus | All | docker-compose.observability.yml | ✅ Active |
 | **9093** | Alertmanager | Monitoring | docker-compose.observability.yml | 🔄 Optional |
@@ -54,16 +55,18 @@
 | **26380** | Redis Sentinel 2 | HA | redis-ha/docker-compose.redis-ha.yml | 🔄 Optional |
 | **26381** | Redis Sentinel 3 | HA | redis-ha/docker-compose.redis-ha.yml | 🔄 Optional |
 
-## ✅ Konflikty rozwiązane
+## ✅ Historia zmian portów
 
-### 1. **Port 8080** - cAdvisor vs Adminer
-- **Rozwiązanie**: Adminer przeniesiony na port **8083**
+### Aktualizacja 2025-07-25
+- **RTSP Capture**: Przeniesiony z 8001 → **8080**
+- **Frame Tracking**: Przeniesiony z 8006 → **8001**
+- **cAdvisor**: Pozostaje na **8081**
+- **Adminer**: Pozostaje na **8083**
+- **Base Template**: Używa **8000**
 
-### 2. **Port 8005** - Metadata Storage vs Example OTEL
-- **Rozwiązanie**: Example OTEL przeniesiony na port **8009**
-
-### 3. **Port 8010** - LLM Intent vs Base Template
-- **Rozwiązanie**: Base Template w development przeniesiony na port **8000**
+### Rozwiązane konflikty
+1. **Port 8080** - RTSP Capture (wcześniej cAdvisor)
+2. **Port 8001** - Frame Tracking (wcześniej RTSP Capture)
 
 ## 🔒 Produkcja - Zabezpieczenia
 
