@@ -113,20 +113,30 @@ services:
   # =================================
 
   pgbouncer:
-    build:
-      context: ../../services/pgbouncer
-      dockerfile: Dockerfile
-    image: ${IMAGE_PREFIX:-ghcr.io/hretheum/detektr}/pgbouncer:${IMAGE_TAG:-latest}
+    image: bitnami/pgbouncer:latest
     restart: unless-stopped
     ports:
-      - "6432:5432"
+      - "6432:6432"
+    environment:
+      POSTGRESQL_HOST: postgres
+      POSTGRESQL_PORT: 5432
+      POSTGRESQL_DATABASE: ${POSTGRES_DB:-detektor}
+      POSTGRESQL_USERNAME: ${POSTGRES_USER:-detektor}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD:-detektor_pass}
+      PGBOUNCER_DATABASE: ${POSTGRES_DB:-detektor}
+      PGBOUNCER_AUTH_TYPE: md5
+      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_MAX_CLIENT_CONN: 200
+      PGBOUNCER_DEFAULT_POOL_SIZE: 25
+      PGBOUNCER_SET_DATABASE_USER: "yes"
+      PGBOUNCER_SET_DATABASE_PASSWORD: "yes"
     networks:
       - detektor-network
     depends_on:
       - postgres
     healthcheck:
       test:
-        ["CMD", "pg_isready", "-h", "localhost", "-p", "5432", "-U", "detektor"]
+        ["CMD", "pg_isready", "-h", "localhost", "-p", "6432", "-U", "detektor"]
       interval: 30s
       timeout: 3s
       retries: 3
