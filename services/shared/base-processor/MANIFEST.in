@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include requirements*.txt
+include src/base_processor/py.typed
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude tests *
