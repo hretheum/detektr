@@ -34,7 +34,7 @@ RUN useradd -m -u 1000 -s /bin/bash appuser
 # Install Python packages from wheels
 COPY --from=builder /wheels /wheels
 COPY services/frame-buffer/requirements.txt .
-RUN pip install --no-cache-dir --no-index --find-links /wheels -r requirements.txt || true && \
+RUN pip install --no-cache-dir --no-index --find-links /wheels -r requirements.txt && \
     rm -rf /wheels
 
 # Set working directory
@@ -65,4 +65,4 @@ USER appuser
 EXPOSE ${PORT}
 
 # Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
