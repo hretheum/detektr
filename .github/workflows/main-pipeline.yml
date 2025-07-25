@@ -266,6 +266,16 @@ jobs:
         run: |
           echo "🚀 Deploying to Nebula using unified deployment script..."
 
+          # Test GitHub registry access
+          echo "Testing GitHub registry access..."
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin || {
+            echo "⚠️ Warning: Failed to login to ghcr.io"
+          }
+
+          # List current images before deployment
+          echo "Current images on runner:"
+          docker images | grep detektr || echo "No detektr images found"
+
           # Copy only deployment files to clean directory
           DEPLOY_DIR="/opt/detektor-clean"
 

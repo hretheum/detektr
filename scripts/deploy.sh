@@ -176,6 +176,10 @@ action_deploy() {
                 # Remove old image to ensure fresh pull
                 docker rmi "ghcr.io/hretheum/detektr/$service:latest" 2>/dev/null || true
                 log "Removed old image for $service"
+
+                # Log current image ID before pull
+                OLD_IMAGE_ID=$(docker images -q "ghcr.io/hretheum/detektr/$service:latest" 2>/dev/null || echo "none")
+                log "Old image ID for $service: $OLD_IMAGE_ID"
             done
         else
             COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down
@@ -187,8 +191,18 @@ action_deploy() {
             COMPOSE_PROJECT_NAME=detektor COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down --rmi local 2>/dev/null || true
         fi
 
-        # Pull fresh images
-        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" pull
+        # Pull fresh images with force
+        log "Pulling images with --pull always flag..."
+        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" pull --policy always
+
+        # Log new image IDs after pull
+        if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
+            for service in $DEPLOY_SERVICES; do
+                NEW_IMAGE_ID=$(docker images -q "ghcr.io/hretheum/detektr/$service:latest" 2>/dev/null || echo "none")
+                NEW_IMAGE_DIGEST=$(docker images --digests "ghcr.io/hretheum/detektr/$service:latest" | grep -v REPOSITORY | awk '{print $3}' | head -1)
+                log "New image ID for $service: $NEW_IMAGE_ID (digest: ${NEW_IMAGE_DIGEST:-unknown})"
+            done
+        fi
     else
         # Copy necessary files first
         log "Copying deployment files to $TARGET_HOST..."
@@ -244,7 +258,7 @@ action_deploy() {
         log "Deploying specific services: $DEPLOY_SERVICES"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
             # shellcheck disable=SC2086
-            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans $DEPLOY_SERVICES
+            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --pull always $DEPLOY_SERVICES
         else
             # shellcheck disable=SC2029,SC2086
             ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans $DEPLOY_SERVICES"
@@ -252,7 +266,7 @@ action_deploy() {
     else
         log "Deploying all services"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
-            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans
+            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always
         else
             # shellcheck disable=SC2029
             ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans"
