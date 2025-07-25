@@ -76,9 +76,6 @@ jobs:
             timescaledb:
               - 'services/timescaledb/**'
               - 'docker-compose.storage.yml'
-            pgbouncer:
-              - 'services/pgbouncer/**'
-              - 'docker-compose.storage.yml'
             base-template:
               - 'services/base-template/**'
             face-recognition:
@@ -109,7 +106,6 @@ jobs:
               "echo-service"
               "gpu-demo"
               "timescaledb"
-              "pgbouncer"
               "base-template"
               "face-recognition"
               "object-detection"
@@ -121,7 +117,7 @@ jobs:
             changes='${{ toJSON(steps.changes.outputs.changes) }}'
             if [[ "$changes" != "{}" && "$changes" != "null" ]]; then
               # Parse JSON and extract service names that changed
-              for service in rtsp-capture frame-tracking frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb pgbouncer base-template face-recognition object-detection ha-bridge llm-intent; do
+              for service in rtsp-capture frame-tracking frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent; do
                 if [[ $(echo "$changes" | jq -r ".$service // false") == "true" ]]; then
                   services+=("$service")
                 fi

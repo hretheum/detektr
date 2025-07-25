@@ -39,7 +39,6 @@ jobs:
             "echo-service"
             "example-otel"
             "gpu-demo"
-            "pgbouncer"
           )
 
           for service in "${SERVICES[@]}"; do
