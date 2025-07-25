@@ -49,12 +49,26 @@ jobs:
       should_deploy: ${{ steps.determine-services.outputs.should_deploy }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper comparison
+
+      - name: Debug Git Info
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Event action: ${{ github.event.action }}"
+          echo "Before SHA: ${{ github.event.before }}"
+          echo "After SHA: ${{ github.event.after }}"
+          echo "Current SHA: $(git rev-parse HEAD)"
+          echo "Previous SHA: $(git rev-parse HEAD~1)"
+          echo "Changed files in last commit:"
+          git diff --name-only HEAD~1 HEAD || true
 
       - name: Detect changed files
         id: changes
-        if: github.event.inputs.force_all != 'true' && github.event.inputs.services == 'changed'
+        if: github.event.inputs.force_all != 'true'
         uses: dorny/paths-filter@v3
         with:
+          base: ${{ github.event.before || 'HEAD~1' }}
           filters: |
             rtsp-capture:
               - 'services/rtsp-capture/**'
@@ -122,6 +136,26 @@ jobs:
             echo "DEBUG: Raw changes from path-filter: $changes"
             echo "DEBUG: All outputs from path-filter:"
             echo '${{ toJSON(steps.changes.outputs) }}'
+
+            # If no manual services specified and we have a push event, detect changes from git
+            if [[ -z "${{ github.event.inputs.services }}" ]] && [[ "${{ github.event_name }}" == "push" ]]; then
+              echo "Detecting changes from git diff..."
+              changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} 2>/dev/null || git diff --name-only HEAD~1 HEAD)
+              echo "Changed files: $changed_files"
+
+              # Check each service path
+              for service in rtsp-capture frame-tracking frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
+                service_path="services/$service"
+                if [[ "$service" == "sample-processor" ]]; then
+                  service_path="examples/sample-processor"
+                fi
+
+                if echo "$changed_files" | grep -q "$service_path\|services/shared/base-processor"; then
+                  echo "Service $service has changes (detected from git)"
+                  services+=("$service")
+                fi
+              done
+            fi
 
             if [[ "$changes" != "{}" && "$changes" != "null" ]]; then
               # Parse JSON and extract service names that changed
