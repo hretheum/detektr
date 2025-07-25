@@ -67,10 +67,34 @@ async def lifespan(app: FastAPI):
     logger.info("Starting metadata-storage service...")
 
     # Initialize connection pool
-    db_url = os.getenv(
-        "DATABASE_URL",
-        "postgresql://detektor:detektor_pass@192.168.1.193:5432/detektor_db",
-    )
+    # Get database configuration
+    db_url = os.getenv("DATABASE_URL")
+
+    # If DATABASE_URL not provided, construct it from individual components
+    if not db_url:
+        POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
+        POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+        POSTGRES_DB = os.getenv("POSTGRES_DB", "detektor")
+        POSTGRES_USER = os.getenv("POSTGRES_USER", "detektor")
+        POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+
+        if not POSTGRES_PASSWORD:
+            logger.error(
+                "POSTGRES_PASSWORD environment variable is required. "
+                f"Available env vars: {list(os.environ.keys())}"
+            )
+            raise ValueError("POSTGRES_PASSWORD environment variable is required")
+
+        # Construct DATABASE_URL from components
+        db_url = (
+            f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
+            f"{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+        )
+        logger.info(
+            f"Database URL constructed from components: "
+            f"host={POSTGRES_HOST}, port={POSTGRES_PORT}, "
+            f"db={POSTGRES_DB}, user={POSTGRES_USER}"
+        )
     state.pool = ConnectionPool(db_url, min_size=5, max_size=20)
 
     # Initialize repository and service

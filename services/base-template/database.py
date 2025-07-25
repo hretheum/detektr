@@ -1,7 +1,6 @@
 """Database configuration and connection management."""
 
 import os
-import sys
 from typing import AsyncGenerator
 
 import structlog
@@ -15,10 +14,46 @@ logger = structlog.get_logger()
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# If DATABASE_URL not provided, construct it from individual components
+if not DATABASE_URL:
+    POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
+    POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+    POSTGRES_DB = os.getenv("POSTGRES_DB", "detektor")
+    POSTGRES_USER = os.getenv("POSTGRES_USER", "detektor")
+    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+
+    if not POSTGRES_PASSWORD:
+        logger.error(
+            "postgres_password_missing",
+            available_env_vars=list(os.environ.keys()),
+            postgres_host=POSTGRES_HOST,
+            postgres_port=POSTGRES_PORT,
+            postgres_db=POSTGRES_DB,
+            postgres_user=POSTGRES_USER,
+        )
+        raise ValueError(
+            "POSTGRES_PASSWORD environment variable is required. "
+            "Available env vars: " + ", ".join(os.environ.keys())
+        )
+
+    # Construct DATABASE_URL from components
+    DATABASE_URL = (
+        f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
+        f"{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+    )
+    logger.info(
+        "database_url_constructed",
+        postgres_host=POSTGRES_HOST,
+        postgres_port=POSTGRES_PORT,
+        postgres_db=POSTGRES_DB,
+        postgres_user=POSTGRES_USER,
+        postgres_password_length=len(POSTGRES_PASSWORD),
+    )
+
 # Enhanced debugging
 logger.info(
     "database_config_check",
-    database_url_present=bool(DATABASE_URL),
+    database_url_source="env" if os.getenv("DATABASE_URL") else "constructed",
     database_url_length=len(DATABASE_URL) if DATABASE_URL else 0,
     database_url_preview=DATABASE_URL[:50] + "..."
     if DATABASE_URL and len(DATABASE_URL) > 50
@@ -27,18 +62,6 @@ logger.info(
     postgres_password_present="POSTGRES_PASSWORD" in os.environ,
     postgres_user_present="POSTGRES_USER" in os.environ,
 )
-
-if not DATABASE_URL:
-    logger.error(
-        "database_url_missing",
-        env_vars=dict(os.environ),
-        cwd=os.getcwd(),
-        python_path=sys.path,
-    )
-    raise ValueError(
-        "DATABASE_URL environment variable is required. Available env vars: "
-        + ", ".join(os.environ.keys())
-    )
 
 # Create async engine with better error handling
 try:
