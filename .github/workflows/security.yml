@@ -1,13 +1,24 @@
+name: Security Scan (Disabled)
+
 # Disabled due to permission issues with SARIF upload
 # This workflow can be re-enabled when repository permissions are fixed
-#
-# name: Security Scan
-# on:
-#   push:
-#     branches: [main]
-#   pull_request:
-#     branches: [main]
-#
+
+on:
+  workflow_dispatch:  # Only manual trigger to prevent automatic runs
+
+jobs:
+  disabled-notice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notice
+        run: |
+          echo "⚠️ Security scan is currently disabled"
+          echo "To re-enable:"
+          echo "1. Fix repository permissions for SARIF upload"
+          echo "2. Uncomment the actual security scan job"
+          echo "3. Change trigger from workflow_dispatch to push/pull_request"
+
+# Original workflow (to be restored):
 # jobs:
 #   security:
 #     runs-on: ubuntu-latest
