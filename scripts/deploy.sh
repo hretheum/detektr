@@ -307,7 +307,7 @@ action_deploy() {
             COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --renew-anon-volumes --no-build $DEPLOY_SERVICES
         else
             # shellcheck disable=SC2029,SC2086
-            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans $DEPLOY_SERVICES"
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans --force-recreate --renew-anon-volumes $DEPLOY_SERVICES"
         fi
     else
         log "Deploying all services"
@@ -315,7 +315,7 @@ action_deploy() {
             COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build
         else
             # shellcheck disable=SC2029
-            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans"
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans --force-recreate"
         fi
     fi
 
@@ -386,14 +386,29 @@ action_stop() {
 action_verify() {
     log "Verifying deployment health..."
 
-    # Define services and their health endpoints
-    declare -A services=(
+    # Define all possible services and their health endpoints
+    declare -A all_services=(
         ["rtsp-capture"]="8080"
         ["frame-tracking"]="8001"
         ["metadata-storage"]="8005"
         ["base-template"]="8000"
         ["sample-processor"]="8099"
     )
+
+    # Filter to only check deployed services
+    declare -A services=()
+    if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
+        for service in $DEPLOY_SERVICES; do
+            if [[ -n "${all_services[$service]:-}" ]]; then
+                services[$service]="${all_services[$service]}"
+            fi
+        done
+    else
+        # If no specific services, check all
+        for key in "${!all_services[@]}"; do
+            services[$key]="${all_services[$key]}"
+        done
+    fi
 
     declare -A infrastructure=(
         ["prometheus"]="9090/-/healthy"
