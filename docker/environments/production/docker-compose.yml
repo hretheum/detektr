@@ -67,6 +67,7 @@ services:
       - LOG_LEVEL=INFO
       - METRICS_ENABLED=true
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - DATABASE_URL=postgresql+asyncpg://detektor:${POSTGRES_PASSWORD:-detektor_pass}@postgres:5432/detektor
 
   metadata-storage:
     <<: *production-defaults
