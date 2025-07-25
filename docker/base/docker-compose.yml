@@ -67,6 +67,11 @@ services:
       SERVICE_NAME: frame-tracking
       PORT: 8001
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD:-detektor_pass}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-detektor_db}
+      POSTGRES_USER: ${POSTGRES_USER:-detektor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-detektor_pass}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-detektor_db}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
@@ -91,6 +96,11 @@ services:
       SERVICE_NAME: metadata-storage
       PORT: 8005
       DATABASE_URL: postgresql://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD:-detektor_pass}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-detektor_db}
+      POSTGRES_USER: ${POSTGRES_USER:-detektor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-detektor_pass}
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_DB: ${POSTGRES_DB:-detektor_db}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       ENVIRONMENT: ${ENVIRONMENT:-production}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
