@@ -31,7 +31,7 @@ class BaseProcessor(ABC, TracingMixin, MetricsMixin, LoggingMixin):
         # Initialize all mixins after name is set
         super().__init__()
 
-        self.logger = logging.getLogger(self.name)
+        # Logger is initialized by LoggingMixin
         self.metrics = ProcessorMetrics()
         self.is_initialized = False
 

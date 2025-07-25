@@ -329,8 +329,9 @@ class StateMachineMixin:
 
     async def track_frame_lifecycle(self, frame_id: str, metadata: Dict[str, Any]):
         """Track frame through its lifecycle."""
-        # Register frame
-        await self.state_machine.register_frame(frame_id, **metadata)
+        # Register frame - remove frame_id from metadata to avoid duplicate argument
+        clean_metadata = {k: v for k, v in metadata.items() if k != 'frame_id'}
+        await self.state_machine.register_frame(frame_id, **clean_metadata)
 
         # Move through validation
         await self.state_machine.transition(frame_id, StateTransition.VALIDATE)

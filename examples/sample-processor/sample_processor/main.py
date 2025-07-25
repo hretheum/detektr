@@ -135,6 +135,9 @@ class SampleProcessor(
             Detection results
         """
         frame_id = metadata.get("frame_id", "unknown")
+        
+        # Track frame in state machine first
+        await self.track_frame_lifecycle(frame_id, metadata)
 
         # Allocate resources
         async with self.with_resources(frame_id):
