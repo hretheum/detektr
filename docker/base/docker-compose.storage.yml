@@ -113,27 +113,20 @@ services:
   # =================================
 
   pgbouncer:
-    image: edoburu/pgbouncer:latest
+    build:
+      context: ../../services/pgbouncer
+      dockerfile: Dockerfile
+    image: ${IMAGE_PREFIX:-ghcr.io/hretheum/detektr}/pgbouncer:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
       - "6432:5432"
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${POSTGRES_USER:-detektor}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-detektor_pass}
-      DB_NAME: ${POSTGRES_DB:-detektor}
-      POOL_MODE: transaction
-      MAX_CLIENT_CONN: 200
-      DEFAULT_POOL_SIZE: 25
-      AUTH_TYPE: trust
-      STATS_USERS: ${POSTGRES_USER:-detektor}
     networks:
       - detektor-network
     depends_on:
       - postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432 || exit 1"]
+      test:
+        ["CMD", "pg_isready", "-h", "localhost", "-p", "5432", "-U", "detektor"]
       interval: 30s
       timeout: 3s
       retries: 3
