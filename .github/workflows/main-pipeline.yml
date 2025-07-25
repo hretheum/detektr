@@ -382,8 +382,10 @@ jobs:
           cp -r ${{ github.workspace }}/docker $DEPLOY_DIR/
           cp -r ${{ github.workspace }}/scripts $DEPLOY_DIR/
 
-          # Copy existing .env from old deployment location if it exists
-          if [ -f "/opt/detektor/.env" ]; then
+          # Copy existing .env from deployment location if it exists
+          if [ -f "$DEPLOY_DIR/.env" ]; then
+            echo "📋 Using existing .env from $DEPLOY_DIR/.env"
+          elif [ -f "/opt/detektor/.env" ]; then
             echo "📋 Copying existing .env from /opt/detektor/.env"
             cp /opt/detektor/.env $DEPLOY_DIR/
           elif [ -f "${{ github.workspace }}/.env.sops" ]; then
