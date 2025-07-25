@@ -154,6 +154,17 @@ action_deploy() {
 
     check_prerequisites
 
+    # Ensure network exists
+    if [[ "$TARGET_HOST" == "localhost" ]]; then
+        if ! docker network ls | grep -q "detektor-network"; then
+            log "Creating detektor-network..."
+            docker network create detektor-network || true
+        fi
+    else
+        # shellcheck disable=SC2029
+        ssh "$TARGET_HOST" "docker network ls | grep -q 'detektor-network' || docker network create detektor-network"
+    fi
+
     # Pull latest images
     log "Pulling latest images..."
 
