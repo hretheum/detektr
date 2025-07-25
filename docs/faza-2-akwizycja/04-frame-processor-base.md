@@ -10,12 +10,12 @@ Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwis
 
 #### Zadania atomowe
 
-1. **[ ] Design pattern dla processor pipeline**
+1. **[x] Design pattern dla processor pipeline**
    - **Metryka**: Extensible architecture design
    - **Walidacja**: Architecture review checklist
    - **Czas**: 2h
 
-2. **[ ] Analiza common requirements dla AI services**
+2. **[x] Analiza common requirements dla AI services**
    - **Metryka**: Lista shared functionality
    - **Walidacja**: Requirements coverage matrix
    - **Czas**: 1h
