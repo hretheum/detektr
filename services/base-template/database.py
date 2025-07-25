@@ -14,7 +14,7 @@ logger = structlog.get_logger()
 # Database configuration
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+asyncpg://detektor:detektor_pass@postgres:5432/detektor_db",
+    "postgresql+asyncpg://detektor:detektor_pass@postgres:5432/detektor",
 )
 
 # Create async engine
