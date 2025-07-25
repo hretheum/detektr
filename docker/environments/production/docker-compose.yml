@@ -46,6 +46,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-detektor}
       - POSTGRES_USER=${POSTGRES_USER:-detektor}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DETEKTOR_DB_PASSWORD=${POSTGRES_PASSWORD}
 
   echo-service:
     <<: *production-defaults
@@ -76,6 +77,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-detektor}
       - POSTGRES_USER=${POSTGRES_USER:-detektor}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DETEKTOR_DB_PASSWORD=${POSTGRES_PASSWORD}
 
   metadata-storage:
     <<: *production-defaults
@@ -88,6 +90,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-detektor}
       - POSTGRES_USER=${POSTGRES_USER:-detektor}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DETEKTOR_DB_PASSWORD=${POSTGRES_PASSWORD}
 
   gpu-demo:
     <<: *production-defaults

@@ -77,6 +77,22 @@ async def lifespan(app: FastAPI):
         POSTGRES_DB = os.getenv("POSTGRES_DB", "detektor")
         POSTGRES_USER = os.getenv("POSTGRES_USER", "detektor")
         POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+        DETEKTOR_DB_PASSWORD = os.getenv("DETEKTOR_DB_PASSWORD")
+
+        logger.info(
+            "Password debug: "
+            f"POSTGRES_PASSWORD="
+            f"{POSTGRES_PASSWORD[:3] + '...' if POSTGRES_PASSWORD else None}, "
+            f"DETEKTOR_DB_PASSWORD="
+            f"{DETEKTOR_DB_PASSWORD[:3] + '...' if DETEKTOR_DB_PASSWORD else None}"
+        )
+
+        # Use DETEKTOR_DB_PASSWORD if POSTGRES_PASSWORD is the default
+        if POSTGRES_PASSWORD == "detektor_pass" and DETEKTOR_DB_PASSWORD:
+            logger.warning(
+                "Using DETEKTOR_DB_PASSWORD instead of default POSTGRES_PASSWORD"
+            )
+            POSTGRES_PASSWORD = DETEKTOR_DB_PASSWORD
 
         if not POSTGRES_PASSWORD:
             logger.error(

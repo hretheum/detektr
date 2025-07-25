@@ -21,6 +21,26 @@ if not DATABASE_URL:
     POSTGRES_DB = os.getenv("POSTGRES_DB", "detektor")
     POSTGRES_USER = os.getenv("POSTGRES_USER", "detektor")
     POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+    DETEKTOR_DB_PASSWORD = os.getenv("DETEKTOR_DB_PASSWORD")
+
+    logger.info(
+        "password_debug",
+        postgres_password=POSTGRES_PASSWORD[:3] + "..." if POSTGRES_PASSWORD else None,
+        detektor_db_password=DETEKTOR_DB_PASSWORD[:3] + "..."
+        if DETEKTOR_DB_PASSWORD
+        else None,
+        postgres_password_len=len(POSTGRES_PASSWORD) if POSTGRES_PASSWORD else 0,
+        detektor_db_password_len=len(DETEKTOR_DB_PASSWORD)
+        if DETEKTOR_DB_PASSWORD
+        else 0,
+    )
+
+    # Use DETEKTOR_DB_PASSWORD if POSTGRES_PASSWORD is the default
+    if POSTGRES_PASSWORD == "detektor_pass" and DETEKTOR_DB_PASSWORD:
+        logger.warning(
+            "Using DETEKTOR_DB_PASSWORD instead of default POSTGRES_PASSWORD"
+        )
+        POSTGRES_PASSWORD = DETEKTOR_DB_PASSWORD
 
     if not POSTGRES_PASSWORD:
         logger.error(
