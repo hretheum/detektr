@@ -12,10 +12,10 @@ from sqlalchemy.pool import NullPool
 logger = structlog.get_logger()
 
 # Database configuration
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://detektor:detektor_pass@postgres:5432/detektor",
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is required")
 
 # Create async engine
 engine = create_async_engine(
