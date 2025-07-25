@@ -138,7 +138,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -h localhost -p 6432 -U ${POSTGRES_USER:-detektor} || exit 1",
+          "PGPASSWORD=${POSTGRES_PASSWORD:-detektor_pass} /opt/bitnami/postgresql/bin/psql -h localhost -p 6432 -U ${POSTGRES_USER:-detektor} -d ${POSTGRES_DB:-detektor} -c 'SELECT 1' || exit 1",
         ]
       interval: 30s
       timeout: 3s
