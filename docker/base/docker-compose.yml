@@ -12,10 +12,10 @@ services:
     image: ghcr.io/hretheum/detektr/rtsp-capture:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "8080:8080"
     environment:
       SERVICE_NAME: rtsp-capture
-      PORT: 8001
+      PORT: 8080
       RTSP_URL: ${RTSP_URL:-rtsp://localhost:8554/stream}
       FRAME_BUFFER_SIZE: ${FRAME_BUFFER_SIZE:-100}
       REDIS_HOST: ${REDIS_HOST:-redis}
@@ -62,10 +62,10 @@ services:
     image: ghcr.io/hretheum/detektr/frame-tracking:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
-      - "8006:8006"
+      - "8001:8001"
     environment:
       SERVICE_NAME: frame-tracking
-      PORT: 8006
+      PORT: 8001
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD:-detektor_pass}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-detektor_db}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}

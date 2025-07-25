@@ -43,7 +43,7 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     SERVICE_NAME=frame-tracking \
     SERVICE_VERSION=0.1.0 \
-    PORT=8006
+    PORT=8001
 
 # Switch to non-root user
 USER appuser

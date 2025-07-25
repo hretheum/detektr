@@ -43,7 +43,7 @@ COPY --chown=appuser:appuser src/ ./
 # Environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8001
+    PORT=8080
 
 # Health check using curl
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

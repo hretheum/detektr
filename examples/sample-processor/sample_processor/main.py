@@ -51,16 +51,19 @@ class SampleProcessor(
             processing_delay_ms: Simulated processing delay
             **kwargs: Base processor arguments
         """
-        # Set default configuration
-        kwargs.setdefault("name", "sample-processor")
-        kwargs.setdefault("enable_metrics", True)
-        kwargs.setdefault("enable_tracing", True)
-        kwargs.setdefault("batch_size", 32)
-        kwargs.setdefault("cpu_cores", 2)
-        kwargs.setdefault("memory_limit_mb", 512)
-        kwargs.setdefault("prefer_gpu", simulate_gpu)
-
-        super().__init__(**kwargs)
+        # Extract name for BaseProcessor
+        name = kwargs.pop("name", "sample-processor")
+        
+        # Remove args that BaseProcessor doesn't accept
+        kwargs.pop("enable_metrics", None)
+        kwargs.pop("enable_tracing", None)
+        kwargs.pop("batch_size", None)
+        kwargs.pop("cpu_cores", None)
+        kwargs.pop("memory_limit_mb", None)
+        kwargs.pop("prefer_gpu", None)
+        
+        # Initialize with only name
+        super().__init__(name=name)
 
         self.detection_threshold = detection_threshold
         self.simulate_gpu = simulate_gpu
