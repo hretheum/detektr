@@ -223,6 +223,10 @@ action_deploy() {
             docker volume ls -q | grep "^detektor_" | xargs -r docker volume rm 2>/dev/null || true
         fi
 
+        # Force recreate volumes if needed - disable interactive mode
+        export DOCKER_CLI_HINTS=false
+        export COMPOSE_INTERACTIVE_NO_CLI=1
+
         # Pull fresh images with force
         log "Pulling images with --pull always flag..."
         COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" pull --policy always
@@ -295,7 +299,7 @@ action_deploy() {
         log "Deploying specific services: $DEPLOY_SERVICES"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
             # shellcheck disable=SC2086
-            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --renew-anon-volumes $DEPLOY_SERVICES
+            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --renew-anon-volumes --no-build $DEPLOY_SERVICES
         else
             # shellcheck disable=SC2029,SC2086
             ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans $DEPLOY_SERVICES"
@@ -303,7 +307,7 @@ action_deploy() {
     else
         log "Deploying all services"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
-            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate
+            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build
         else
             # shellcheck disable=SC2029
             ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans"
