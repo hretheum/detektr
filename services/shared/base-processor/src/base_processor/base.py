@@ -8,13 +8,16 @@ from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 
 from .exceptions import InitializationError, ProcessingError, ValidationError
+from .logging import LoggingMixin, ProcessingContext
 from .metrics import ProcessorMetrics
+from .metrics_decorators import MetricsContext, MetricsMixin, timed_method
 from .pipeline import ProcessingPipeline
 from .retry import ErrorHandler, RetryPolicy, with_retry
+from .tracing import ProcessorSpan, TracingMixin
 
 
-class BaseProcessor(ABC):
-    """Abstract base class for all frame processors."""
+class BaseProcessor(ABC, TracingMixin, MetricsMixin, LoggingMixin):
+    """Abstract base class for all frame processors with full observability."""
 
     def __init__(self, name: Optional[str] = None):
         """Initialize the base processor.
@@ -81,6 +84,7 @@ class BaseProcessor(ABC):
         self.is_initialized = False
         self.logger.info(f"{self.name} cleaned up successfully")
 
+    @timed_method("process_frame")
     async def process(
         self, frame: np.ndarray, metadata: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -101,39 +105,76 @@ class BaseProcessor(ABC):
         if not self.is_initialized:
             raise RuntimeError("Processor not initialized")
 
-        start_time = time.time()
+        # Extract frame ID for correlation
+        frame_id = metadata.get("frame_id", f"frame_{time.time()}")
 
-        async with self._semaphore:
-            task = asyncio.current_task()
-            self._active_tasks.add(task)
+        # Start processing context for logging
+        with ProcessingContext(self.name, frame_id=frame_id):
+            # Start span for tracing
+            with ProcessorSpan(self.tracer, "process_frame", self.name, frame_id):
+                # Start metrics context
+                with MetricsContext(self.name, "process_frame"):
+                    start_time = time.time()
 
-            try:
-                # Create pipeline context
-                context = {
-                    "frame": frame,
-                    "metadata": metadata,
-                    "start_time": start_time,
-                }
+                    async with self._semaphore:
+                        task = asyncio.current_task()
+                        self._active_tasks.add(task)
 
-                # Execute pipeline
-                result_context = await self.pipeline.execute(context)
+                        try:
+                            # Log processing start
+                            self.log_with_context(
+                                "info",
+                                "Starting frame processing",
+                                frame_shape=frame.shape,
+                                metadata_keys=list(metadata.keys()),
+                            )
 
-                # Extract result
-                result = result_context.get("result", {})
+                            # Create pipeline context
+                            context = {
+                                "frame": frame,
+                                "metadata": metadata,
+                                "start_time": start_time,
+                            }
 
-                # Record metrics
-                processing_time = time.time() - start_time
-                await self.metrics.record_frame_processed(processing_time)
+                            # Execute pipeline
+                            result_context = await self.pipeline.execute(context)
 
-                return result
+                            # Extract result
+                            result = result_context.get("result", {})
 
-            except Exception as e:
-                await self.metrics.record_error(type(e).__name__)
-                await self._run_hooks("error", e)
-                raise
+                            # Record metrics
+                            processing_time = time.time() - start_time
+                            await self.metrics.record_frame_processed(processing_time)
 
-            finally:
-                self._active_tasks.discard(task)
+                            # Log success
+                            self.log_with_context(
+                                "info",
+                                "Frame processing completed",
+                                processing_time=processing_time,
+                                result_keys=list(result.keys())
+                                if isinstance(result, dict)
+                                else None,
+                            )
+
+                            return result
+
+                        except Exception as e:
+                            await self.metrics.record_error(type(e).__name__)
+                            await self._run_hooks("error", e)
+
+                            # Log error
+                            self.log_with_context(
+                                "error",
+                                "Frame processing failed",
+                                error=str(e),
+                                error_type=type(e).__name__,
+                            )
+
+                            raise
+
+                        finally:
+                            self._active_tasks.discard(task)
+                            self.set_active_frames(len(self._active_tasks))
 
     def register_hook(self, hook_type: str, callback: Callable):
         """Register a hook callback.

@@ -24,17 +24,17 @@ Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwis
 
 #### Zadania atomowe
 
-1. **[ ] TDD: Abstract base processor class**
+1. **[x] TDD: Abstract base processor class**
    - **Metryka**: 100% coverage base functionality
    - **Walidacja**: `pytest tests/test_base_processor.py`
    - **Czas**: 3h
 
-2. **[ ] Implementacja processing pipeline**
+2. **[x] Implementacja processing pipeline**
    - **Metryka**: Pre/process/post hooks
    - **Walidacja**: Pipeline execution test
    - **Czas**: 3h
 
-3. **[ ] Error handling i retry logic**
+3. **[x] Error handling i retry logic**
    - **Metryka**: Graceful degradation
    - **Walidacja**: Fault injection testing
    - **Czas**: 2h
