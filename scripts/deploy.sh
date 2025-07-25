@@ -237,11 +237,23 @@ action_deploy() {
 
     # Deploy services
     log "Starting services..."
-    if [[ "$TARGET_HOST" == "localhost" ]]; then
-        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans
+    if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
+        log "Deploying specific services: $DEPLOY_SERVICES"
+        if [[ "$TARGET_HOST" == "localhost" ]]; then
+            # shellcheck disable=SC2086
+            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans $DEPLOY_SERVICES
+        else
+            # shellcheck disable=SC2029,SC2086
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans $DEPLOY_SERVICES"
+        fi
     else
-        # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans"
+        log "Deploying all services"
+        if [[ "$TARGET_HOST" == "localhost" ]]; then
+            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans
+        else
+            # shellcheck disable=SC2029
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans"
+        fi
     fi
 
     # Wait for services to start
