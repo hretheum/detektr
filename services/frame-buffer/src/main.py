@@ -21,9 +21,6 @@ from fastapi import FastAPI, HTTPException, status
 # Import frame tracking
 try:
     from frame_tracking import TraceContext
-    from opentelemetry.trace.propagation.tracecontext import (
-        TraceContextTextMapPropagator,
-    )
 
     FRAME_TRACKING_AVAILABLE = True
 except ImportError:
@@ -123,15 +120,6 @@ async def enqueue_frame(frame_data: dict):
     """Add frame to buffer with trace context propagation."""
     client = await get_redis_client()
 
-    # Extract trace context if available
-    trace_ctx = None
-    if FRAME_TRACKING_AVAILABLE and "traceparent" in frame_data:
-        propagator = TraceContextTextMapPropagator()
-        ctx = propagator.extract(frame_data)
-        trace_ctx = TraceContext.from_context(
-            ctx, frame_data.get("frame_id", "unknown")
-        )
-
     with frame_processing_time.labels(operation="enqueue").time():
         try:
             # Check buffer size
@@ -153,19 +141,16 @@ async def enqueue_frame(frame_data: dict):
             # Prepare data with trace context
             queue_data = {"frame_data": json.dumps(frame_data)}
 
-            # Inject trace context for propagation
-            if FRAME_TRACKING_AVAILABLE and trace_ctx:
-                with trace_ctx as ctx:
+            # Use frame tracking if available
+            if FRAME_TRACKING_AVAILABLE:
+                with TraceContext.inject(frame_data.get("frame_id", "unknown")) as ctx:
                     ctx.add_event("frame_buffer_enqueue")
-                    ctx.set_attributes(
-                        {
-                            "buffer.size": current_size,
-                            "buffer.max_size": MAX_BUFFER_SIZE,
-                            "frame.id": frame_data.get("frame_id", "unknown"),
-                        }
-                    )
-                    propagator = TraceContextTextMapPropagator()
-                    propagator.inject(queue_data)
+                    ctx.set_attribute("buffer.size", current_size)
+                    ctx.set_attribute("buffer.max_size", MAX_BUFFER_SIZE)
+                    ctx.set_attribute("frame.id", frame_data.get("frame_id", "unknown"))
+
+                    # Inject trace context for propagation
+                    ctx.inject_to_carrier(queue_data)
 
             # Add to queue with JSON serialization
             message_id = await client.xadd(FRAME_QUEUE_NAME, queue_data)
@@ -230,26 +215,24 @@ async def dequeue_frame(count: int = 1):
                                 for k, v in data.items()
                             }
 
-                            # Extract trace context
-                            propagator = TraceContextTextMapPropagator()
-                            ctx = propagator.extract(str_data)
-
-                            # Create trace context and add dequeue event
-                            if ctx:
-                                with TraceContext.from_context(
-                                    ctx, frame_data.get("frame_id", "unknown")
-                                ) as trace_ctx:
-                                    trace_ctx.add_event("frame_buffer_dequeue")
-                                    trace_ctx.set_attributes(
-                                        {
-                                            "buffer.message_id": message_id.decode()
-                                            if isinstance(message_id, bytes)
-                                            else message_id
-                                        }
+                            # Extract and use trace context
+                            extracted_context = TraceContext.extract_from_carrier(
+                                str_data
+                            )
+                            if extracted_context:
+                                with TraceContext.inject(
+                                    frame_data.get("frame_id", "unknown")
+                                ) as ctx:
+                                    ctx.add_event("frame_buffer_dequeue")
+                                    ctx.set_attribute(
+                                        "buffer.message_id",
+                                        message_id.decode()
+                                        if isinstance(message_id, bytes)
+                                        else message_id,
                                     )
 
                                     # Re-inject trace context for downstream
-                                    propagator.inject(frame_data)
+                                    ctx.inject_to_carrier(frame_data)
 
                         result_frames.append(frame_data)
                         message_ids.append(message_id)
@@ -418,30 +401,22 @@ async def test_frame_with_trace(test_data: dict):
     if not FRAME_TRACKING_AVAILABLE:
         return {"error": "Frame tracking not available"}
 
-    # Extract trace context from test data
-    if "traceparent" in test_data:
-        propagator = TraceContextTextMapPropagator()
-        ctx = propagator.extract(test_data)
+    # Use frame tracking for test
+    with TraceContext.inject(test_data.get("frame_id", "test")) as ctx:
+        ctx.add_event("test_frame_buffer")
 
-        with TraceContext.from_context(
-            ctx, test_data.get("frame_id", "test")
-        ) as trace_ctx:
-            trace_ctx.add_event("test_frame_buffer")
+        # Test enqueue
+        enqueue_result = await enqueue_frame(test_data)
 
-            # Test enqueue
-            enqueue_result = await enqueue_frame(test_data)
+        # Test dequeue
+        dequeue_result = await dequeue_frame(count=1)
 
-            # Test dequeue
-            dequeue_result = await dequeue_frame(count=1)
-
-            return {
-                "frame_tracking_enabled": True,
-                "trace_id": trace_ctx.get_trace_id(),
-                "enqueue_result": enqueue_result,
-                "dequeue_result": dequeue_result,
-            }
-    else:
-        return {"error": "No traceparent header provided"}
+        return {
+            "frame_tracking_enabled": True,
+            "trace_id": ctx.trace_id,
+            "enqueue_result": enqueue_result,
+            "dequeue_result": dequeue_result,
+        }
 
 
 if __name__ == "__main__":
