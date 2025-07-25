@@ -191,7 +191,9 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 - Search/analytics working
 - Performance acceptable
 
-### Blok 4: CI/CD Pipeline dla Frame Tracking
+### Blok 4: CI/CD Pipeline dla Frame Tracking (LIBRARY ONLY) ⚠️
+
+> **UWAGA**: Frame-tracking to biblioteka, nie serwis. Nie potrzebuje własnego deploymentu.
 
 #### Zadania atomowe
 
@@ -209,114 +211,100 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
    - **Guardrails**: All tests passing
    - **Czas**: 1.5h
 
-2. **[ ] Dockerfile dla frame-tracking service**
-   - **Metryka**: Service image z OTEL instrumentation
+2. **[x] ~~Dockerfile dla frame-tracking service~~ SKIPPED**
+   - **Powód**: Frame-tracking to biblioteka, nie serwis
+   - **Zamiast tego**: Każdy serwis instaluje bibliotekę lokalnie
+   - **Przykład**: Zobacz `services/rtsp-capture/Dockerfile`
+
+3. **[ ] Weryfikacja testów biblioteki w CI**
+   - **Metryka**: Testy biblioteki uruchamiane przy każdym PR
    - **Walidacja**:
      ```bash
-     docker build -f services/frame-tracking/Dockerfile -t frame-tracking:test .
-     docker run --rm frame-tracking:test python -m frame_tracking.health
-     # Health check passed
+     # Sprawdź czy testy są włączone w pr-checks.yml
+     grep -n "frame-tracking" .github/workflows/pr-checks.yml
+
+     # Uruchom testy lokalnie
+     cd services/shared/frame-tracking
+     pytest tests/ -v
      ```
-   - **Quality Gate**: Image <200MB
-   - **Guardrails**: OTEL auto-instrumentation included
-   - **Czas**: 1h
+   - **Quality Gate**: 80%+ code coverage
+   - **Guardrails**: Testy przechodzą w CI
+   - **Czas**: 0.5h
 
-3. **[ ] GitHub Actions dla tracking components**
-   - **Metryka**: Automated builds and tests
-   - **Walidacja**:
-     ```bash
-     # Check workflow
-     cat .github/workflows/frame-tracking-deploy.yml
-     git push origin main
-     # Monitor build: https://github.com/hretheum/bezrobocie/actions
-     ```
-   - **Quality Gate**: Build <5min
-   - **Guardrails**: Integration tests included
-   - **Czas**: 1.5h
+### Blok 5: WALIDACJA BIBLIOTEKI W SERWISACH 🔄
 
-### Blok 5: DEPLOYMENT NA NEBULA I WALIDACJA ✅
-
-> **📚 NEW**: Ten blok używa zunifikowanej procedury deployment. Zobacz [Deployment Guide](../../deployment/README.md)
+> **📚 ZMIANA**: Ponieważ frame-tracking to biblioteka, nie ma własnego deploymentu. Zamiast tego walidujemy jej użycie w innych serwisach.
 
 #### Zadania atomowe
 
-1. **[ ] Przygotowanie deployment**
-   - **Metryka**: Service ready for deployment
+1. **[ ] Weryfikacja integracji w rtsp-capture**
+   - **Metryka**: rtsp-capture używa frame-tracking poprawnie
+   - **Walidacja**:
+     ```bash
+     # Sprawdź logi rtsp-capture
+     curl -s http://nebula:8080/health | jq .
+     docker logs rtsp-capture | grep "frame_tracking"
+
+     # Sprawdź czy generowane są frame IDs
+     docker exec rtsp-capture python -c "from frame_tracking import FrameID; print(FrameID.generate())"
+     ```
+   - **Quality Gate**: Frame IDs są generowane
+   - **Czas**: 15min
+
+2. **[ ] Weryfikacja trace propagation**
+   - **Metryka**: Traces z frame.id widoczne w Jaeger
+   - **Walidacja**:
+     ```bash
+     # Sprawdź czy rtsp-capture wysyła traces
+     curl -s "http://nebula:16686/api/services" | jq '. | map(select(. == "rtsp-capture"))'
+
+     # Znajdź trace z frame.id
+     curl -s "http://nebula:16686/api/traces?service=rtsp-capture&limit=10" | \
+       jq '.[].spans[].tags[] | select(.key == "frame.id")'
+     ```
+   - **Quality Gate**: Każdy trace ma frame.id
+   - **Czas**: 15min
+
+3. **[ ] Test frame search functionality**
+   - **Metryka**: Można wyszukać klatkę po ID
+   - **Walidacja**:
+     ```bash
+     # Pobierz przykładowy frame ID
+     FRAME_ID=$(curl -s "http://nebula:16686/api/traces?service=rtsp-capture&limit=1" | \
+       jq -r '.[0].spans[0].tags[] | select(.key == "frame.id") | .value')
+
+     # Użyj trace_analyzer.py
+     ./scripts/trace_analyzer.py search "$FRAME_ID" --jaeger-url http://nebula:16686
+     ```
+   - **Quality Gate**: Trace znaleziony w <1s
+   - **Czas**: 15min
+
+4. **[ ] Performance validation biblioteki**
+   - **Metryka**: <1ms overhead na klatkę
+   - **Walidacja**:
+     ```bash
+     # Sprawdź metryki w Grafanie
+     open http://nebula:3000/d/frame-tracking
+
+     # Porównaj latency z i bez frame-tracking
+     curl -s http://nebula:8080/metrics | grep frame_processing_duration
+     ```
+   - **Quality Gate**: Overhead <1ms
+   - **Czas**: 30min
+
+5. **[x] ~~Dashboard setup~~ JUŻ ZROBIONE**
+   - **Status**: Dashboard utworzony w Bloku 3
+   - **Dostępny**: http://nebula:3000/d/frame-tracking
+   - **Dokumentacja**: dashboards/README.md
+
+6. **[ ] Dokumentacja integracji**
+   - **Metryka**: Każdy serwis wie jak użyć biblioteki
    - **Tasks**:
-     - [ ] Verify frame-tracking is in deploy-self-hosted.yml matrix
-     - [ ] Verify docker-compose.yml has frame-tracking service
-     - [ ] Create `docs/deployment/services/frame-tracking.md`
-   - **Template**: Use [New Service Guide](../../deployment/guides/new-service.md)
-   - **Quality Gate**: All deployment prerequisites met
-   - **Czas**: 30min
-
-2. **[ ] Deploy frame-tracking service**
-   - **Metryka**: Service running with tracing enabled
-   - **SINGLE COMMAND**:
-     ```bash
-     # Deploy
-     git add .
-     git commit -m "feat: deploy frame-tracking service with OpenTelemetry"
-     git push origin main
-
-     # Monitor deployment
-     gh run list --workflow=deploy-self-hosted.yml --limit=1
-     ```
-   - **Verification** (after ~5min):
-     ```bash
-     # Health check
-     curl -s http://nebula:8006/health | jq .
-
-     # Metrics check
-     curl -s http://nebula:8006/metrics | grep frame_tracking
-
-     # Trace verification
-     curl -s "http://nebula:16686/api/services" | jq '. | map(select(. == "frame-tracking"))'
-     ```
-   - **Quality Gate**: Service healthy and connected to Jaeger
-   - **Czas**: 10min
-
-3. **[ ] E2E trace validation**
-   - **Metryka**: Complete traces visible in Jaeger
-   - **Test approach**:
-     ```bash
-     # Add test-generator to docker-compose.yml if needed
-     # Deploy it via git push
-
-     # Verify traces (no SSH needed)
-     curl -s "http://nebula:16686/api/traces?service=frame-tracking&limit=10" | \
-       jq '.[].spans | length'
-     ```
-   - **Quality Gate**: All traces have frame.id tags
-   - **Czas**: 30min
-
-4. **[ ] Performance validation**
-   - **Metryka**: <1% overhead from tracing
-   - **Approach**: Deploy benchmark service via CI/CD
-   - **Monitor via Grafana**:
-     - CPU usage: http://nebula:3000/d/frame-tracking
-     - Processing latency with/without tracing
-   - **Quality Gate**: Performance within acceptable range
+     - [ ] Utwórz `docs/guides/frame-tracking-integration.md`
+     - [ ] Dodaj przykłady dla różnych serwisów
+     - [ ] Zaktualizuj README główne
+   - **Quality Gate**: Dokumentacja kompletna
    - **Czas**: 1h
-
-5. **[ ] Dashboard setup**
-   - **Metryka**: Frame tracking visualizations live
-   - **Tasks**:
-     - [ ] Create Grafana dashboard JSON
-     - [ ] Import via Grafana API
-     - [ ] Document dashboard ID in deployment guide
-   - **Verification**: http://nebula:3000/d/frame-tracking
-   - **Quality Gate**: All panels show data
-   - **Czas**: 30min
-
-6. **[ ] Stability validation**
-   - **Metryka**: 24h stable operation
-   - **Monitor**:
-     - Service uptime in Grafana
-     - Trace retention in Jaeger
-     - No memory leaks or restarts
-   - **Quality Gate**: No issues for 24h
-   - **Czas**: 24h (passive)
 
 #### 🚀 Quick Reference
 

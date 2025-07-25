@@ -58,34 +58,9 @@ services:
     depends_on:
       - redis
 
-  frame-tracking:
-    image: ghcr.io/hretheum/detektr/frame-tracking:${IMAGE_TAG:-latest}
-    restart: unless-stopped
-    ports:
-      - "8001:8001"
-    environment:
-      SERVICE_NAME: frame-tracking
-      PORT: 8001
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-detektor}:${POSTGRES_PASSWORD:-detektor_pass}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-detektor_db}
-      POSTGRES_USER: ${POSTGRES_USER:-detektor}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-detektor_pass}
-      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      POSTGRES_DB: ${POSTGRES_DB:-detektor_db}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
-    networks:
-      - detektor-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    depends_on:
-      - redis
-      - postgres
+  # frame-tracking - removed: this is a library, not a service
+  # Frame tracking functionality is provided as a library that other services import
+  # See: services/shared/frame-tracking/README.md
 
   metadata-storage:
     image: ghcr.io/hretheum/detektr/metadata-storage:${IMAGE_TAG:-latest}
