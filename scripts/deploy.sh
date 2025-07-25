@@ -325,10 +325,11 @@ action_verify() {
 
     # Define services and their health endpoints
     declare -A services=(
-        ["rtsp-capture"]="8001"
-        ["frame-tracking"]="8006"
+        ["rtsp-capture"]="8080"
+        ["frame-tracking"]="8001"
         ["metadata-storage"]="8005"
         ["base-template"]="8000"
+        ["sample-processor"]="8099"
     )
 
     declare -A infrastructure=(
