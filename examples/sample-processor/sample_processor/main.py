@@ -169,7 +169,8 @@ class SampleProcessor(
             )
 
             # Update metrics
-            self.count_frames("objects_detected", len(filtered_detections))
+            self.count_frames("success")
+            # Could also track objects detected as a custom metric if needed
 
             return result
 
@@ -315,9 +316,11 @@ async def main():
         # Show metrics
         print("\n5. Processor metrics:")
         metrics = processor.get_metrics()
-        print(f"   Frames processed: {metrics['frames_processed']}")
-        print(f"   Success rate: {metrics['success_rate']:.1%}")
-        print(f"   Average latency: {metrics['average_latency_ms']:.1f}ms")
+        print(f"   Frames processed: {metrics.get('frames_processed', 0)}")
+        if 'success_rate' in metrics:
+            print(f"   Success rate: {metrics['success_rate']:.1%}")
+        if 'average_latency_ms' in metrics:
+            print(f"   Average latency: {metrics['average_latency_ms']:.1f}ms")
 
         # Show state statistics
         print("\n6. State machine statistics:")
