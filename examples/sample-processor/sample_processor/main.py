@@ -70,7 +70,7 @@ class SampleProcessor(
         self.processing_delay_ms = processing_delay_ms
         self.model_loaded = False
 
-    async def setup(self):
+    async def _initialize(self):
         """Setup the processor - load model, initialize resources."""
         self.log_with_context("info", "Loading detection model...")
 
@@ -206,7 +206,7 @@ class SampleProcessor(
             frame_id=frame_id,
         )
 
-    async def cleanup(self):
+    async def _cleanup(self):
         """Cleanup resources."""
         self.log_with_context("info", "Unloading model...")
         self.model_loaded = False
@@ -331,7 +331,7 @@ async def main():
     finally:
         # Shutdown
         print("\n8. Shutting down...")
-        await processor.shutdown()
+        await processor.cleanup()
         print("   ✓ Processor shut down")
 
     print("\n" + "=" * 50)
