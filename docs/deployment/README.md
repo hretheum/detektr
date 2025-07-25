@@ -199,10 +199,14 @@ gh workflow run ghcr-cleanup.yml -f dry_run=true
 - [Frame Tracking](services/frame-tracking.md)
 - [PostgreSQL/TimescaleDB](services/postgresql-timescale.md)
 - [Message Broker](services/message-broker.md)
+- [PgBouncer](services/pgbouncer.md)
 
 ## 🔧 Dodawanie Nowego Serwisu
 
-Zobacz: [New Service Guide](guides/new-service.md)
+**⚠️ WAŻNE**: Przed dodaniem nowej usługi przeczytaj:
+- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - **Rozwiązania znanych problemów**
+- [PORT_ALLOCATION.md](./PORT_ALLOCATION.md) - **Lista zajętych portów**
+- [New Service Guide](guides/new-service.md) - Szczegółowy przewodnik
 
 ---
 
