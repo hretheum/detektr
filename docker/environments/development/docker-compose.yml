@@ -131,7 +131,7 @@ services:
         "--host",
         "0.0.0.0",
         "--port",
-        "8005",
+        "8009",
         "--reload",
       ]
 
@@ -160,7 +160,7 @@ services:
         "--host",
         "0.0.0.0",
         "--port",
-        "8010",
+        "8000",
         "--reload",
       ]
 
@@ -204,7 +204,7 @@ services:
     <<: *development-defaults
     image: adminer:latest
     ports:
-      - "8080:8080"
+      - "8083:8080"
     environment:
       - ADMINER_DEFAULT_SERVER=postgres
     depends_on:
