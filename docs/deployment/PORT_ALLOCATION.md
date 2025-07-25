@@ -39,6 +39,7 @@
 | **8013** | Scene Understanding | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
 | **8014** | HA Bridge | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
 | **8015** | Telegram Alerts | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
+| **8099** | Example Processor | Dev | base/docker-compose.yml | 🔧 Dev |
 | **8404** | Redis HAProxy Stats | HA | redis-ha/docker-compose.redis-ha.yml | 🔄 Optional |
 | **9090** | Prometheus | All | docker-compose.observability.yml | ✅ Active |
 | **9093** | Alertmanager | Monitoring | docker-compose.observability.yml | 🔄 Optional |

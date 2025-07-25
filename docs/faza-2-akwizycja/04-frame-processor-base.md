@@ -132,16 +132,19 @@ Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwis
    - **Guardrails**: Dependencies pinned
    - **Czas**: 1.5h
 
-2. **[ ] GitHub Actions dla shared libraries**
-   - **Metryka**: Auto-publish to package registry
+2. **[ ] Integration with release workflow**
+   - **Metryka**: Auto-publish on version tag
    - **Walidacja**:
      ```bash
-     cat .github/workflows/base-processor-publish.yml
+     # Check release workflow exists
+     cat .github/workflows/release.yml | grep base-processor
+
+     # Test with tag
      git tag v1.0.0 && git push --tags
-     # Package published to GitHub Packages
+     # Monitor GitHub Actions for package build
      ```
    - **Quality Gate**: Tests pass before publish
-   - **Guardrails**: Semantic versioning
+   - **Guardrails**: Semantic versioning enforced
    - **Czas**: 1.5h
 
 3. **[ ] Dockerfile template dla processors**
@@ -150,64 +153,107 @@ Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwis
      ```dockerfile
      # Dockerfile.processor template includes:
      FROM python:3.11-slim
-     # Base processor pre-installed
-     RUN pip install base-processor==1.0.0
+     # Base processor from source (until package registry ready)
+     COPY services/shared/base-processor /tmp/base-processor
+     RUN pip install /tmp/base-processor
      ```
    - **Quality Gate**: Template builds <2min
-   - **Guardrails**: Security scanning enabled
+   - **Guardrails**: Security scanning in main-pipeline.yml
    - **Czas**: 1h
 
-### Blok 6: DEPLOYMENT NA SERWERZE NEBULA
+### Blok 6: Example Processor Deployment
 
-#### 🎯 **NOWA PROCEDURA - UŻYJ UNIFIED DOCUMENTATION**
+#### 🎯 **AKTUALIZACJA - Używamy Unified Pipeline**
 
-**Wszystkie procedury deploymentu** znajdują się w: `docs/deployment/services/frame-processor-base.md`
+**Dokumentacja**: [docs/deployment/services/frame-processor-base.md](../../deployment/services/frame-processor-base.md)
 
 #### Zadania atomowe
 
-1. **[ ] Deploy via CI/CD pipeline**
-   - **Metryka**: Automated deployment to Nebula via GitHub Actions
-   - **Walidacja**: `git push origin main` triggers deployment
-   - **Procedura**: [docs/deployment/services/frame-processor-base.md#deploy](docs/deployment/services/frame-processor-base.md#deploy)
+1. **[ ] Create example processor service**
+   - **Metryka**: Working example using base processor
+   - **Walidacja**:
+     ```bash
+     # Check example exists
+     ls -la examples/sample-processor/
+     # Test locally
+     cd examples/sample-processor
+     python -m sample_processor.main
+     ```
+   - **Quality Gate**: All base features demonstrated
+   - **Czas**: 1h
 
-2. **[ ] Deploy example processor**
-   - **Metryka**: Example processor running on port 8099
-   - **Walidacja**: `curl http://nebula:8099/health` returns healthy
-   - **Procedura**: [docs/deployment/services/frame-processor-base.md#example](docs/deployment/services/frame-processor-base.md#example)
+2. **[ ] Add to docker-compose if needed**
+   - **Metryka**: Service defined in docker/base/docker-compose.yml
+   - **Walidacja**:
+     ```yaml
+     # Add to docker/base/docker-compose.yml:
+     example-processor:
+       build: ./examples/sample-processor
+       ports:
+         - "8099:8099"
+     ```
+   - **Quality Gate**: Port allocated in PORT_ALLOCATION.md
+   - **Czas**: 0.5h
 
-3. **[ ] Weryfikacja metryk w Prometheus**
-   - **Metryka**: Processor metrics visible at http://nebula:9090
-   - **Walidacja**: `curl http://nebula:9090/api/v1/query?query=processor_frames_processed_total`
-   - **Procedura**: [docs/deployment/services/frame-processor-base.md#monitoring](docs/deployment/services/frame-processor-base.md#monitoring)
+3. **[ ] Deploy via main-pipeline**
+   - **Metryka**: Service running on Nebula
+   - **Walidacja**:
+     ```bash
+     # Option 1: Manual trigger
+     gh workflow run main-pipeline.yml -f services=example-processor
 
-4. **[ ] Integracja z Jaeger tracing**
-   - **Metryka**: Traces visible at http://nebula:16686
-   - **Walidacja**: `curl http://nebula:16686/api/traces?service=example-processor`
-   - **Procedura**: [docs/deployment/services/frame-processor-base.md#tracing](docs/deployment/services/frame-processor-base.md#tracing)
+     # Option 2: Push to main (if changes detected)
+     git push origin main
 
-5. **[ ] Performance baseline test**
-   - **Metryka**: <1ms overhead per frame verified
-   - **Walidacja**: Benchmark tests via CI/CD
-   - **Procedura**: [docs/deployment/services/frame-processor-base.md#benchmarks](docs/deployment/services/frame-processor-base.md#benchmarks)
+     # Verify deployment
+     curl http://nebula:8099/health
+     ```
+   - **Quality Gate**: Health check passes
+   - **Czas**: 0.5h
 
-#### **🚀 JEDNA KOMENDA DO WYKONANIA:**
+4. **[ ] Verify observability integration**
+   - **Metryka**: Metrics and traces visible
+   - **Walidacja**:
+     ```bash
+     # Check Prometheus metrics
+     curl http://nebula:9090/api/v1/query?query=processor_frames_processed_total{service="example-processor"}
+
+     # Check Jaeger traces (after processing some frames)
+     curl http://nebula:16686/api/traces?service=example-processor&limit=10
+     ```
+   - **Quality Gate**: All metrics exported correctly
+   - **Czas**: 0.5h
+
+5. **[ ] Run performance validation**
+   - **Metryka**: <1ms overhead confirmed
+   - **Walidacja**:
+     ```bash
+     # Check benchmark results in CI/CD logs
+     gh run list --workflow=pr-checks.yml --limit=1
+     gh run view [RUN_ID] --log
+
+     # Or run locally
+     cd services/shared/base-processor
+     pytest tests/benchmarks/test_performance.py -v
+     ```
+   - **Quality Gate**: Performance within baseline
+   - **Czas**: 0.5h
+
+#### **📋 Alternatywne metody deployment:**
 ```bash
-# Cały Blok 6 wykonuje się automatycznie:
-git push origin main
+# Local development
+cd examples/sample-processor
+docker build -t example-processor .
+docker run -p 8099:8099 example-processor
+
+# Production via script
+./scripts/deploy.sh production deploy
 ```
 
-#### **📋 Walidacja sukcesu:**
-```bash
-# Sprawdź deployment:
-curl http://nebula:8099/health
-curl http://nebula:8099/metrics
-curl http://nebula:8099/ready
-```
-
-#### **🔗 Linki do procedur:**
-- **Deployment Guide**: [docs/deployment/services/frame-processor-base.md](docs/deployment/services/frame-processor-base.md)
-- **Quick Start**: [docs/deployment/quick-start.md](docs/deployment/quick-start.md)
-- **Troubleshooting**: [docs/deployment/troubleshooting/common-issues.md](docs/deployment/troubleshooting/common-issues.md)
+#### **🔗 Aktualne linki:**
+- **Frame Processor Base Guide**: [docs/deployment/services/frame-processor-base.md](../../deployment/services/frame-processor-base.md)
+- **Main Pipeline Usage**: [.github/workflows/main-pipeline.yml](../../.github/workflows/main-pipeline.yml)
+- **Service Template**: [docs/deployment/templates/service-template.md](../../deployment/templates/service-template.md)
 
 #### **🔍 Metryki sukcesu bloku:**
 - ✅ Base processor package published to GitHub Packages
