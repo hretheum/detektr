@@ -130,9 +130,9 @@ check_prerequisites() {
 
 get_compose_command() {
     if [[ "$TARGET_HOST" == "localhost" ]]; then
-        echo "COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]}"
+        echo "COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]}"
     else
-        echo "ssh $TARGET_HOST 'cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]}'"
+        echo "ssh $TARGET_HOST 'cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]}'"
     fi
 }
 
@@ -171,21 +171,21 @@ action_deploy() {
         # Stop services that will be redeployed
         if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
             for service in $DEPLOY_SERVICES; do
-                COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" stop "$service" 2>/dev/null || true
-                COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" rm -f "$service" 2>/dev/null || true
+                COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" stop "$service" 2>/dev/null || true
+                COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" rm -f "$service" 2>/dev/null || true
             done
         else
-            COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" down
+            COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down
         fi
 
         # Option to remove images too if FORCE_IMAGE_CLEANUP is set
         if [[ "${FORCE_IMAGE_CLEANUP:-false}" == "true" ]]; then
             log "Force removing old images..."
-            COMPOSE_PROJECT_NAME=detektor COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" down --rmi local 2>/dev/null || true
+            COMPOSE_PROJECT_NAME=detektor COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down --rmi local 2>/dev/null || true
         fi
 
         # Pull fresh images
-        COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" pull
+        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" pull
     else
         # Copy necessary files first
         log "Copying deployment files to $TARGET_HOST..."
@@ -204,9 +204,9 @@ action_deploy() {
             log "Stopping and removing specific services: $DEPLOY_SERVICES"
             for service in $DEPLOY_SERVICES; do
                 # shellcheck disable=SC2029
-                ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} stop $service 2>/dev/null || true"
+                ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} stop $service 2>/dev/null || true"
                 # shellcheck disable=SC2029
-                ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} rm -f $service 2>/dev/null || true"
+                ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} rm -f $service 2>/dev/null || true"
                 # Remove the old image for this service to ensure fresh pull
                 # shellcheck disable=SC2029
                 ssh "$TARGET_HOST" "docker rmi ghcr.io/hretheum/detektr/$service:latest 2>/dev/null || true"
@@ -220,28 +220,28 @@ action_deploy() {
         if [[ "${FORCE_IMAGE_CLEANUP:-false}" == "true" ]]; then
             log "Force removing old images..."
             # shellcheck disable=SC2029
-            ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} down --rmi local 2>/dev/null || true"
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} down --rmi local 2>/dev/null || true"
         fi
 
         # Pull fresh images on remote
         if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
             # Pull only specific services
             # shellcheck disable=SC2029
-            ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} pull $DEPLOY_SERVICES"
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} pull $DEPLOY_SERVICES"
         else
             # Pull all images
             # shellcheck disable=SC2029
-            ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} pull"
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} pull"
         fi
     fi
 
     # Deploy services
     log "Starting services..."
     if [[ "$TARGET_HOST" == "localhost" ]]; then
-        COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" up -d --remove-orphans
+        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans
     else
         # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} up -d --remove-orphans"
+        ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans"
     fi
 
     # Wait for services to start
@@ -268,10 +268,10 @@ action_status() {
     log "Checking service status in $ENVIRONMENT..."
 
     if [[ "$TARGET_HOST" == "localhost" ]]; then
-        COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" ps
+        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" ps
     else
         # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} ps"
+        ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} ps"
     fi
 }
 
@@ -279,10 +279,10 @@ action_logs() {
     log "Showing logs for $ENVIRONMENT..."
 
     if [[ "$TARGET_HOST" == "localhost" ]]; then
-        COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" logs "${ADDITIONAL_ARGS[@]}"
+        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" logs "${ADDITIONAL_ARGS[@]}"
     else
         # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} logs ${ADDITIONAL_ARGS[*]}"
+        ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} logs ${ADDITIONAL_ARGS[*]}"
     fi
 }
 
@@ -290,10 +290,10 @@ action_restart() {
     log "Restarting services in $ENVIRONMENT..."
 
     if [[ "$TARGET_HOST" == "localhost" ]]; then
-        docker compose "${COMPOSE_FILES[@]}" restart "${ADDITIONAL_ARGS[@]}"
+        docker compose --env-file .env "${COMPOSE_FILES[@]}" restart "${ADDITIONAL_ARGS[@]}"
     else
         # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" "cd $TARGET_DIR && docker compose ${COMPOSE_FILES[*]} restart ${ADDITIONAL_ARGS[*]}"
+        ssh "$TARGET_HOST" "cd $TARGET_DIR && docker compose --env-file .env ${COMPOSE_FILES[*]} restart ${ADDITIONAL_ARGS[*]}"
     fi
 }
 
@@ -301,10 +301,10 @@ action_stop() {
     log "Stopping services in $ENVIRONMENT..."
 
     if [[ "$TARGET_HOST" == "localhost" ]]; then
-        COMPOSE_PROJECT_NAME=detektor docker compose "${COMPOSE_FILES[@]}" down
+        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down
     else
         # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} down"
+        ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} down"
     fi
 }
 
