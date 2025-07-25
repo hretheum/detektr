@@ -1,0 +1,58 @@
+FROM python:3.11-slim as builder
+
+# Build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install base processor from source
+COPY services/shared/base-processor /tmp/base-processor
+RUN pip install --no-cache-dir /tmp/base-processor
+
+# Production stage
+FROM python:3.11-slim
+
+# Runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libgomp1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -s /bin/bash processor
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Set working directory
+WORKDIR /app
+
+# Copy processor code
+COPY examples/sample-processor/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY examples/sample-processor/ ./
+
+# Set ownership
+RUN chown -R processor:processor /app
+
+# Switch to non-root user
+USER processor
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PROCESSOR_NAME=sample-processor
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8099}/health || exit 1
+
+# Run the processor
+CMD ["python", "-m", "sample_processor.main"]

@@ -109,6 +109,37 @@ services:
   # EXAMPLE & DEMO SERVICES
   # =================================
 
+  sample-processor:
+    image: ghcr.io/hretheum/detektr/sample-processor:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8099:8099"
+    environment:
+      SERVICE_NAME: sample-processor
+      PROCESSOR_NAME: sample-processor
+      PORT: 8099
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENABLE_METRICS: "true"
+      ENABLE_TRACING: "true"
+      OTEL_SERVICE_NAME: sample-processor
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+      CPU_CORES: ${CPU_CORES:-2}
+      MEMORY_LIMIT_MB: ${MEMORY_LIMIT_MB:-1024}
+      PREFER_GPU: ${PREFER_GPU:-false}
+      CONFIDENCE_THRESHOLD: ${CONFIDENCE_THRESHOLD:-0.7}
+      BATCH_SIZE: ${BATCH_SIZE:-4}
+      PROCESSING_DELAY_MS: ${PROCESSING_DELAY_MS:-50}
+    networks:
+      - detektor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8099/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - jaeger
+
   example-otel:
     image: ghcr.io/hretheum/detektr/example-otel:${IMAGE_TAG:-latest}
     restart: unless-stopped

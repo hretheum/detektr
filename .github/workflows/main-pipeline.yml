@@ -86,6 +86,9 @@ jobs:
               - 'services/ha-bridge/**'
             llm-intent:
               - 'services/llm-intent/**'
+            sample-processor:
+              - 'examples/sample-processor/**'
+              - 'services/shared/base-processor/**'
 
       - name: Determine services to build
         id: determine-services
@@ -111,13 +114,14 @@ jobs:
               "object-detection"
               "ha-bridge"
               "llm-intent"
+              "sample-processor"
             )
           elif [[ "${{ github.event.inputs.services }}" == "changed" ]]; then
             # Use detected changes
             changes='${{ toJSON(steps.changes.outputs.changes) }}'
             if [[ "$changes" != "{}" && "$changes" != "null" ]]; then
               # Parse JSON and extract service names that changed
-              for service in rtsp-capture frame-tracking frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent; do
+              for service in rtsp-capture frame-tracking frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
                 if [[ $(echo "$changes" | jq -r ".$service // false") == "true" ]]; then
                   services+=("$service")
                 fi
@@ -218,7 +222,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: services/${{ matrix.service }}/Dockerfile
+          file: ${{ matrix.service == 'sample-processor' && 'examples/sample-processor/Dockerfile' || format('services/{0}/Dockerfile', matrix.service) }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

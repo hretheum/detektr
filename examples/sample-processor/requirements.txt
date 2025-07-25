@@ -1,3 +1,3 @@
+aiohttp>=3.9.0
 numpy>=1.24.0
-# In production, add:
-# base-processor==1.0.0
+# Base processor will be installed from source in Dockerfile
