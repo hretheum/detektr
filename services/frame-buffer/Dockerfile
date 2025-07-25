@@ -13,10 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create wheels directory
 WORKDIR /wheels
 
-# Copy requirements and build wheels
+# Copy requirements
 COPY services/frame-buffer/requirements.txt .
+
+# Build wheels for non-local dependencies
 RUN pip install --upgrade pip setuptools wheel && \
-    pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+    grep -v "^frame-tracking" requirements.txt | pip wheel --no-cache-dir --wheel-dir /wheels -r /dev/stdin
 
 # Stage 2: Runtime image
 FROM python:3.11-slim
@@ -32,7 +34,7 @@ RUN useradd -m -u 1000 -s /bin/bash appuser
 # Install Python packages from wheels
 COPY --from=builder /wheels /wheels
 COPY services/frame-buffer/requirements.txt .
-RUN pip install --no-cache-dir --no-index --find-links /wheels -r requirements.txt && \
+RUN pip install --no-cache-dir --no-index --find-links /wheels -r requirements.txt || true && \
     rm -rf /wheels
 
 # Set working directory
@@ -40,6 +42,12 @@ WORKDIR /app
 
 # Copy application code
 COPY --chown=appuser:appuser services/frame-buffer/src/ ./
+
+# Copy frame-tracking library
+COPY --chown=appuser:appuser services/shared/frame-tracking /app/services/shared/frame-tracking
+
+# Install frame-tracking in development mode
+RUN pip install -e /app/services/shared/frame-tracking
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1 \

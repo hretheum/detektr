@@ -18,6 +18,18 @@ from typing import Optional
 import redis.asyncio as redis
 from fastapi import FastAPI, HTTPException, status
 
+# Import frame tracking
+try:
+    from frame_tracking import TraceContext
+    from opentelemetry.trace.propagation.tracecontext import (
+        TraceContextTextMapPropagator,
+    )
+
+    FRAME_TRACKING_AVAILABLE = True
+except ImportError:
+    FRAME_TRACKING_AVAILABLE = False
+    print("Warning: frame-tracking library not available")
+
 # Import health check router
 from health import health_router, update_health_state
 
@@ -108,8 +120,17 @@ async def get_redis_client() -> redis.Redis:
 
 @app.post("/frames/enqueue")
 async def enqueue_frame(frame_data: dict):
-    """Add frame to buffer."""
+    """Add frame to buffer with trace context propagation."""
     client = await get_redis_client()
+
+    # Extract trace context if available
+    trace_ctx = None
+    if FRAME_TRACKING_AVAILABLE and "traceparent" in frame_data:
+        propagator = TraceContextTextMapPropagator()
+        ctx = propagator.extract(frame_data)
+        trace_ctx = TraceContext.from_context(
+            ctx, frame_data.get("frame_id", "unknown")
+        )
 
     with frame_processing_time.labels(operation="enqueue").time():
         try:
@@ -129,10 +150,25 @@ async def enqueue_frame(frame_data: dict):
                     detail="Buffer full",
                 )
 
+            # Prepare data with trace context
+            queue_data = {"frame_data": json.dumps(frame_data)}
+
+            # Inject trace context for propagation
+            if FRAME_TRACKING_AVAILABLE and trace_ctx:
+                with trace_ctx as ctx:
+                    ctx.add_event("frame_buffer_enqueue")
+                    ctx.set_attributes(
+                        {
+                            "buffer.size": current_size,
+                            "buffer.max_size": MAX_BUFFER_SIZE,
+                            "frame.id": frame_data.get("frame_id", "unknown"),
+                        }
+                    )
+                    propagator = TraceContextTextMapPropagator()
+                    propagator.inject(queue_data)
+
             # Add to queue with JSON serialization
-            message_id = await client.xadd(
-                FRAME_QUEUE_NAME, {"frame_data": json.dumps(frame_data)}
-            )
+            message_id = await client.xadd(FRAME_QUEUE_NAME, queue_data)
 
             frame_counter.labels(operation="enqueue", status="success").inc()
             buffer_size_gauge.set(current_size + 1)
@@ -153,7 +189,7 @@ async def enqueue_frame(frame_data: dict):
 
 @app.get("/frames/dequeue")
 async def dequeue_frame(count: int = 1):
-    """Retrieve frames from buffer."""
+    """Retrieve frames from buffer with trace context extraction."""
     client = await get_redis_client()
 
     with frame_processing_time.labels(operation="dequeue").time():
@@ -177,8 +213,44 @@ async def dequeue_frame(count: int = 1):
                 for message_id, data in messages:
                     try:
                         # Parse JSON frame data
-                        frame_json = data.get("frame_data", "{}")
+                        frame_json = data.get(b"frame_data", b"{}")
+                        if isinstance(frame_json, bytes):
+                            frame_json = frame_json.decode("utf-8")
                         frame_data = json.loads(frame_json)
+
+                        # Extract trace context if available
+                        if FRAME_TRACKING_AVAILABLE:
+                            # Convert bytes keys to strings for trace propagation
+                            str_data = {
+                                k.decode()
+                                if isinstance(k, bytes)
+                                else k: v.decode()
+                                if isinstance(v, bytes)
+                                else v
+                                for k, v in data.items()
+                            }
+
+                            # Extract trace context
+                            propagator = TraceContextTextMapPropagator()
+                            ctx = propagator.extract(str_data)
+
+                            # Create trace context and add dequeue event
+                            if ctx:
+                                with TraceContext.from_context(
+                                    ctx, frame_data.get("frame_id", "unknown")
+                                ) as trace_ctx:
+                                    trace_ctx.add_event("frame_buffer_dequeue")
+                                    trace_ctx.set_attributes(
+                                        {
+                                            "buffer.message_id": message_id.decode()
+                                            if isinstance(message_id, bytes)
+                                            else message_id
+                                        }
+                                    )
+
+                                    # Re-inject trace context for downstream
+                                    propagator.inject(frame_data)
+
                         result_frames.append(frame_data)
                         message_ids.append(message_id)
                     except Exception as e:
@@ -338,6 +410,38 @@ async def reprocess_dlq(max_items: int = 100):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
+
+
+@app.post("/test-frame")
+async def test_frame_with_trace(test_data: dict):
+    """Test endpoint to verify trace propagation."""
+    if not FRAME_TRACKING_AVAILABLE:
+        return {"error": "Frame tracking not available"}
+
+    # Extract trace context from test data
+    if "traceparent" in test_data:
+        propagator = TraceContextTextMapPropagator()
+        ctx = propagator.extract(test_data)
+
+        with TraceContext.from_context(
+            ctx, test_data.get("frame_id", "test")
+        ) as trace_ctx:
+            trace_ctx.add_event("test_frame_buffer")
+
+            # Test enqueue
+            enqueue_result = await enqueue_frame(test_data)
+
+            # Test dequeue
+            dequeue_result = await dequeue_frame(count=1)
+
+            return {
+                "frame_tracking_enabled": True,
+                "trace_id": trace_ctx.get_trace_id(),
+                "enqueue_result": enqueue_result,
+                "dequeue_result": dequeue_result,
+            }
+    else:
+        return {"error": "No traceparent header provided"}
 
 
 if __name__ == "__main__":
