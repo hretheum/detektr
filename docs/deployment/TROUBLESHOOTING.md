@@ -246,3 +246,4 @@ docker volume ls | grep base_ | awk '{print $2}' | xargs docker volume rm
 2. Zmienne środowiskowe (--env-file .env)
 3. Nazwę projektu (COMPOSE_PROJECT_NAME=detektor)
 4. Logi kontenera (docker logs)
+# Force deployment with updated deploy.sh
