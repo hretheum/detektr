@@ -107,3 +107,4 @@ SHOW STATS;
 - Userlist.txt must have 600 permissions
 - Regularly rotate database passwords
 - Monitor failed authentication attempts in logs
+# PgBouncer jest teraz używany jako bitnami/pgbouncer
