@@ -31,23 +31,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create non-root user
 RUN useradd -m -u 1000 -s /bin/bash appuser
 
-# Install Python packages from wheels
-COPY --from=builder /wheels /wheels
-COPY services/frame-buffer/requirements.txt .
-RUN pip install --no-cache-dir --no-index --find-links /wheels -r requirements.txt && \
-    rm -rf /wheels
-
 # Set working directory
 WORKDIR /app
 
-# Copy application code
-COPY --chown=appuser:appuser services/frame-buffer/src/ ./
-
-# Copy frame-tracking library
+# Copy frame-tracking library first
 COPY --chown=appuser:appuser services/shared/frame-tracking /app/services/shared/frame-tracking
 
-# Install frame-tracking in development mode
-RUN pip install -e /app/services/shared/frame-tracking
+# Install Python packages from wheels
+COPY --from=builder /wheels /wheels
+COPY services/frame-buffer/requirements.txt .
+RUN pip install --no-cache-dir --no-index --find-links /wheels \
+    $(grep -v "^frame-tracking" requirements.txt) && \
+    pip install -e /app/services/shared/frame-tracking && \
+    rm -rf /wheels
+
+# Copy application code
+COPY --chown=appuser:appuser services/frame-buffer/src/ ./
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1 \
