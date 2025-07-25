@@ -14,6 +14,9 @@
 
 set -euo pipefail
 
+# Always use consistent project name
+export COMPOSE_PROJECT_NAME=detektor
+
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"

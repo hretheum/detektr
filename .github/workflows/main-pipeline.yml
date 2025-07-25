@@ -297,7 +297,8 @@ jobs:
           echo "📦 Tag: $IMAGE_TAG"
           echo "📦 Deploy Directory: $DEPLOY_DIR"
 
-          # Execute deployment
+          # Execute deployment with proper project name
+          export COMPOSE_PROJECT_NAME=detektor
           ./scripts/deploy.sh "$ENVIRONMENT" deploy || {
             echo "❌ Deployment failed"
             exit 1
