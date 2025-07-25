@@ -3,7 +3,7 @@ import asyncio
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import numpy as np
 
@@ -16,11 +16,14 @@ sys.path.insert(
     ),
 )
 
-from base_processor import BaseProcessor
-from base_processor.batch_processor import BatchProcessorMixin
-from base_processor.exceptions import ProcessingError, ValidationError
-from base_processor.resource_manager import ResourceManagerMixin
-from base_processor.state_machine import StateMachineMixin, StateTransition
+from base_processor import BaseProcessor  # noqa: E402
+from base_processor.batch_processor import BatchProcessorMixin  # noqa: E402
+from base_processor.exceptions import ValidationError  # noqa: E402
+from base_processor.resource_manager import ResourceManagerMixin  # noqa: E402
+from base_processor.state_machine import (  # noqa: E402
+    StateMachineMixin,
+    StateTransition,
+)
 
 
 class SampleProcessor(
@@ -53,7 +56,7 @@ class SampleProcessor(
         """
         # Extract name for BaseProcessor
         name = kwargs.pop("name", "sample-processor")
-        
+
         # Remove args that BaseProcessor doesn't accept
         kwargs.pop("enable_metrics", None)
         kwargs.pop("enable_tracing", None)
@@ -61,9 +64,10 @@ class SampleProcessor(
         kwargs.pop("cpu_cores", None)
         kwargs.pop("memory_limit_mb", None)
         kwargs.pop("prefer_gpu", None)
-        
-        # Initialize with only name
-        super().__init__(name=name)
+
+        # Initialize all parent classes properly
+        # Pass empty kwargs to ensure all mixins initialize
+        super().__init__(name=name, **{})
 
         self.detection_threshold = detection_threshold
         self.simulate_gpu = simulate_gpu
@@ -71,7 +75,7 @@ class SampleProcessor(
         self.model_loaded = False
 
     async def _initialize(self):
-        """Setup the processor - load model, initialize resources."""
+        """Setup the processor - load model, initialize resources."""  # noqa: D401
         self.log_with_context("info", "Loading detection model...")
 
         # Simulate model loading
@@ -183,7 +187,7 @@ class SampleProcessor(
         num_objects = int((avg_intensity / 255) * 5)  # 0-5 objects
 
         detections = []
-        for i in range(num_objects):
+        for _ in range(num_objects):
             # Random bounding box
             x1 = np.random.randint(0, w - 50)
             y1 = np.random.randint(0, h - 50)
@@ -200,7 +204,7 @@ class SampleProcessor(
         return detections
 
     async def _on_detection_complete(self, frame_id: str, metadata: Dict[str, Any]):
-        """Callback when detection completes."""
+        """Callback when detection completes."""  # noqa: D401
         self.log_with_context(
             "debug",
             f"Detection completed for frame {frame_id}",
@@ -216,7 +220,7 @@ class SampleProcessor(
         self.state_machine.cleanup()
 
     def supports_batch_processing(self) -> bool:
-        """This processor supports batch processing."""
+        """This processor supports batch processing."""  # noqa: D401
         return True
 
     async def prepare_batch(
@@ -288,7 +292,8 @@ async def main():
         for frame, metadata in zip(frames[:2], metadata_list[:2]):
             result = await processor.process(frame, metadata)
             print(
-                f"   Frame {metadata['frame_id']}: {result['total_objects']} objects detected"
+                f"   Frame {metadata['frame_id']}: "
+                f"{result['total_objects']} objects detected"
             )
 
         # Process batch
