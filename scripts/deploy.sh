@@ -198,15 +198,19 @@ action_deploy() {
         # Stop and remove old containers on remote
         log "Removing old containers on remote host..."
         if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
+            log "Stopping and removing specific services: $DEPLOY_SERVICES"
             for service in $DEPLOY_SERVICES; do
                 # shellcheck disable=SC2029
                 ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} stop $service 2>/dev/null || true"
                 # shellcheck disable=SC2029
                 ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} rm -f $service 2>/dev/null || true"
+                # Remove the old image for this service to ensure fresh pull
+                # shellcheck disable=SC2029
+                ssh "$TARGET_HOST" "docker rmi ghcr.io/hretheum/detektr/$service:latest 2>/dev/null || true"
             done
         else
-            # shellcheck disable=SC2029
-            ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} down"
+            log "No specific services specified - using rolling update strategy"
+            # Don't use 'down' which kills everything - just let 'up -d' handle updates
         fi
 
         # Option to remove images too if FORCE_IMAGE_CLEANUP is set
@@ -217,8 +221,15 @@ action_deploy() {
         fi
 
         # Pull fresh images on remote
-        # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} pull"
+        if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
+            # Pull only specific services
+            # shellcheck disable=SC2029
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} pull $DEPLOY_SERVICES"
+        else
+            # Pull all images
+            # shellcheck disable=SC2029
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && COMPOSE_PROJECT_NAME=detektor docker compose ${COMPOSE_FILES[*]} pull"
+        fi
     fi
 
     # Deploy services
