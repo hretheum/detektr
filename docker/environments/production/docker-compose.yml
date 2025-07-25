@@ -54,6 +54,8 @@ services:
     environment:
       - LOG_LEVEL=INFO
       - METRICS_ENABLED=true
+    profiles:
+      - demo
 
   example-otel:
     <<: *production-defaults
@@ -62,6 +64,8 @@ services:
       - LOG_LEVEL=INFO
       - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://jaeger:4317
       - OTEL_METRICS_EXPORTER=prometheus
+    profiles:
+      - demo
 
   base-template:
     <<: *production-defaults
@@ -108,6 +112,9 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    profiles:
+      - demo
+      - gpu
 
   # Infrastructure services with production limits
   postgres:
