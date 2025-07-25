@@ -1,5 +1,6 @@
 # Core dependencies
 numpy==1.26.2
+psutil==5.9.6
 
 # Observability
 opentelemetry-api==1.21.0

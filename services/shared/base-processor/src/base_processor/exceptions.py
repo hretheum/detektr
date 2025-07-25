@@ -29,3 +29,9 @@ class InitializationError(ProcessorException):
     """Processor initialization error."""
 
     pass
+
+
+class ResourceError(ProcessorException):
+    """Resource allocation/management error."""
+
+    pass

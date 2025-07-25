@@ -43,17 +43,17 @@ Stworzyć bazowy serwis przetwarzania klatek jako template dla wszystkich serwis
 
 #### Zadania atomowe
 
-1. **[ ] Automatic OpenTelemetry tracing**
+1. **[x] Automatic OpenTelemetry tracing**
    - **Metryka**: Every method traced
    - **Walidacja**: Jaeger shows full traces
    - **Czas**: 2h
 
-2. **[ ] Prometheus metrics decorators**
+2. **[x] Prometheus metrics decorators**
    - **Metryka**: Auto-metrics dla latency, errors
    - **Walidacja**: Metrics endpoint test
    - **Czas**: 2h
 
-3. **[ ] Structured logging z context**
+3. **[x] Structured logging z context**
    - **Metryka**: Correlation IDs preserved
    - **Walidacja**: Log aggregation test
    - **Czas**: 1h
