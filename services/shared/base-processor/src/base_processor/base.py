@@ -25,7 +25,12 @@ class BaseProcessor(ABC, TracingMixin, MetricsMixin, LoggingMixin):
         Args:
             name: Optional processor name, defaults to class name
         """
+        # Set name first as mixins need it
         self.name = name or self.__class__.__name__
+
+        # Initialize all mixins after name is set
+        super().__init__()
+
         self.logger = logging.getLogger(self.name)
         self.metrics = ProcessorMetrics()
         self.is_initialized = False
@@ -109,9 +114,11 @@ class BaseProcessor(ABC, TracingMixin, MetricsMixin, LoggingMixin):
         frame_id = metadata.get("frame_id", f"frame_{time.time()}")
 
         # Start processing context for logging
-        with ProcessingContext(self.name, frame_id=frame_id):
+        with ProcessingContext(self.name, frame_id=frame_id):  # noqa: SIM117
             # Start span for tracing
-            with ProcessorSpan(self.tracer, "process_frame", self.name, frame_id):
+            with ProcessorSpan(
+                self.tracer, "process_frame", self.name, frame_id
+            ):  # noqa: SIM117
                 # Start metrics context
                 with MetricsContext(self.name, "process_frame"):
                     start_time = time.time()
@@ -256,7 +263,7 @@ class BaseProcessor(ABC, TracingMixin, MetricsMixin, LoggingMixin):
         return pipeline
 
     async def _validate_stage(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Validation stage of pipeline."""
+        """Validate input in pipeline stage."""  # noqa: D401
         frame = context.get("frame")
         metadata = context.get("metadata")
         self._validate_input(frame, metadata)
@@ -275,7 +282,7 @@ class BaseProcessor(ABC, TracingMixin, MetricsMixin, LoggingMixin):
         return context
 
     async def _process_stage(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Main processing stage with retry logic."""
+        """Process frame with retry logic."""  # noqa: D401
         frame = context["frame"]
         metadata = context["metadata"]
 

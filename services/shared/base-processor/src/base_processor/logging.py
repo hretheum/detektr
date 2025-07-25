@@ -4,7 +4,7 @@ import contextvars
 import functools
 import logging
 import uuid
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 import structlog
 from structlog.processors import JSONRenderer, TimeStamper, add_log_level
@@ -88,6 +88,7 @@ class LoggingMixin:
     """Mixin to add structured logging to processors."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize logging mixin."""  # noqa: D107
         super().__init__(*args, **kwargs)
         self.logger = structlog.get_logger(self.__class__.__name__)
         # Bind processor name permanently
@@ -138,6 +139,7 @@ class ProcessingContext:
         frame_id: Optional[str] = None,
         correlation_id: Optional[str] = None,
     ):
+        """Initialize processing context."""  # noqa: D107
         self.processor_name = processor_name
         self.frame_id = frame_id or str(uuid.uuid4())
         self.correlation_id = correlation_id or str(uuid.uuid4())
@@ -154,18 +156,20 @@ class ProcessingContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit processing context."""
-        # Reset context variables
-        for token in self.tokens:
-            processor_name_var.reset(token)
+        # Reset context variables in reverse order
+        if self.tokens:
+            correlation_id_var.reset(self.tokens[-1])
+            frame_id_var.reset(self.tokens[-2])
+            processor_name_var.reset(self.tokens[-3])
 
 
 def log_method_call(level: str = "info", include_args: bool = False):
-    """Decorator to log method calls.
+    """Log method calls with optional arguments.
 
     Args:
         level: Log level
         include_args: Whether to include method arguments in logs
-    """
+    """  # noqa: D401
 
     def decorator(func):
         @functools.wraps(func)
@@ -300,6 +304,7 @@ class LogBuffer:
     """Buffer for collecting logs during processing."""
 
     def __init__(self, max_size: int = 1000):
+        """Initialize log buffer."""  # noqa: D107
         self.max_size = max_size
         self.logs = []
 
