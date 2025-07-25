@@ -4,7 +4,7 @@ name: Security Scan (Disabled)
 # This workflow can be re-enabled when repository permissions are fixed
 
 on:
-  workflow_dispatch:  # Only manual trigger to prevent automatic runs
+  workflow_dispatch: {}  # Only manual trigger to prevent automatic runs
 
 jobs:
   disabled-notice:
