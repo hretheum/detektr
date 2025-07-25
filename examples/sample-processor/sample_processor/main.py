@@ -78,10 +78,11 @@ class SampleProcessor(
         await asyncio.sleep(0.5)
         self.model_loaded = True
 
-        # Register state callbacks
-        self.state_machine.on_state_enter(
-            StateTransition.COMPLETE, self._on_detection_complete
-        )
+        # Register state callbacks - commented out for now
+        # TODO: Fix state machine callback registration
+        # self.state_machine.on_state_enter(
+        #     StateTransition.COMPLETE, self._on_detection_complete
+        # )
 
         self.log_with_context(
             "info",
