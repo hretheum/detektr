@@ -181,7 +181,7 @@ jobs:
     name: Build ${{ matrix.service }}
     needs: detect-changes
     if: needs.detect-changes.outputs.services != '' && needs.detect-changes.outputs.should_build == 'true'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.detect-changes.outputs.matrix) }}
