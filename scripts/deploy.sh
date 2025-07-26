@@ -222,6 +222,43 @@ action_deploy() {
         log "Cleaning up any orphaned resources..."
         COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down --remove-orphans 2>/dev/null || true
 
+        # Clean up containers using specific ports
+        log "Checking for containers using service ports..."
+        declare -A SERVICE_PORTS=(
+            ["frame-buffer"]="8002"
+            ["rtsp-capture"]="8080"
+            ["frame-events"]="8081"
+            ["metadata-storage"]="8005"
+        )
+
+        for service in "${!SERVICE_PORTS[@]}"; do
+            port="${SERVICE_PORTS[$service]}"
+            # Find any container using this port
+            container_using_port=$(docker ps --format "{{.Names}}" --filter "publish=$port" 2>/dev/null | head -1)
+            if [[ -n "$container_using_port" ]]; then
+                log "Port $port is used by container: $container_using_port - removing it"
+                docker stop "$container_using_port" 2>/dev/null || true
+                docker rm -f "$container_using_port" 2>/dev/null || true
+            fi
+        done
+
+        # Check for volume conflicts and fix ownership issues
+        log "Checking for volume conflicts..."
+        for vol in detektor_postgres_data detektor_redis_data; do
+            if docker volume inspect "$vol" >/dev/null 2>&1; then
+                log "Volume $vol exists, checking ownership..."
+                # Get the mount point
+                mount_point=$(docker volume inspect "$vol" --format '{{.Mountpoint}}')
+                if [[ -n "$mount_point" ]] && [[ -d "$mount_point" ]]; then
+                    # Fix permissions if running as root (GitHub Actions runner)
+                    if [[ "$EUID" -eq 0 ]] || sudo -n true 2>/dev/null; then
+                        log "Fixing permissions for $vol..."
+                        sudo chown -R 999:999 "$mount_point" 2>/dev/null || true
+                    fi
+                fi
+            fi
+        done
+
         # Remove conflicting volumes if they exist (be careful with data!)
         if [[ "${FORCE_VOLUME_RECREATE:-false}" == "true" ]]; then
             log "Force removing volumes (WARNING: Data will be lost!)"
@@ -270,6 +307,30 @@ action_deploy() {
 
         # Stop and remove old containers on remote
         log "Removing old containers on remote host..."
+
+        # Clean up containers using specific ports on remote
+        log "Checking for containers using service ports on remote..."
+        # shellcheck disable=SC2029
+        ssh "$TARGET_HOST" '
+            declare -A SERVICE_PORTS=(
+                ["frame-buffer"]="8002"
+                ["rtsp-capture"]="8080"
+                ["frame-events"]="8081"
+                ["metadata-storage"]="8005"
+            )
+
+            for service in "${!SERVICE_PORTS[@]}"; do
+                port="${SERVICE_PORTS[$service]}"
+                # Find any container using this port
+                container_using_port=$(docker ps --format "{{.Names}}" --filter "publish=$port" 2>/dev/null | head -1)
+                if [[ -n "$container_using_port" ]]; then
+                    echo "Port $port is used by container: $container_using_port - removing it"
+                    docker stop "$container_using_port" 2>/dev/null || true
+                    docker rm -f "$container_using_port" 2>/dev/null || true
+                fi
+            done
+        '
+
         if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
             log "Stopping and removing specific services: $DEPLOY_SERVICES"
             for service in $DEPLOY_SERVICES; do
@@ -327,11 +388,34 @@ action_deploy() {
         COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down >/dev/null 2>&1 || true
         # Kill any stuck containers
         docker ps -a --filter "label=com.docker.compose.project=detektor" --format "{{.ID}}" | xargs -r docker rm -f >/dev/null 2>&1 || true
+
+        # Check for containers using our ports and stop them
+        log "Checking for port conflicts..."
+        for port in 8002 8080 8081 8005; do
+            container_on_port=$(docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep -E ":${port}->" | awk '{print $1}' | head -1)
+            if [[ -n "$container_on_port" ]]; then
+                log "Port $port is occupied by container $container_on_port, stopping it..."
+                docker stop "$container_on_port" 2>/dev/null || true
+                docker rm -f "$container_on_port" 2>/dev/null || true
+            fi
+        done
     else
         log "Ensuring all old containers are stopped on remote..."
         # shellcheck disable=SC2029
         ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} down >/dev/null 2>&1 || true"
         ssh "$TARGET_HOST" "docker ps -a --filter 'label=com.docker.compose.project=detektor' --format '{{.ID}}' | xargs -r docker rm -f >/dev/null 2>&1 || true"
+
+        # Check for port conflicts on remote
+        log "Checking for port conflicts on remote..."
+        # shellcheck disable=SC2029
+        ssh "$TARGET_HOST" 'for port in 8002 8080 8081 8005; do
+            container_on_port=$(docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep -E ":${port}->" | awk "{print \$1}" | head -1)
+            if [[ -n "$container_on_port" ]]; then
+                echo "Port $port is occupied by container $container_on_port, stopping it..."
+                docker stop "$container_on_port" 2>/dev/null || true
+                docker rm -f "$container_on_port" 2>/dev/null || true
+            fi
+        done'
     fi
 
     if [[ -n "${DEPLOY_SERVICES:-}" ]]; then

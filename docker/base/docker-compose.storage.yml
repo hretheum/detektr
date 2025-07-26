@@ -148,10 +148,10 @@ services:
 volumes:
   redis_data:
     driver: local
-    name: ${COMPOSE_PROJECT_NAME}_redis_data
+    name: detektor_redis_data
   postgres_data:
     driver: local
-    name: ${COMPOSE_PROJECT_NAME}_postgres_data
+    name: detektor_postgres_data
 
 networks:
   detektor-network:

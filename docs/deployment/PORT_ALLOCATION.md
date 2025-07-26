@@ -20,7 +20,7 @@
 | **6831/udp** | Jaeger (Thrift compact) | All | docker-compose.observability.yml | ✅ Active |
 | **6832/udp** | Jaeger (Thrift binary) | All | docker-compose.observability.yml | ✅ Active |
 | **8000** | Base Template | All | base/docker-compose.yml | ✅ Active |
-| **8001** | Frame Tracking | All | base/docker-compose.yml | ✅ Active |
+| **8001** | Frame Tracking (library) | - | - | ❌ Deprecated |
 | **8002** | Frame Buffer | All | base/docker-compose.yml | ✅ Active |
 | **8003** | Face Recognition | GPU | features/gpu/docker-compose.gpu.yml | 🔄 Optional |
 | **8004** | Object Detection | GPU | features/gpu/docker-compose.gpu.yml | 🔄 Optional |
@@ -30,8 +30,8 @@
 | **8008** | GPU Demo | GPU | features/gpu/docker-compose.gpu.yml | 🔄 Optional |
 | **8009** | Example OTEL | All | base/docker-compose.yml | ✅ Active |
 | **8080** | RTSP Capture | All | base/docker-compose.yml | ✅ Active |
-| **8081** | cAdvisor | Monitoring | base/docker-compose.observability.yml | ✅ Active |
-| **8082** | Reserved | - | - | 🔮 Future |
+| **8081** | Frame Events | All | base/docker-compose.yml | ✅ Active |
+| **8082** | cAdvisor | Monitoring | base/docker-compose.observability.yml | 🔄 Optional |
 | **8083** | Adminer | Dev | environments/development/docker-compose.yml | 🔧 Dev |
 | **8010** | LLM Intent | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
 | **8011** | Gesture Detection | AI | ai-services/docker-compose.ai.yml | 🔄 Optional |
@@ -57,6 +57,12 @@
 | **26381** | Redis Sentinel 3 | HA | redis-ha/docker-compose.redis-ha.yml | 🔄 Optional |
 
 ## ✅ Historia zmian portów
+
+### Aktualizacja 2025-07-26
+- **Frame Buffer**: Port 8002 - naprawiony hardkodowany port w Dockerfile
+- **Frame Events**: Port 8081 (wcześniej frame-tracking service)
+- **Frame Tracking**: Teraz biblioteka, nie serwis
+- **cAdvisor**: Przeniesiony na port 8082
 
 ### Aktualizacja 2025-07-25
 - **RTSP Capture**: Przeniesiony z 8001 → **8080**
