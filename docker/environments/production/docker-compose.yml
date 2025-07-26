@@ -69,6 +69,37 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - DETEKTOR_DB_PASSWORD=${POSTGRES_PASSWORD}
 
+  frame-buffer:
+    <<: *production-defaults
+    image: ghcr.io/hretheum/detektr/frame-buffer:${IMAGE_TAG:-latest}
+    environment:
+      - LOG_LEVEL=INFO
+      - METRICS_ENABLED=true
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+      - FRAME_QUEUE_NAME=${FRAME_QUEUE_NAME:-frame_queue}
+      - DLQ_NAME=${DLQ_NAME:-frame_dlq}
+      - MAX_BUFFER_SIZE=${MAX_BUFFER_SIZE:-1000}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+
+  frame-events:
+    <<: *production-defaults
+    image: ghcr.io/hretheum/detektr/frame-events:${IMAGE_TAG:-latest}
+    environment:
+      - LOG_LEVEL=INFO
+      - METRICS_ENABLED=true
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-detektor}
+      - POSTGRES_USER=${POSTGRES_USER:-detektor}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DETEKTOR_DB_PASSWORD=${POSTGRES_PASSWORD}
+      - ENABLE_METRICS=true
+      - ENABLE_TRACING=true
+      - OTEL_SERVICE_NAME=frame-events
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+
   metadata-storage:
     <<: *production-defaults
     image: ghcr.io/hretheum/detektr/metadata-storage:${IMAGE_TAG:-latest}
