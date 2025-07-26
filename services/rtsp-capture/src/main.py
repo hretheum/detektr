@@ -64,7 +64,11 @@ async def startup_event():
         redis_queue = RedisFrameQueue(redis_client)
 
         # Create consumer group for downstream services
-        await redis_queue.create_consumer_group("frame-processors")
+        try:
+            await redis_queue.create_consumer_group("frame-processors", start_id="0")
+        except Exception as e:
+            print(f"Consumer group creation info: {e}")
+            # Group might already exist, which is fine
 
     except Exception as e:
         print(f"Failed to connect to Redis: {e}")

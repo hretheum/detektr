@@ -107,22 +107,22 @@ echo ""
 echo "🐳 Container Status:"
 echo "===================="
 
-# Check all containers - using actual names (COMPOSE_PROJECT_NAME=detektor)
+# Check all containers - using actual names (COMPOSE_PROJECT_NAME=detektr)
 for container in \
-    "detektor-rtsp-capture-1" \
-    "detektor-frame-buffer-1" \
-    "detektor-gpu-demo-1" \
-    "detektor-redis-1" \
-    "detektor-postgres-1" \
-    "detektor-frame-events-1" \
-    "detektor-example-otel-1" \
-    "detektor-echo-service-1" \
-    "detektor-base-template-1" \
-    "detektor-metadata-storage-1" \
-    "detektor-sample-processor-1" \
-    "detektor-prometheus-1" \
-    "detektor-jaeger-1" \
-    "detektor-grafana-1"; do
+    "detektr-rtsp-capture-1" \
+    "detektr-frame-buffer-1" \
+    "detektr-gpu-demo-1" \
+    "detektr-redis-1" \
+    "detektr-postgres-1" \
+    "detektr-frame-events-1" \
+    "detektr-example-otel-1" \
+    "detektr-echo-service-1" \
+    "detektr-base-template-1" \
+    "detektr-metadata-storage-1" \
+    "detektr-sample-processor-1" \
+    "detektr-prometheus-1" \
+    "detektr-jaeger-1" \
+    "detektr-grafana-1"; do
 
     check_container "$container"
 done

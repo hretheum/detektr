@@ -131,15 +131,30 @@ class RedisFrameQueue:
             True if created, False if already exists
         """
         try:
+            # First, ensure the stream exists by adding a dummy entry if needed
+            stream_exists = await self.redis_client.exists(self.stream_key)
+            if not stream_exists:
+                # Create stream with a dummy entry and immediately delete it
+                dummy_id = await self.redis_client.xadd(
+                    self.stream_key,
+                    {"_init": "1"},
+                    maxlen=self.max_len,
+                    approximate=self.approximate,
+                )
+                await self.redis_client.xdel(self.stream_key, dummy_id)
+                print(f"Created stream: {self.stream_key}")
+
             await self.redis_client.xgroup_create(
                 self.stream_key,
                 group_name,
                 id=start_id,
             )
+            print(f"Created consumer group: {group_name}")
             return True
         except ResponseError as e:
             if "BUSYGROUP" in str(e):
                 # Group already exists
+                print(f"Consumer group {group_name} already exists")
                 return False
             raise
 
