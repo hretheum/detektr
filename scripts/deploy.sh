@@ -39,6 +39,54 @@ else
     info() { echo -e "${BLUE}[INFO]${NC} $*"; }
 fi
 
+# Service Port Allocation - Single Source of Truth
+# Sync with docs/deployment/PORT_ALLOCATION.md
+# Define as string for easier remote execution
+export SERVICE_PORTS_STRING='
+    base-template:8000
+    frame-buffer:8002
+    face-recognition:8003
+    object-detection:8004
+    metadata-storage:8005
+    echo-service:8007
+    gpu-demo:8008
+    example-otel:8009
+    rtsp-capture:8080
+    frame-events:8081
+    cadvisor:8082
+    adminer:8083
+    sample-processor:8099
+    grafana:3000
+    postgres:5432
+    redis:6379
+    pgbouncer:6432
+    prometheus:9090
+    jaeger-ui:16686
+'
+
+# Parse into associative array for local use (kept for future use)
+declare -A SERVICE_PORTS
+while IFS=: read -r service port; do
+    [[ -n "$service" ]] && SERVICE_PORTS["$service"]="$port"
+done <<< "$SERVICE_PORTS_STRING"
+export SERVICE_PORTS  # Export for potential use in other scripts
+
+# Function to clean up containers using specific ports
+cleanup_ports() {
+    echo "Checking for containers using service ports..."
+    while IFS=: read -r service port; do
+        if [[ -n "$service" ]] && [[ -n "$port" ]]; then
+            echo "Checking port $port ($service)..."
+            container_on_port=$(docker ps --format "{{.Names}}" --filter "publish=$port" 2>/dev/null | head -1 || true)
+            if [[ -n "$container_on_port" ]]; then
+                echo "Port $port is used by container: $container_on_port - removing it"
+                docker stop "$container_on_port" 2>/dev/null || true
+                docker rm -f "$container_on_port" 2>/dev/null || true
+            fi
+        fi
+    done <<< "$SERVICE_PORTS_STRING"
+}
+
 # Configuration
 ENVIRONMENT="${1:-production}"
 ACTION="${2:-deploy}"
@@ -256,24 +304,8 @@ action_deploy() {
         COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down --remove-orphans 2>/dev/null || true
 
         # Clean up containers using specific ports
-        log "Checking for containers using service ports..."
-        declare -A SERVICE_PORTS=(
-            ["frame-buffer"]="8002"
-            ["rtsp-capture"]="8080"
-            ["frame-events"]="8081"
-            ["metadata-storage"]="8005"
-        )
-
-        for service in "${!SERVICE_PORTS[@]}"; do
-            port="${SERVICE_PORTS[$service]}"
-            # Find any container using this port
-            container_using_port=$(docker ps --format "{{.Names}}" --filter "publish=$port" 2>/dev/null | head -1)
-            if [[ -n "$container_using_port" ]]; then
-                log "Port $port is used by container: $container_using_port - removing it"
-                docker stop "$container_using_port" 2>/dev/null || true
-                docker rm -f "$container_using_port" 2>/dev/null || true
-            fi
-        done
+        log "Cleaning up containers using service ports..."
+        cleanup_ports
 
         # Check for volume conflicts and fix ownership issues
         log "Checking for volume conflicts..."
@@ -344,25 +376,7 @@ action_deploy() {
         # Clean up containers using specific ports on remote
         log "Checking for containers using service ports on remote..."
         # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" '
-            declare -A SERVICE_PORTS=(
-                ["frame-buffer"]="8002"
-                ["rtsp-capture"]="8080"
-                ["frame-events"]="8081"
-                ["metadata-storage"]="8005"
-            )
-
-            for service in "${!SERVICE_PORTS[@]}"; do
-                port="${SERVICE_PORTS[$service]}"
-                # Find any container using this port
-                container_using_port=$(docker ps --format "{{.Names}}" --filter "publish=$port" 2>/dev/null | head -1)
-                if [[ -n "$container_using_port" ]]; then
-                    echo "Port $port is used by container: $container_using_port - removing it"
-                    docker stop "$container_using_port" 2>/dev/null || true
-                    docker rm -f "$container_using_port" 2>/dev/null || true
-                fi
-            done
-        '
+        ssh "$TARGET_HOST" "$(declare -f cleanup_ports); export SERVICE_PORTS_STRING='$SERVICE_PORTS_STRING'; cleanup_ports"
 
         if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
             log "Stopping and removing specific services: $DEPLOY_SERVICES"
@@ -426,18 +440,8 @@ action_deploy() {
         docker ps -a --filter "label=com.docker.compose.project=detektor" --format "{{.ID}}" | xargs -r docker rm -f >/dev/null 2>&1 || true
 
         # Check for containers using our ports and stop them
-        log "Checking for port conflicts..."
-        for port in 8002 8080 8081 8005; do
-            log "Checking port $port..."
-            container_on_port=$(docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep -E ":${port}->" | awk '{print $1}' | head -1 || true)
-            if [[ -n "$container_on_port" ]]; then
-                log "Port $port is occupied by container $container_on_port, stopping it..."
-                docker stop "$container_on_port" 2>/dev/null || true
-                docker rm -f "$container_on_port" 2>/dev/null || true
-            else
-                log "Port $port is free"
-            fi
-        done
+        log "Final port conflict check..."
+        cleanup_ports
         log "Port conflict check completed"
     else
         log "Ensuring all old containers are stopped on remote..."
@@ -448,14 +452,7 @@ action_deploy() {
         # Check for port conflicts on remote
         log "Checking for port conflicts on remote..."
         # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" 'for port in 8002 8080 8081 8005; do
-            container_on_port=$(docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep -E ":${port}->" | awk "{print \$1}" | head -1)
-            if [[ -n "$container_on_port" ]]; then
-                echo "Port $port is occupied by container $container_on_port, stopping it..."
-                docker stop "$container_on_port" 2>/dev/null || true
-                docker rm -f "$container_on_port" 2>/dev/null || true
-            fi
-        done'
+        ssh "$TARGET_HOST" "$(declare -f cleanup_ports); export SERVICE_PORTS_STRING='$SERVICE_PORTS_STRING'; cleanup_ports"
     fi
 
     if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
