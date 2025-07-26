@@ -603,8 +603,6 @@ action_verify() {
     declare -A all_services=(
         ["rtsp-capture"]="8080"
         ["frame-events"]="8081"
-        ["echo-service"]="8007"
-        ["example-otel"]="8009"
     )
 
     # Filter to only check deployed services
