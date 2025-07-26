@@ -460,7 +460,7 @@ action_deploy() {
         log "Deploying specific services: $DEPLOY_SERVICES"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
             # shellcheck disable=SC2086
-            yes n | DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build $DEPLOY_SERVICES 2>&1 | grep -v "Recreate"
+            echo n | DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build $DEPLOY_SERVICES 2>&1 | grep -v "Recreate" || true
         else
             # shellcheck disable=SC2029,SC2086
             ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans --force-recreate $DEPLOY_SERVICES < /dev/null"
@@ -468,7 +468,7 @@ action_deploy() {
     else
         log "Deploying all services"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
-            yes n | DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build 2>&1 | grep -v "Recreate"
+            echo n | DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build 2>&1 | grep -v "Recreate" || true
         else
             # shellcheck disable=SC2029
             ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans --force-recreate < /dev/null"
@@ -542,6 +542,11 @@ action_stop() {
 action_verify() {
     log "Verifying deployment health..."
 
+    # Add debug logging
+    log "Current environment: $ENVIRONMENT"
+    log "Target host: $TARGET_HOST"
+    log "Deploy services: ${DEPLOY_SERVICES:-all}"
+
     # Define all possible services and their health endpoints
     # Using the same SERVICE_PORTS as defined at the beginning
     declare -A all_services=(
@@ -577,6 +582,7 @@ action_verify() {
     local failed=0
 
     # Check application services
+    log "Checking ${#services[@]} application services..."
     for service in "${!services[@]}"; do
         port="${services[$service]}"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
@@ -585,6 +591,7 @@ action_verify() {
             url="http://$TARGET_HOST:$port/health"
         fi
 
+        log "Checking $service at $url..."
         if curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
             echo -e "${GREEN}✓${NC} $service is healthy"
         else
