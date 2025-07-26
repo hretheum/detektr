@@ -151,8 +151,11 @@ jobs:
                 fi
 
                 if echo "$changed_files" | grep -q "$service_path\|services/shared/base-processor"; then
-                  echo "Service $service has changes (detected from git)"
-                  services+=("$service")
+                  # Check if service is already in array to avoid duplicates
+                  if [[ ! " ${services[@]} " =~ " ${service} " ]]; then
+                    echo "Service $service has changes (detected from git)"
+                    services+=("$service")
+                  fi
                 fi
               done
             fi
@@ -191,8 +194,11 @@ jobs:
                 esac
 
                 if [[ "$service_changed" == "true" ]]; then
-                  echo "DEBUG: Service $service has changes"
-                  services+=("$service")
+                  # Check if service is already in array to avoid duplicates
+                  if [[ ! " ${services[@]} " =~ " ${service} " ]]; then
+                    echo "DEBUG: Service $service has changes"
+                    services+=("$service")
+                  fi
                 fi
               done
             fi
