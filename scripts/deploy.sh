@@ -543,11 +543,13 @@ action_verify() {
     log "Verifying deployment health..."
 
     # Define all possible services and their health endpoints
+    # Using the same SERVICE_PORTS as defined at the beginning
     declare -A all_services=(
-        ["rtsp-capture"]="8080"
-        ["frame-tracking"]="8001"
-        ["metadata-storage"]="8005"
         ["base-template"]="8000"
+        ["frame-buffer"]="8002"
+        ["metadata-storage"]="8005"
+        ["rtsp-capture"]="8080"
+        ["frame-events"]="8081"
         ["sample-processor"]="8099"
     )
 

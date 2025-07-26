@@ -68,12 +68,15 @@ echo "📊 Service Health Checks:"
 echo "========================"
 
 # Application Services
-check_service "RTSP Capture" "http://localhost:8001/health"
+check_service "Base Template" "http://localhost:8000/health"
 check_service "Frame Buffer" "http://localhost:8002/health"
-check_service "Example OTEL" "http://localhost:8005/health"
-check_service "Frame Events" "http://localhost:8081/health"
+check_service "Metadata Storage" "http://localhost:8005/health"
 check_service "Echo Service" "http://localhost:8007/health"
 check_service "GPU Demo" "http://localhost:8008/health"
+check_service "Example OTEL" "http://localhost:8009/health"
+check_service "RTSP Capture" "http://localhost:8080/health"
+check_service "Frame Events" "http://localhost:8081/health"
+check_service "Sample Processor" "http://localhost:8099/health"
 
 echo ""
 echo "🔧 Infrastructure Services:"
