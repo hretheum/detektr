@@ -25,6 +25,7 @@ scrape_configs:
     static_configs:
       - targets:
           - "rtsp-capture:8080"
+          - "frame-events:8081"
           - "frame-buffer:8002"
           - "face-recognition:8006"
           - "object-detection:8003"

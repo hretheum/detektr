@@ -1,10 +1,12 @@
-# Service: Frame Tracking
+# Service: Frame Events (formerly Frame Tracking Service)
 
-> ⚠️ **IMPORTANT**: Frame tracking has DUAL implementation:
-> 1. **Event Sourcing SERVICE** (this document) - Audit trail on port 8081
-> 2. **Shared LIBRARY** (`services/shared/frame-tracking`) - Distributed tracing
+> ⚠️ **IMPORTANT**: This is the Frame Events service for event sourcing and audit trail.
 >
-> This document covers the EVENT SOURCING SERVICE. For library integration, see [Frame Tracking Integration Guide](../../guides/frame-tracking-integration.md).
+> **NOT TO BE CONFUSED WITH**:
+> - **Frame Tracking LIBRARY** (`services/shared/frame-tracking`) - Distributed tracing
+>
+> This document covers the FRAME EVENTS SERVICE (event sourcing) on port 8081.
+> For distributed tracing library integration, see [Frame Tracking Integration Guide](../../guides/frame-tracking-integration.md).
 
 ## 🚀 Quick Deploy (30 seconds)
 ```bash
@@ -21,13 +23,13 @@ git push origin main
 - [x] SOPS encrypted secrets configured
 
 ### 2. Configuration
-- **Service Name**: `frame-tracking`
+- **Service Name**: `frame-events`
 - **Port**: `8081`
 - **Purpose**: Event sourcing for frame lifecycle audit
 - **Health Check**: `http://localhost:8081/health`
 - **Metrics**: `http://localhost:8081/metrics`
 - **Storage**: PostgreSQL for event store
-- **NOT**: This is NOT the tracing library - that's in `services/shared/frame-tracking`
+- **Image**: `ghcr.io/hretheum/detektr/frame-events:latest`
 
 ### 3. Deploy
 ```bash

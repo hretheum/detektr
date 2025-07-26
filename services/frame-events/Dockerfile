@@ -13,7 +13,7 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy requirements and install dependencies
-COPY services/frame-tracking-event-sourcing/requirements.txt .
+COPY services/frame-events/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Production stage
@@ -36,12 +36,12 @@ ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /app
 
 # Copy application code
-COPY --chown=appuser:appuser ./services/frame-tracking-event-sourcing/ .
+COPY --chown=appuser:appuser ./services/frame-events/ .
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    SERVICE_NAME=frame-tracking-event-sourcing \
+    SERVICE_NAME=frame-events \
     SERVICE_VERSION=0.1.0 \
     PORT=8081
 
