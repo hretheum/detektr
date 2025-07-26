@@ -184,8 +184,8 @@ action_deploy() {
             log "Cleaning up specific services: $DEPLOY_SERVICES"
             for service in $DEPLOY_SERVICES; do
                 log "Stopping and removing $service..."
-                COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" stop "$service" 2>/dev/null || true
-                COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" rm -f "$service" 2>/dev/null || true
+                COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" stop "$service" >/dev/null 2>&1 || true
+                COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" rm -f "$service" >/dev/null 2>&1 || true
 
                 # Also remove by container name pattern if compose missed it
                 docker ps -a --format "{{.Names}}" | grep -E "^detektor-${service}(-[0-9]+)?$" | while read -r container; do
