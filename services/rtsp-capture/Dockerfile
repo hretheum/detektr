@@ -7,7 +7,12 @@ FROM python:3.11-slim AS builder
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    g++ \
     libc-dev \
+    # Build dependencies for numpy
+    libatlas-base-dev \
+    libopenblas-dev \
+    gfortran \
     && rm -rf /var/lib/apt/lists/*
 
 # Create wheels directory
@@ -28,14 +33,28 @@ FROM python:3.11-slim
 # OpenCV requires these libraries for video processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    # OpenGL libraries
     libgl1-mesa-glx \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    # GStreamer for video processing
     libgstreamer1.0-0 \
     libgstreamer-plugins-base1.0-0 \
+    # Additional dependencies for OpenCV
+    libgthread-2.0-0 \
+    libxfixes3 \
+    libxinerama1 \
+    libxi6 \
+    libxrandr2 \
+    libxcursor1 \
+    libxcomposite1 \
+    libxdamage1 \
+    # For numpy
+    libatlas-base-dev \
+    libopenblas-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
