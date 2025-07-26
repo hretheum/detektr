@@ -459,8 +459,12 @@ action_deploy() {
     if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
         log "Deploying specific services: $DEPLOY_SERVICES"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
+            set +e  # Temporarily disable exit on error
             # shellcheck disable=SC2086
-            echo n | DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build $DEPLOY_SERVICES 2>&1 | grep -v "Recreate" || true
+            echo n | DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build $DEPLOY_SERVICES 2>&1 | grep -v "Recreate"
+            local compose_exit_code=$?
+            set -e  # Re-enable exit on error
+            echo "[DEBUG] Docker compose exit code: $compose_exit_code"
         else
             # shellcheck disable=SC2029,SC2086
             ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans --force-recreate $DEPLOY_SERVICES < /dev/null"
@@ -468,16 +472,29 @@ action_deploy() {
     else
         log "Deploying all services"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
-            echo n | DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build 2>&1 | grep -v "Recreate" || true
+            set +e  # Temporarily disable exit on error
+            echo n | DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build 2>&1 | grep -v "Recreate"
+            local compose_exit_code=$?
+            set -e  # Re-enable exit on error
+            echo "[DEBUG] Docker compose exit code: $compose_exit_code"
         else
             # shellcheck disable=SC2029
             ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans --force-recreate < /dev/null"
         fi
     fi
 
+    # Debug - check if deployment command succeeded
+    echo "[DEBUG] Docker compose up completed with exit code: $?"
+    echo "[DEBUG] Continuing to verification..."
+
     # Wait for services to start
     log "Waiting for services to stabilize..."
     sleep 10
+
+    # Debug - check if we got here
+    echo "[DEBUG] About to start verification..."
+    echo "[DEBUG] DEPLOY_SERVICES: ${DEPLOY_SERVICES:-not set}"
+    echo "[DEBUG] TARGET_HOST: $TARGET_HOST"
 
     # Verify deployment with retries
     local verify_attempts=0
