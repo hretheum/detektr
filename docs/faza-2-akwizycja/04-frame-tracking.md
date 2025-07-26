@@ -201,7 +201,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
    - **Status**: Już zrobione w Bloku 2
    - **Metryka**: Generuje FrameID i TraceContext dla każdej klatki
 
-2. **[ ] Integracja w frame-buffer**
+2. **[x] Integracja w frame-buffer** ✅
    - **Metryka**: Propaguje trace context przez Redis
    - **Walidacja**:
      ```bash
@@ -220,7 +220,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
      - Context jest propagowany do kolejnych serwisów
    - **Czas**: 2h
 
-3. **[ ] Integracja w base-processor**
+3. **[x] Integracja w base-processor** ✅
    - **Metryka**: Wszystkie procesory dziedziczą frame tracking
    - **Walidacja**:
      ```bash
@@ -237,7 +237,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
      - Trace ID jest zachowany przez cały pipeline
    - **Czas**: 2h
 
-4. **[ ] Integracja w metadata-storage**
+4. **[x] Integracja w metadata-storage** ✅
    - **Metryka**: Przechowuje trace_id i span_id w bazie
    - **Walidacja**:
      ```bash
@@ -257,7 +257,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
      - Pełny trace context zapisany jako JSON
    - **Czas**: 1.5h
 
-5. **[ ] Integracja w sample-processor (przykład)**
+5. **[x] Integracja w sample-processor (przykład)** ✅
    - **Metryka**: Demonstracja użycia w konkretnym procesorze
    - **Walidacja**:
      ```bash

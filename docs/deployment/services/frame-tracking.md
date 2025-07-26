@@ -1,5 +1,11 @@
 # Service: Frame Tracking
 
+> ⚠️ **IMPORTANT**: Frame tracking has DUAL implementation:
+> 1. **Event Sourcing SERVICE** (this document) - Audit trail on port 8081
+> 2. **Shared LIBRARY** (`services/shared/frame-tracking`) - Distributed tracing
+>
+> This document covers the EVENT SOURCING SERVICE. For library integration, see [Frame Tracking Integration Guide](../../guides/frame-tracking-integration.md).
+
 ## 🚀 Quick Deploy (30 seconds)
 ```bash
 git push origin main
@@ -17,9 +23,11 @@ git push origin main
 ### 2. Configuration
 - **Service Name**: `frame-tracking`
 - **Port**: `8081`
+- **Purpose**: Event sourcing for frame lifecycle audit
 - **Health Check**: `http://localhost:8081/health`
 - **Metrics**: `http://localhost:8081/metrics`
-- **Tracing**: Jaeger integration via OpenTelemetry
+- **Storage**: PostgreSQL for event store
+- **NOT**: This is NOT the tracing library - that's in `services/shared/frame-tracking`
 
 ### 3. Deploy
 ```bash
@@ -226,32 +234,25 @@ curl http://localhost:8081/health
 
 ## 🎯 Service-Specific Features
 
-### Processing Management
+### Event Sourcing
 ```bash
-# Check current processing
-curl http://localhost:8081/processing/info
+# Query frame lifecycle events
+curl http://localhost:8081/frames/{frame_id}/events
 
-# Restart processing
-curl -X POST http://localhost:8081/processing/restart
+# Get frame audit trail
+curl http://localhost:8081/frames/{frame_id}/audit
 
-# Change processing settings
-curl -X POST http://localhost:8081/processing/config \
-  -d "batch_size=15&interval=2s"
+# Search by time range
+curl "http://localhost:8081/events?start=2025-01-01&end=2025-01-02"
 ```
 
-### Model Management
-```bash
-# List available models
-curl http://localhost:8081/models
-
-# Switch model
-curl -X POST http://localhost:8081/models/switch \
-  -d "model_name=yolov8n.pt"
-
-# Update model
-curl -X POST http://localhost:8081/models/update \
-  -d "model_url=https://models.example.com/new-model.pt"
-```
+### Event Types
+- `frame.created` - Frame captured from camera
+- `frame.enqueued` - Frame added to processing queue
+- `frame.processing.started` - Processing began
+- `frame.processing.completed` - Processing finished
+- `frame.stored` - Frame metadata saved
+- `frame.dropped` - Frame discarded (with reason)
 
 ## 📚 Examples
 

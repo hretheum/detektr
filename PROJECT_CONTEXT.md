@@ -292,24 +292,41 @@ docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d
 
 **Lekcja**: Zawsze używaj `--env-file .env` w skryptach deployment gdy używasz pełnych ścieżek do plików docker-compose.
 
-## Status Fazy 2: Akwizycja i Storage (2025-07-25)
+### 6. Frame Tracking - Dwa komponenty (2025-07-26)
 
-### ✅ Ukończone zadania (5/8):
+**Problem**: Początkowo niejasne czy frame-tracking to serwis czy biblioteka.
+
+**Rozwiązanie**: Frame tracking składa się z DWÓCH komponentów:
+1. **Frame-tracking SERVICE** (port 8081) - Event Sourcing dla audytu cyklu życia klatek
+2. **Frame-tracking LIBRARY** (services/shared/frame-tracking) - Distributed tracing z OpenTelemetry
+
+**Implementacja biblioteki**:
+- Zintegrowana w 4 serwisach: frame-buffer, base-processor, metadata-storage, sample-processor
+- Automatyczna propagacja trace context przez Redis Streams i HTTP headers
+- Graceful fallback gdy biblioteka niedostępna
+- Pełna widoczność w Jaeger UI
+
+**Lekcja**: Rozróżniaj między serwisami infrastrukturalnymi (event sourcing) a bibliotekami współdzielonymi (tracing).
+
+## Status Fazy 2: Akwizycja i Storage (2025-07-26)
+
+### ✅ Ukończone zadania (6/8):
 1. **RTSP Capture Service** - Działający na Nebula:8080, konfiguracja Reolink, status "degraded" (czeka na Redis)
 2. **Frame Buffer z Redis** - Throughput 80k frames/s, latency 0.01ms, DLQ skonfigurowane
 3. **Redis Configuration** - 4GB limit, persistence, monitoring, Telegram alerts
 4. **PostgreSQL/TimescaleDB** - 100GB volume, PGBouncer, hypertables ready
 5. **Frame Processor Base Service** - Framework w services/shared/base-processor/, sample-processor na Nebula:8099
+6. **Frame tracking z distributed tracing** - Biblioteka w services/shared/frame-tracking, zintegrowana w 4 serwisach, trace propagation działa
 
 ### ⏳ W trakcie realizacji (0/8):
 - Brak aktywnych zadań
 
-### 📋 Do zrobienia (3/8):
-6. Frame tracking z distributed tracing
+### 📋 Do zrobienia (2/8):
 7. Dashboard: Frame Pipeline Overview
 8. Alerty: frame drop, latency, queue size
 
 ### 🔧 Działające usługi produkcyjne:
 - **Infrastruktura**: postgres, pgbouncer, redis, prometheus, grafana, jaeger (wszystkie healthy)
-- **Aplikacyjne**: rtsp-capture, frame-buffer, frame-tracking, metadata-storage, base-template, sample-processor (wszystkie healthy)
-- **Łącznie**: 11 usług działających na Nebula z pełnym monitoringiem
+- **Aplikacyjne**: rtsp-capture, frame-buffer, frame-tracking (jako serwis event sourcing), metadata-storage, base-template, sample-processor (wszystkie healthy)
+- **Biblioteki**: frame-tracking (shared library) zintegrowana w: frame-buffer, base-processor, metadata-storage, sample-processor
+- **Łącznie**: 11 usług działających na Nebula z pełnym monitoringiem i distributed tracing

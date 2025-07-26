@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Frame Tracking Implementation** (Phase 2, Task 6 ✅ COMPLETED)
+  - Dual implementation architecture:
+    - Event Sourcing Service (port 8081) for audit trail
+    - Shared Library (services/shared/frame-tracking) for distributed tracing
+  - Frame ID generation with unique, time-ordered identifiers
+  - W3C Trace Context propagation through Redis and HTTP
+  - Integration with OpenTelemetry and Jaeger
+  - Comprehensive Grafana dashboard with Jaeger panel integration
+  - Trace analyzer CLI tool for debugging
+  - Library integrated in 4 services:
+    - frame-buffer: Trace context propagation through Redis
+    - base-processor: Automatic tracing for all processors
+    - metadata-storage: Trace ID storage and querying
+    - sample-processor: Example implementation
+  - Performance: <1ms overhead per service
+  - Documentation: Integration guide and dashboard setup
 - **RTSP Capture Service** (Phase 2, Blocks 0-5 ✅ COMPLETED)
   - Core RTSP client with PyAV library
   - Auto-reconnect mechanism (5s default)

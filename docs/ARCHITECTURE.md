@@ -125,13 +125,25 @@ graph TB
   - DLQ (Dead Letter Queue)
   - Persistence
 
-#### Frame Tracking Service (Port 8006)
-- **Odpowiedzialność**: Śledzenie obiektów między ramkami
-- **Technologie**: Python, OpenCV, SORT/DeepSORT
+#### Frame Tracking (Dual Implementation)
+
+**1. Frame Tracking Service (Port 8081)**
+- **Odpowiedzialność**: Event sourcing dla audytu cyklu życia klatek
+- **Technologie**: Python, FastAPI, PostgreSQL
 - **Features**:
-  - Multi-object tracking
-  - Track persistence
-  - Re-identification
+  - Event store dla wszystkich zdarzeń związanych z klatkami
+  - Audit trail dla compliance
+  - Query API dla historii klatek
+  - Retention policies
+
+**2. Frame Tracking Library (`services/shared/frame-tracking`)**
+- **Odpowiedzialność**: Distributed tracing dla śledzenia klatek przez pipeline
+- **Technologie**: Python, OpenTelemetry, W3C Trace Context
+- **Features**:
+  - Automatyczna propagacja trace context
+  - Integracja z Jaeger
+  - Zero network latency (in-process)
+  - Graceful degradation
 
 ### 3. AI Services
 

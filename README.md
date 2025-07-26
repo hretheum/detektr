@@ -63,9 +63,9 @@ Szczegóły: [Architecture Documentation](docs/ARCHITECTURE.md)
 
 - ✅ **Faza 0**: Dokumentacja i planowanie
 - ✅ **Faza 1**: Fundament z observability (CI/CD, monitoring)
-- 🚧 **Faza 2**: Akwizycja i storage (5/8 zadań ukończonych)
-  - ✅ RTSP Capture, Frame Buffer, Redis, PostgreSQL, Base Processor Framework
-  - 📋 TODO: Frame tracking, Dashboard, Alerty
+- 🚧 **Faza 2**: Akwizycja i storage (6/8 zadań ukończonych)
+  - ✅ RTSP Capture, Frame Buffer, Redis, PostgreSQL, Base Processor Framework, Frame Tracking
+  - 📋 TODO: Dashboard, Alerty
 - 🔜 **Faza 3**: AI services podstawy
 - 🔜 **Faza 4**: Integracja z Home Assistant
 
@@ -129,10 +129,14 @@ Więcej: [Deployment Documentation](docs/deployment/unified-deployment.md)
 
 | Serwis | Port | Status | Opis |
 |--------|------|--------|------|
-| rtsp-capture | 8001 | ✅ Production | Przechwytywanie RTSP |
-| frame-tracking | 8006 | ✅ Production | Tracking ramek |
-| example-otel | 8005 | ✅ Production | Przykład z OpenTelemetry |
-| face-recognition | 8002 | 🚧 Development | Rozpoznawanie twarzy |
+| rtsp-capture | 8080 | ✅ Production | Przechwytywanie RTSP |
+| frame-buffer | 8002 | ✅ Production | Buforowanie klatek |
+| frame-tracking | 8081 | ✅ Production | Event sourcing dla klatek |
+| metadata-storage | 8005 | ✅ Production | Przechowywanie metadanych |
+| sample-processor | 8099 | ✅ Production | Przykładowy procesor |
+| base-template | 8000 | ✅ Production | Szablon serwisu |
+| example-otel | 8009 | ✅ Production | Przykład z OpenTelemetry |
+| face-recognition | 8006 | 🚧 Development | Rozpoznawanie twarzy |
 | object-detection | 8003 | 🚧 Development | Detekcja obiektów |
 | ha-bridge | 8004 | 📅 Planned | Integracja z Home Assistant |
 

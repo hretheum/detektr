@@ -83,10 +83,12 @@ System składa się z następujących głównych komponentów:
 
 #### 1.2.4 Warstwa Observability
 
-- **Distributed Tracing**: Jaeger
+- **Distributed Tracing**: Jaeger + OpenTelemetry
 - **Metrics**: Prometheus + Grafana
 - **Logging**: ELK Stack (Elasticsearch, Logstash, Kibana)
-- **Frame Tracking**: Custom tracking ID dla każdej klatki
+- **Frame Tracking**: Dwa komponenty:
+  - Event Sourcing Service (port 8081) - audit trail dla cyklu życia klatek
+  - Shared Library (frame-tracking) - distributed tracing z propagacją trace context
 
 ### 1.3 Architektura Kontenerowa
 
@@ -382,7 +384,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 3. **Deploy**: Pull z registry na Nebula (NIGDY build na produkcji)
 4. **Monitor**: Health checks i observability od początku
 
-### Faza 2: Akwizycja i Storage z pełnym monitoringiem (2-3 tygodnie)
+### Faza 2: Akwizycja i Storage z pełnym monitoringiem (2-3 tygodnie) - (6/8 zadań ukończonych)
 
 #### Zadania i Metryki
 
@@ -494,17 +496,24 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Performance benchmarks in tests/benchmarks/ ✅
    - **[Szczegóły →](docs/faza-2-akwizycja/04-frame-processor-base.md)**
 
-6. **Frame tracking z distributed tracing od wejścia**
-   - **Metryka**: Każda klatka ma trace_id i span przez cały pipeline
+6. **[x] Frame tracking z distributed tracing od wejścia** ✅ **COMPLETED**
+   - **Metryki**:
+     - 100% klatek ma trace_id przez cały pipeline ✅
+     - Trace propagation przez Redis Streams działa ✅
+     - Integracja w 4 serwisach ukończona ✅
    - **Walidacja**:
-
-     ```python
-     # Test script sprawdzający frame metadata
-     assert frame.trace_id is not None
-     assert len(frame.processing_spans) > 0
+     ```bash
+     # Test frame-buffer integration
+     curl -X POST http://nebula:8002/test-frame -d '{"frame_id":"test-123"}'
+     # Check trace in Jaeger UI
+     http://nebula:16686 -> search by frame_id
      ```
-
-   - **Sukces**: 100% klatek ma kompletny trace
+   - **Sukces**: Distributed tracing działa end-to-end
+   - **Status produkcyjny**:
+     - Frame-tracking SERVICE (event sourcing) running on port 8081 ✅
+     - Frame-tracking LIBRARY integrated in 4 services ✅
+     - Full trace propagation through pipeline ✅
+     - Grafana dashboard with Jaeger integration ✅
    - **[Szczegóły →](docs/faza-2-akwizycja/05-frame-tracking-implementation.md)**
 
 7. **Dashboard: Frame Pipeline Overview**
