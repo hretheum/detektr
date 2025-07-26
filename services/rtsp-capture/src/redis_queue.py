@@ -8,9 +8,9 @@ with <1ms latency for real-time processing.
 import json
 from typing import Any, Dict, List, Optional, Union
 
-import aioredis
-from aioredis.exceptions import ConnectionError, ResponseError
+import redis.asyncio as redis
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from redis.exceptions import ConnectionError, ResponseError
 
 
 class RedisFrameQueue:
@@ -23,7 +23,7 @@ class RedisFrameQueue:
 
     def __init__(
         self,
-        redis_client: aioredis.Redis,
+        redis_client: redis.Redis,
         stream_key: str = "frames:metadata",
         max_len: Optional[int] = 10000,
         approximate: bool = True,
@@ -79,7 +79,7 @@ class RedisFrameQueue:
             return message_id.decode() if isinstance(message_id, bytes) else message_id
 
         except ConnectionError:
-            # Connection error handling for aioredis
+            # Connection error handling for redis
             raise
 
     async def publish_batch(self, messages: List[Dict[str, Any]]) -> List[str]:
@@ -264,7 +264,7 @@ class RedisFrameQueue:
 
         with suppress(Exception):
             await self.redis_client.ping()
-            # For aioredis, connection is managed by pool
+            # For redis.asyncio, connection is managed by pool
 
     async def close(self) -> None:
         """Close Redis connection."""
