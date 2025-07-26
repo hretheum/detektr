@@ -44,7 +44,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgstreamer1.0-0 \
     libgstreamer-plugins-base1.0-0 \
     # Additional dependencies for OpenCV
-    libgthread-2.0-0 \
     libxfixes3 \
     libxinerama1 \
     libxi6 \

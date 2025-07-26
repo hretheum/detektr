@@ -3,11 +3,11 @@
 # Core video processing
 av==15.0.0                    # PyAV for FFmpeg RTSP handling
 opencv-python==4.9.0.80       # OpenCV for frame processing
-numpy==2.2.3                  # Numeric operations
+numpy==1.24.4                 # Numeric operations (compatible with OpenCV)
 
 # Async and concurrency
 asyncio-mqtt==0.16.1          # MQTT client for async
-aioredis==2.0.1               # Redis async client
+# aioredis==2.0.1               # Redis async client - incompatible with Python 3.11
 asyncio-throttle==1.0.2       # Rate limiting
 
 # Web framework and API
