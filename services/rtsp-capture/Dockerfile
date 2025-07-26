@@ -2,7 +2,7 @@
 # Optimized for small size and security
 
 # Stage 1: Build Python wheels
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -27,7 +27,7 @@ RUN pip install --upgrade pip setuptools wheel && \
     pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
 # Stage 2: Runtime image
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Install minimal runtime dependencies
 # OpenCV requires these libraries for video processing
