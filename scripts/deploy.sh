@@ -232,9 +232,21 @@ action_deploy() {
         export DOCKER_CLI_HINTS=false
         export COMPOSE_INTERACTIVE_NO_CLI=1
 
-        # Pull fresh images with force
+        # Pull fresh images with force and timeout
         log "Pulling images with --pull always flag..."
-        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" pull --policy always
+        if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
+            # Pull specific services one by one
+            for service in $DEPLOY_SERVICES; do
+                log "Pulling image for $service..."
+                DOCKER_CLIENT_TIMEOUT=300 COMPOSE_HTTP_TIMEOUT=300 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" pull --policy always "$service" || {
+                    log "Warning: Failed to pull $service, will retry..."
+                    sleep 2
+                    DOCKER_CLIENT_TIMEOUT=300 COMPOSE_HTTP_TIMEOUT=300 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" pull --policy always "$service" || true
+                }
+            done
+        else
+            DOCKER_CLIENT_TIMEOUT=300 COMPOSE_HTTP_TIMEOUT=300 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" pull --policy always
+        fi
 
         # Log new image IDs after pull
         if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
@@ -286,15 +298,22 @@ action_deploy() {
             ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} down --rmi local 2>/dev/null || true"
         fi
 
-        # Pull fresh images on remote
+        # Pull fresh images on remote with retry logic
         if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
-            # Pull only specific services
-            # shellcheck disable=SC2029
-            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} pull $DEPLOY_SERVICES"
+            # Pull only specific services one by one for better reliability
+            for service in $DEPLOY_SERVICES; do
+                log "Pulling image for $service..."
+                # shellcheck disable=SC2029
+                ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} pull $service" || {
+                    log "Warning: Failed to pull $service, will retry..."
+                    sleep 2
+                    ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} pull $service" || true
+                }
+            done
         else
-            # Pull all images
+            # Pull all images with increased timeout
             # shellcheck disable=SC2029
-            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} pull"
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLIENT_TIMEOUT=300 COMPOSE_HTTP_TIMEOUT=300 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} pull"
         fi
     fi
 
