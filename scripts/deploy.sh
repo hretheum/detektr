@@ -14,6 +14,9 @@
 
 set -euo pipefail
 
+# Debug trap to show where script fails
+trap 'echo "[DEBUG] Script failed at line $LINENO with exit code $?"' ERR
+
 # Always use consistent project name
 export COMPOSE_PROJECT_NAME=detektor
 
@@ -497,18 +500,25 @@ action_deploy() {
     echo "[DEBUG] TARGET_HOST: $TARGET_HOST"
 
     # Verify deployment with retries
+    echo "[DEBUG] Starting verification loop..."
     local verify_attempts=0
     local max_verify_attempts=3
     local verify_success=false
 
+    echo "[DEBUG] Initial values: verify_attempts=$verify_attempts, max=$max_verify_attempts"
+
     while [[ $verify_attempts -lt $max_verify_attempts ]]; do
+        echo "[DEBUG] Loop iteration, verify_attempts=$verify_attempts"
         ((verify_attempts++))
         log "Verification attempt $verify_attempts of $max_verify_attempts..."
 
+        echo "[DEBUG] About to call action_verify..."
         if action_verify; then
+            echo "[DEBUG] action_verify returned success"
             verify_success=true
             break
         else
+            echo "[DEBUG] action_verify returned failure"
             if [[ $verify_attempts -lt $max_verify_attempts ]]; then
                 log "Verification failed, waiting 10 seconds before retry..."
                 sleep 10
