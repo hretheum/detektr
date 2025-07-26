@@ -6,9 +6,10 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install base processor from source
+# Install shared libraries from source
 COPY services/shared/base-processor /tmp/base-processor
-RUN pip install --no-cache-dir /tmp/base-processor
+COPY services/shared/frame-tracking /tmp/frame-tracking
+RUN pip install --no-cache-dir /tmp/base-processor /tmp/frame-tracking
 
 # Production stage
 FROM python:3.11-slim
