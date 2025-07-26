@@ -71,7 +71,7 @@ echo "========================"
 check_service "RTSP Capture" "http://localhost:8001/health"
 check_service "Frame Buffer" "http://localhost:8002/health"
 check_service "Example OTEL" "http://localhost:8005/health"
-check_service "Frame Tracking" "http://localhost:8006/health"
+check_service "Frame Events" "http://localhost:8081/health"
 check_service "Echo Service" "http://localhost:8007/health"
 check_service "GPU Demo" "http://localhost:8008/health"
 

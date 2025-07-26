@@ -333,6 +333,7 @@ action_deploy() {
         # Force recreate volumes if needed - disable interactive mode
         export DOCKER_CLI_HINTS=false
         export COMPOSE_INTERACTIVE_NO_CLI=1
+        export DOCKER_BUILDKIT=0  # Disable BuildKit which can cause interactive prompts
 
         # Pull fresh images with force and timeout
         log "Pulling images with --pull always flag..."
@@ -459,18 +460,18 @@ action_deploy() {
         log "Deploying specific services: $DEPLOY_SERVICES"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
             # shellcheck disable=SC2086
-            DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build $DEPLOY_SERVICES
+            DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build $DEPLOY_SERVICES < /dev/null
         else
             # shellcheck disable=SC2029,SC2086
-            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans --force-recreate $DEPLOY_SERVICES"
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans --force-recreate $DEPLOY_SERVICES < /dev/null"
         fi
     else
         log "Deploying all services"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
-            DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build
+            DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d --remove-orphans --pull always --force-recreate --no-build < /dev/null
         else
             # shellcheck disable=SC2029
-            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans --force-recreate"
+            ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && DOCKER_CLI_HINTS=false COMPOSE_INTERACTIVE_NO_CLI=1 COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} up -d --remove-orphans --force-recreate < /dev/null"
         fi
     fi
 
