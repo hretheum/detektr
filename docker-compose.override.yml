@@ -8,12 +8,6 @@ services:
       dockerfile: ./services/example-otel/Dockerfile
     image: example-otel:simple
 
-  frame-tracking:
-    build:
-      context: .
-      dockerfile: ./services/frame-tracking/Dockerfile
-    image: frame-tracking:latest
-
   echo-service:
     build:
       context: .

@@ -5,9 +5,6 @@ services:
   example-otel:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/detektr}/example-otel:${TAG:-latest}
 
-  frame-tracking:
-    image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/detektr}/frame-tracking:${TAG:-latest}
-
   echo-service:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-hretheum/detektr}/echo-service:${TAG:-latest}
 

@@ -14,12 +14,6 @@ scrape_configs:
       - targets: ["example-otel:8000"]
     metrics_path: "/metrics"
 
-  # Frame tracking service (future)
-  - job_name: "frame-tracking"
-    static_configs:
-      - targets: ["frame-tracking:8006"]
-    metrics_path: "/metrics"
-
   # Echo service (future)
   - job_name: "echo-service"
     static_configs:

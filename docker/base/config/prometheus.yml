@@ -24,20 +24,21 @@ scrape_configs:
   - job_name: "detektor-services"
     static_configs:
       - targets:
-          - "rtsp-capture:8001"
+          - "rtsp-capture:8080"
           - "frame-buffer:8002"
-          - "face-recognition:8003"
-          - "object-detection:8004"
+          - "face-recognition:8006"
+          - "object-detection:8003"
           - "metadata-storage:8005"
-          - "frame-tracking:8006"
           - "echo-service:8007"
           - "gpu-demo:8008"
-          - "example-otel:8000"
+          - "example-otel:8009"
+          - "base-template:8000"
+          - "sample-processor:8099"
           - "llm-intent:8010"
           - "gesture-detection:8011"
           - "audio-analysis:8012"
           - "scene-understanding:8013"
-          - "ha-bridge:8014"
+          - "ha-bridge:8004"
           - "telegram-alerts:8015"
     relabel_configs:
       - source_labels: [__address__]

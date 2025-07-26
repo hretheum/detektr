@@ -30,15 +30,6 @@ services:
       - TRACE_ENABLED=true
       - ENVIRONMENT=staging
 
-  frame-tracking:
-    <<: *staging-defaults
-    image: ghcr.io/hretheum/detektr/frame-tracking:${IMAGE_TAG:-staging}
-    environment:
-      - LOG_LEVEL=DEBUG
-      - METRICS_ENABLED=true
-      - TRACE_ENABLED=true
-      - ENVIRONMENT=staging
-
   echo-service:
     <<: *staging-defaults
     image: ghcr.io/hretheum/detektr/echo-service:${IMAGE_TAG:-staging}

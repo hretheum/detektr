@@ -46,36 +46,6 @@ services:
         "--reload",
       ]
 
-  frame-tracking:
-    <<: *development-defaults
-    image: ghcr.io/hretheum/detektr/frame-tracking:${IMAGE_TAG:-dev}
-    build:
-      context: ../../services/frame-tracking
-      dockerfile: Dockerfile
-      target: development
-    environment:
-      - LOG_LEVEL=DEBUG
-      - METRICS_ENABLED=true
-      - TRACE_ENABLED=true
-      - ENVIRONMENT=development
-      - PYTHONUNBUFFERED=1
-      - DEBUG=true
-    volumes:
-      - ../../services/frame-tracking:/app:ro
-      - frame_tracking_cache:/app/__pycache__
-    command:
-      [
-        "python",
-        "-m",
-        "uvicorn",
-        "main:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8006",
-        "--reload",
-      ]
-
   echo-service:
     <<: *development-defaults
     image: ghcr.io/hretheum/detektr/echo-service:${IMAGE_TAG:-dev}
@@ -269,7 +239,6 @@ volumes:
   grafana_data_dev:
   # Cache volumes for hot reload
   rtsp_capture_cache:
-  frame_tracking_cache:
   echo_service_cache:
   example_otel_cache:
   base_template_cache:

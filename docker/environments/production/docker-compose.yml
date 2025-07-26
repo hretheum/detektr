@@ -34,20 +34,6 @@ services:
           memory: 1G
           cpus: "2.0"
 
-  frame-tracking:
-    <<: *production-defaults
-    image: ghcr.io/hretheum/detektr/frame-tracking:${IMAGE_TAG:-latest}
-    environment:
-      - LOG_LEVEL=INFO
-      - METRICS_ENABLED=true
-      - TRACE_ENABLED=true
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-detektor}
-      - POSTGRES_USER=${POSTGRES_USER:-detektor}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - DETEKTOR_DB_PASSWORD=${POSTGRES_PASSWORD}
-
   echo-service:
     <<: *production-defaults
     image: ghcr.io/hretheum/detektr/echo-service:${IMAGE_TAG:-latest}

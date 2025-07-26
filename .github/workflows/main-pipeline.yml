@@ -73,8 +73,6 @@ jobs:
             rtsp-capture:
               - 'services/rtsp-capture/**'
               - 'docker-compose.rtsp.yml'
-            frame-tracking:
-              - 'services/frame-tracking/**'
             frame-buffer:
               - 'services/frame-buffer/**'
             telegram-alerts:
@@ -115,7 +113,6 @@ jobs:
             # Build all services
             services=(
               "rtsp-capture"
-              "frame-tracking"
               "frame-buffer"
               "telegram-alerts"
               "metadata-storage"
@@ -144,7 +141,7 @@ jobs:
               echo "Changed files: $changed_files"
 
               # Check each service path
-              for service in rtsp-capture frame-tracking frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
+              for service in rtsp-capture frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
                 service_path="services/$service"
                 if [[ "$service" == "sample-processor" ]]; then
                   service_path="examples/sample-processor"
@@ -162,7 +159,7 @@ jobs:
 
             if [[ "$changes" != "{}" && "$changes" != "null" && "$changes" != "[]" ]]; then
               # Parse JSON and extract service names that changed
-              for service in rtsp-capture frame-tracking frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
+              for service in rtsp-capture frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
                 # Check from path-filter output directly
                 service_key=$(echo "$service" | tr '-' '_')
                 # Use direct check for each service
@@ -170,7 +167,6 @@ jobs:
                 case "$service" in
                   "sample-processor") service_changed="${{ steps.changes.outputs.sample-processor }}" ;;
                   "rtsp-capture") service_changed="${{ steps.changes.outputs.rtsp-capture }}" ;;
-                  "frame-tracking") service_changed="${{ steps.changes.outputs.frame-tracking }}" ;;
                   "frame-buffer") service_changed="${{ steps.changes.outputs.frame-buffer }}" ;;
                   "telegram-alerts") service_changed="${{ steps.changes.outputs.telegram-alerts }}" ;;
                   "metadata-storage") service_changed="${{ steps.changes.outputs.metadata-storage }}" ;;
@@ -208,7 +204,7 @@ jobs:
               echo "Only workflow files changed, checking recent service changes..."
               # Look at last 10 commits for service changes
               recent_changes=$(git diff --name-only HEAD~10 HEAD | grep -E '^(services|examples)/' | sort -u)
-              for service in rtsp-capture frame-tracking sample-processor; do
+              for service in rtsp-capture sample-processor; do
                 service_path="services/$service"
                 if [[ "$service" == "sample-processor" ]]; then
                   service_path="examples/sample-processor"
