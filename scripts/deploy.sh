@@ -300,6 +300,21 @@ action_deploy() {
 
     # Deploy services
     log "Starting services..."
+
+    # Extra cleanup to ensure ports are free
+    if [[ "$TARGET_HOST" == "localhost" ]]; then
+        log "Ensuring all old containers are stopped..."
+        # Stop all containers in the project first
+        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down >/dev/null 2>&1 || true
+        # Kill any stuck containers
+        docker ps -a --filter "label=com.docker.compose.project=detektor" --format "{{.ID}}" | xargs -r docker rm -f >/dev/null 2>&1 || true
+    else
+        log "Ensuring all old containers are stopped on remote..."
+        # shellcheck disable=SC2029
+        ssh "$TARGET_HOST" "cd $TARGET_DIR && set -a && source .env 2>/dev/null || true && set +a && COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env ${COMPOSE_FILES[*]} down >/dev/null 2>&1 || true"
+        ssh "$TARGET_HOST" "docker ps -a --filter 'label=com.docker.compose.project=detektor' --format '{{.ID}}' | xargs -r docker rm -f >/dev/null 2>&1 || true"
+    fi
+
     if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
         log "Deploying specific services: $DEPLOY_SERVICES"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
