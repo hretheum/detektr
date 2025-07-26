@@ -34,6 +34,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Frame tracking
+try:
+    from frame_tracking import TraceContext
+
+    FRAME_TRACKING_AVAILABLE = True
+except ImportError:
+    FRAME_TRACKING_AVAILABLE = False
+    logger.warning("Frame tracking library not available")
+
 # Prometheus metrics
 request_count = Counter(
     "metadata_storage_requests_total",
@@ -179,15 +188,57 @@ async def metrics():
 
 @app.post("/metadata")
 async def create_metadata(metadata: dict) -> Dict:
-    """Create new frame metadata."""
+    """Create new frame metadata with trace context support."""
     try:
-        # Record metrics
+        # Use frame tracking if available
+        if FRAME_TRACKING_AVAILABLE and any(
+            key.startswith("traceparent") for key in metadata.keys()
+        ):
+            # Extract frame ID for tracking
+            frame_id = metadata.get("frame_id", "unknown")
+
+            # Extract trace context
+            extracted_context = TraceContext.extract_from_carrier(metadata)
+            if extracted_context:
+                with TraceContext.inject(frame_id) as ctx:
+                    ctx.add_event("metadata_storage_store")
+                    ctx.set_attribute("metadata.keys_count", len(metadata.keys()))
+                    ctx.set_attribute("frame.id", frame_id)
+
+                    # Store with timing
+                    with request_duration.labels(
+                        method="POST", endpoint="/metadata"
+                    ).time():
+                        result = await state.metadata_service.store_metadata(metadata)
+
+                        # Add trace_id to stored metadata
+                        if hasattr(result, "metadata"):
+                            result.metadata["trace_id"] = ctx.trace_id
+
+                    ctx.add_event("metadata_storage_stored")
+                    ctx.set_attribute("storage.success", True)
+
+                    request_count.labels(
+                        method="POST", endpoint="/metadata", status="200"
+                    ).inc()
+
+                    # Return result with trace context
+                    response = {
+                        "success": True,
+                        "frame_id": result.frame_id,
+                        "trace_id": ctx.trace_id,
+                    }
+                    ctx.inject_to_carrier(response)
+                    return response
+
+        # Fallback to regular processing
         with request_duration.labels(method="POST", endpoint="/metadata").time():
             result = await state.metadata_service.store_metadata(metadata)
             request_count.labels(
                 method="POST", endpoint="/metadata", status="200"
             ).inc()
             return {"success": True, "frame_id": result.frame_id}
+
     except Exception as e:
         request_count.labels(method="POST", endpoint="/metadata", status="500").inc()
         logger.error(f"Failed to store metadata: {e}")
@@ -219,6 +270,36 @@ async def get_metadata(frame_id: str) -> Dict:
         ).inc()
         logger.error(f"Failed to get metadata: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/test-metadata")
+async def test_metadata_with_tracking(test_data: dict) -> Dict:
+    """Test endpoint to verify frame tracking in metadata storage."""
+    if not FRAME_TRACKING_AVAILABLE:
+        return {"error": "Frame tracking not available"}
+
+    # Create test metadata with frame tracking
+    frame_id = test_data.get("frame_id", "test-metadata")
+
+    with TraceContext.inject(frame_id) as ctx:
+        ctx.add_event("test_metadata_storage")
+        ctx.set_attribute("test.enabled", True)
+
+        # Inject trace context into test data
+        ctx.inject_to_carrier(test_data)
+
+        # Test metadata creation
+        create_result = await create_metadata(test_data)
+
+        # Test metadata retrieval
+        get_result = await get_metadata(create_result["frame_id"])
+
+        return {
+            "frame_tracking_enabled": True,
+            "trace_id": ctx.trace_id,
+            "create_result": create_result,
+            "get_result": get_result,
+        }
 
 
 def handle_shutdown(signum, frame):

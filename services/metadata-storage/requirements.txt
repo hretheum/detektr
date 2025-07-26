@@ -5,6 +5,9 @@ python-dateutil==2.8.2
 fastapi==0.110.3
 uvicorn[standard]==0.30.6
 
+# Frame tracking
+frame-tracking @ file:///app/services/shared/frame-tracking
+
 # Monitoring
 prometheus-client==0.21.1
 
