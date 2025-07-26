@@ -507,9 +507,12 @@ action_deploy() {
 
     echo "[DEBUG] Initial values: verify_attempts=$verify_attempts, max=$max_verify_attempts"
 
+    # Temporarily disable strict mode for arithmetic
+    set +e
     while [[ $verify_attempts -lt $max_verify_attempts ]]; do
         echo "[DEBUG] Loop iteration, verify_attempts=$verify_attempts"
-        ((verify_attempts++))
+        verify_attempts=$((verify_attempts + 1))
+        echo "[DEBUG] After increment, verify_attempts=$verify_attempts"
         log "Verification attempt $verify_attempts of $max_verify_attempts..."
 
         echo "[DEBUG] About to call action_verify..."
@@ -525,6 +528,7 @@ action_deploy() {
             fi
         fi
     done
+    set -e  # Re-enable strict mode
 
     if [[ "$verify_success" == "true" ]]; then
         # Record success if circuit breaker is enabled
