@@ -2,6 +2,9 @@
 numpy==1.26.2
 psutil==5.9.6
 
+# Frame tracking
+frame-tracking @ file:///app/services/shared/frame-tracking
+
 # Observability
 opentelemetry-api==1.21.0
 opentelemetry-sdk==1.21.0

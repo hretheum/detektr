@@ -1,6 +1,5 @@
 """Abstract base processor for frame processing services."""
 import asyncio
-import logging
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Optional
@@ -14,6 +13,14 @@ from .metrics_decorators import MetricsContext, MetricsMixin, timed_method
 from .pipeline import ProcessingPipeline
 from .retry import ErrorHandler, RetryPolicy, with_retry
 from .tracing import ProcessorSpan, TracingMixin
+
+# Frame tracking
+try:
+    from frame_tracking import TraceContext
+
+    FRAME_TRACKING_AVAILABLE = True
+except ImportError:
+    FRAME_TRACKING_AVAILABLE = False
 
 
 class BaseProcessor(ABC, TracingMixin, MetricsMixin, LoggingMixin):
@@ -226,6 +233,62 @@ class BaseProcessor(ABC, TracingMixin, MetricsMixin, LoggingMixin):
                 result = hook(result) if len(args) == 1 else hook(*result)
 
         return result
+
+    async def process_frame_with_tracking(
+        self,
+        frame: np.ndarray,
+        metadata: Dict[str, Any],
+        frame_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Process frame with distributed tracing support.
+
+        Args:
+            frame: Input frame as numpy array
+            metadata: Frame metadata
+            frame_id: Optional frame ID for tracking
+
+        Returns:
+            Processing result dictionary with trace context
+        """
+        if not FRAME_TRACKING_AVAILABLE:
+            # Fallback to regular processing
+            return await self.process_frame(frame, metadata)
+
+        # Use frame tracking
+        actual_frame_id = frame_id or metadata.get("frame_id", "unknown")
+
+        with TraceContext.inject(actual_frame_id) as ctx:
+            # Add processor span
+            ctx.add_event(f"processor_{self.name}_start")
+            ctx.set_attribute("processor.name", self.name)
+            ctx.set_attribute("frame.shape", str(frame.shape))
+
+            try:
+                # Process with timing
+                start_time = time.time()
+                result = await self.process_frame(frame, metadata)
+                processing_time = time.time() - start_time
+
+                # Add success metrics to trace
+                ctx.add_event(f"processor_{self.name}_success")
+                ctx.set_attribute("processor.duration_seconds", processing_time)
+                ctx.set_attribute(
+                    "result.keys",
+                    list(result.keys()) if isinstance(result, dict) else "non_dict",
+                )
+
+                # Inject trace context into result for downstream
+                if isinstance(result, dict):
+                    ctx.inject_to_carrier(result)
+
+                return result
+
+            except Exception as e:
+                # Add error to trace
+                ctx.add_event(f"processor_{self.name}_error")
+                ctx.set_attribute("error.type", type(e).__name__)
+                ctx.set_attribute("error.message", str(e))
+                raise
 
     @abstractmethod
     async def process_frame(

@@ -6,6 +6,14 @@ from .metrics import ProcessorMetrics
 from .resource_manager import ResourceManager, ResourceStats
 from .state_machine import FrameState, FrameStateMachine, StateTransition
 
+# Frame tracking availability flag
+try:
+    from frame_tracking import TraceContext
+
+    FRAME_TRACKING_AVAILABLE = True
+except ImportError:
+    FRAME_TRACKING_AVAILABLE = False
+
 __all__ = [
     "BaseProcessor",
     "ProcessingError",
@@ -20,6 +28,7 @@ __all__ = [
     "BatchProcessor",
     "BatchConfig",
     "BatchResult",
+    "FRAME_TRACKING_AVAILABLE",
 ]
 
 __version__ = "1.0.0"
