@@ -25,8 +25,17 @@ RUN pip install --upgrade pip setuptools wheel && \
 FROM python:3.11-slim
 
 # Install minimal runtime dependencies
+# OpenCV requires these libraries for video processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgstreamer1.0-0 \
+    libgstreamer-plugins-base1.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
