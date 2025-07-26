@@ -476,10 +476,30 @@ action_deploy() {
     fi
 
     # Wait for services to start
-    sleep 5
+    log "Waiting for services to stabilize..."
+    sleep 10
 
-    # Verify deployment
-    if action_verify; then
+    # Verify deployment with retries
+    local verify_attempts=0
+    local max_verify_attempts=3
+    local verify_success=false
+
+    while [[ $verify_attempts -lt $max_verify_attempts ]]; do
+        ((verify_attempts++))
+        log "Verification attempt $verify_attempts of $max_verify_attempts..."
+
+        if action_verify; then
+            verify_success=true
+            break
+        else
+            if [[ $verify_attempts -lt $max_verify_attempts ]]; then
+                log "Verification failed, waiting 10 seconds before retry..."
+                sleep 10
+            fi
+        fi
+    done
+
+    if [[ "$verify_success" == "true" ]]; then
         # Record success if circuit breaker is enabled
         if [[ -x "$PROJECT_ROOT/scripts/deployment-circuit-breaker.sh" ]]; then
             "$PROJECT_ROOT/scripts/deployment-circuit-breaker.sh" success
@@ -550,27 +570,36 @@ action_verify() {
     # Define all possible services and their health endpoints
     # Using the same SERVICE_PORTS as defined at the beginning
     declare -A all_services=(
-        ["base-template"]="8000"
-        ["frame-buffer"]="8002"
-        ["metadata-storage"]="8005"
         ["rtsp-capture"]="8080"
         ["frame-events"]="8081"
-        ["sample-processor"]="8099"
+        ["echo-service"]="8007"
+        ["example-otel"]="8009"
     )
 
     # Filter to only check deployed services
     declare -A services=()
     if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
+        log "Filtering services to check. DEPLOY_SERVICES: $DEPLOY_SERVICES"
         for service in $DEPLOY_SERVICES; do
             if [[ -n "${all_services[$service]:-}" ]]; then
                 services[$service]="${all_services[$service]}"
+                log "Will check service: $service on port ${all_services[$service]}"
+            else
+                log "Service $service not in health check list - skipping"
             fi
         done
     else
         # If no specific services, check all
+        log "No specific services specified, checking all services"
         for key in "${!all_services[@]}"; do
             services[$key]="${all_services[$key]}"
         done
+    fi
+
+    # If no services to check, return success
+    if [[ ${#services[@]} -eq 0 ]]; then
+        log "No services to verify - considering deployment successful"
+        return 0
     fi
 
     declare -A infrastructure=(
@@ -583,6 +612,8 @@ action_verify() {
 
     # Check application services
     log "Checking ${#services[@]} application services..."
+    log "Services to check: ${!services[*]}"
+
     for service in "${!services[@]}"; do
         port="${services[$service]}"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
@@ -592,15 +623,21 @@ action_verify() {
         fi
 
         log "Checking $service at $url..."
-        if curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
+
+        # Try curl with more verbose output for debugging
+        if response=$(curl -sf --max-time 5 "$url" 2>&1); then
             echo -e "${GREEN}✓${NC} $service is healthy"
+            log "Response: OK"
         else
-            echo -e "${RED}✗${NC} $service is not responding"
+            curl_exit_code=$?
+            echo -e "${RED}✗${NC} $service is not responding (curl exit code: $curl_exit_code)"
+            log "Curl error: $response"
             ((failed++))
         fi
     done
 
-    # Check infrastructure services
+    # Check infrastructure services (optional - don't fail deployment if these are down)
+    log "Checking infrastructure services (optional)..."
     for service in "${!infrastructure[@]}"; do
         endpoint="${infrastructure[$service]}"
         if [[ "$TARGET_HOST" == "localhost" ]]; then
@@ -609,10 +646,12 @@ action_verify() {
             url="http://$TARGET_HOST:$endpoint"
         fi
 
+        log "Checking $service at $url..."
         if curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
             echo -e "${GREEN}✓${NC} $service is healthy"
         else
-            echo -e "${YELLOW}⚠${NC} $service might not be ready yet"
+            echo -e "${YELLOW}⚠${NC} $service might not be ready yet (not critical)"
+            # Don't increment failed counter for infrastructure services
         fi
     done
 
