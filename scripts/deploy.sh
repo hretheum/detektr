@@ -175,6 +175,15 @@ action_deploy() {
 
     check_prerequisites
 
+    # Change to target directory for localhost deployment
+    if [[ "$TARGET_HOST" == "localhost" ]] && [[ "$PWD" != "$TARGET_DIR" ]]; then
+        log "Changing to target directory: $TARGET_DIR"
+        cd "$TARGET_DIR" || {
+            error "Cannot change to target directory: $TARGET_DIR"
+            exit 1
+        }
+    fi
+
     # Ensure network exists
     if [[ "$TARGET_HOST" == "localhost" ]]; then
         if ! docker network ls | grep -q "detektor-network"; then
@@ -409,6 +418,8 @@ action_deploy() {
     # Extra cleanup to ensure ports are free
     if [[ "$TARGET_HOST" == "localhost" ]]; then
         log "Ensuring all old containers are stopped..."
+        log "Working directory: $(pwd)"
+
         # Stop all containers in the project first
         COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" down >/dev/null 2>&1 || true
         # Kill any stuck containers
@@ -417,13 +428,17 @@ action_deploy() {
         # Check for containers using our ports and stop them
         log "Checking for port conflicts..."
         for port in 8002 8080 8081 8005; do
-            container_on_port=$(docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep -E ":${port}->" | awk '{print $1}' | head -1)
+            log "Checking port $port..."
+            container_on_port=$(docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}" | grep -E ":${port}->" | awk '{print $1}' | head -1 || true)
             if [[ -n "$container_on_port" ]]; then
                 log "Port $port is occupied by container $container_on_port, stopping it..."
                 docker stop "$container_on_port" 2>/dev/null || true
                 docker rm -f "$container_on_port" 2>/dev/null || true
+            else
+                log "Port $port is free"
             fi
         done
+        log "Port conflict check completed"
     else
         log "Ensuring all old containers are stopped on remote..."
         # shellcheck disable=SC2029
