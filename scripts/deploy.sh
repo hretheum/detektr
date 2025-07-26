@@ -265,11 +265,18 @@ action_deploy() {
             log "Cleaning up specific services: $DEPLOY_SERVICES"
             for service in $DEPLOY_SERVICES; do
                 log "Stopping and removing $service..."
-                # Use subshell to prevent script exit on error
-                (
-                    COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" stop "$service" 2>&1 | grep -v "no such service" || true
-                    COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" rm -f "$service" 2>&1 | grep -v "no such service" || true
-                ) || log "Service $service may not exist, continuing..."
+                # Check if service exists first
+                if docker ps -a --format "{{.Names}}" | grep -q "detektor-${service}"; then
+                    # Use subshell to prevent script exit on error
+                    (
+                        set +e  # Temporarily disable exit on error
+                        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" stop "$service" 2>&1 | grep -v "no such service" || true
+                        COMPOSE_PROJECT_NAME=detektor docker compose --env-file .env "${COMPOSE_FILES[@]}" rm -f "$service" 2>&1 | grep -v "no such service" || true
+                        set -e  # Re-enable exit on error
+                    ) || log "Service $service may not exist, continuing..."
+                else
+                    log "Service $service not currently running"
+                fi
 
                 # Also remove by container name pattern if compose missed it
                 docker ps -a --format "{{.Names}}" | grep -E "^detektor-${service}(-[0-9]+)?$" | while read -r container; do
