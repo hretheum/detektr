@@ -1,0 +1,117 @@
+name: Manual Deploy Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to deploy'
+        required: true
+        type: choice
+        options:
+          - rtsp-capture
+          - frame-events
+          - frame-buffer
+          - telegram-alerts
+          - metadata-storage
+          - example-otel
+          - echo-service
+          - gpu-demo
+          - base-template
+          - face-recognition
+          - object-detection
+          - sample-processor
+
+jobs:
+  deploy-service:
+    name: Deploy ${{ github.event.inputs.service }}
+    runs-on: self-hosted
+    steps:
+      - name: Checkout deployment files
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/deploy.sh
+            scripts/common.sh
+            docker/
+            .env.sops
+          sparse-checkout-cone-mode: false
+
+      - name: Prepare deployment directory
+        run: |
+          echo "🚀 Deploying ${{ github.event.inputs.service }}..."
+
+          # Clean deployment directory
+          DEPLOY_DIR="/opt/detektor-clean"
+          sudo rm -rf $DEPLOY_DIR/docker $DEPLOY_DIR/scripts
+          sudo mkdir -p $DEPLOY_DIR
+
+          # Copy files
+          cp -r docker $DEPLOY_DIR/
+          cp -r scripts $DEPLOY_DIR/
+
+          # Copy .env.sops if exists
+          if [ -f .env.sops ]; then
+            cp .env.sops $DEPLOY_DIR/
+          fi
+
+          # Ensure proper ownership
+          sudo chown -R github-runner:github-runner $DEPLOY_DIR
+
+      - name: Decrypt secrets
+        working-directory: /opt/detektor-clean
+        run: |
+          if [ -f .env.sops ]; then
+            echo "📋 Decrypting secrets..."
+            export SOPS_AGE_KEY_FILE=/home/github-runner/.config/sops/age/keys.txt
+            sops --input-type dotenv --output-type dotenv -d .env.sops > .env || {
+              echo "⚠️ Failed to decrypt .env.sops, checking for existing .env..."
+              if [ -f /opt/detektor/.env ]; then
+                echo "📋 Using existing .env from /opt/detektor/.env"
+                cp /opt/detektor/.env .env
+              else
+                echo "❌ No .env file found!"
+                exit 1
+              fi
+            }
+          fi
+
+      - name: Deploy service
+        working-directory: /opt/detektor-clean
+        run: |
+          echo "🚀 Deploying ${{ github.event.inputs.service }} to production..."
+
+          # Login to GitHub Container Registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+          # Export required variables
+          export DEPLOY_SERVICES="${{ github.event.inputs.service }}"
+          export COMPOSE_PROJECT_NAME=detektor
+          export IMAGE_TAG="latest"
+
+          # Run deployment
+          ./scripts/deploy.sh production deploy
+
+      - name: Verify deployment
+        working-directory: /opt/detektor-clean
+        run: |
+          echo "🔍 Verifying deployment..."
+
+          # Wait for service to start
+          sleep 15
+
+          # Run verification
+          export DEPLOY_SERVICES="${{ github.event.inputs.service }}"
+          ./scripts/deploy.sh production verify || {
+            echo "⚠️ Verification failed, checking logs..."
+            docker logs detektor-${{ github.event.inputs.service }}-1 --tail 50
+            exit 1
+          }
+
+          echo "✅ ${{ github.event.inputs.service }} deployed successfully!"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Clean workspace
+          sudo rm -rf ${{ github.workspace }}/*
+          sudo rm -rf ${{ github.workspace }}/.*
