@@ -99,7 +99,7 @@ ADDITIONAL_ARGS=("${@:3}")
 case "$ENVIRONMENT" in
     production|prod)
         # If running on GitHub Actions self-hosted runner, use localhost
-        if [[ "${GITHUB_ACTIONS:-false}" == "true" ]] || [[ "$(hostname)" == "nebula" ]]; then
+        if [[ "${GITHUB_ACTIONS:-false}" == "true" ]] || [[ "$(hostname)" == "nebula" ]] || [[ "$(hostname)" == "nebula-forge" ]]; then
             TARGET_HOST="localhost"
             TARGET_DIR="/opt/detektor-clean"
             # Use target directory for compose files when on production server
