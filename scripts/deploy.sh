@@ -279,18 +279,18 @@ action_deploy() {
                 fi
 
                 # Also remove by container name pattern if compose missed it
-                docker ps -a --format "{{.Names}}" | grep -E "^detektor-${service}(-[0-9]+)?$" | while read -r container; do
+                docker ps -a --format "{{.Names}}" | grep -E "^detektor-${service}(-[0-9]+)?$" 2>/dev/null | while read -r container; do
                     log "Removing stale container: $container"
                     docker stop "$container" 2>/dev/null || true
                     docker rm -f "$container" 2>/dev/null || true
-                done
+                done || true
 
                 # Extra aggressive cleanup - remove any container using the service image
-                docker ps -a --format "{{.ID}} {{.Image}}" | grep "ghcr.io/hretheum/detektr/${service}:" | awk '{print $1}' | while read -r container_id; do
+                docker ps -a --format "{{.ID}} {{.Image}}" | grep "ghcr.io/hretheum/detektr/${service}:" 2>/dev/null | awk '{print $1}' | while read -r container_id; do
                     log "Removing container by image: $container_id"
                     docker stop "$container_id" 2>/dev/null || true
                     docker rm -f "$container_id" 2>/dev/null || true
-                done
+                done || true
                 # Remove old image to ensure fresh pull
                 docker rmi "ghcr.io/hretheum/detektr/$service:latest" 2>/dev/null || true
                 log "Removed old image for $service"
