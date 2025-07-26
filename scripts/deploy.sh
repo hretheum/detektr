@@ -47,19 +47,28 @@ ADDITIONAL_ARGS=("${@:3}")
 # Environment-specific configuration
 case "$ENVIRONMENT" in
     production|prod)
-        COMPOSE_FILES=(
-            "-f" "$PROJECT_ROOT/docker/base/docker-compose.yml"
-            "-f" "$PROJECT_ROOT/docker/base/docker-compose.storage.yml"
-            "-f" "$PROJECT_ROOT/docker/base/docker-compose.observability.yml"
-            "-f" "$PROJECT_ROOT/docker/environments/production/docker-compose.yml"
-        )
         # If running on GitHub Actions self-hosted runner, use localhost
         if [[ "${GITHUB_ACTIONS:-false}" == "true" ]] || [[ "$(hostname)" == "nebula" ]]; then
             TARGET_HOST="localhost"
+            TARGET_DIR="/opt/detektor-clean"
+            # Use target directory for compose files when on production server
+            COMPOSE_FILES=(
+                "-f" "$TARGET_DIR/docker/base/docker-compose.yml"
+                "-f" "$TARGET_DIR/docker/base/docker-compose.storage.yml"
+                "-f" "$TARGET_DIR/docker/base/docker-compose.observability.yml"
+                "-f" "$TARGET_DIR/docker/environments/production/docker-compose.yml"
+            )
         else
             TARGET_HOST="nebula"
+            TARGET_DIR="/opt/detektor-clean"
+            # Use project root for compose files when deploying remotely
+            COMPOSE_FILES=(
+                "-f" "$PROJECT_ROOT/docker/base/docker-compose.yml"
+                "-f" "$PROJECT_ROOT/docker/base/docker-compose.storage.yml"
+                "-f" "$PROJECT_ROOT/docker/base/docker-compose.observability.yml"
+                "-f" "$PROJECT_ROOT/docker/environments/production/docker-compose.yml"
+            )
         fi
-        TARGET_DIR="/opt/detektor-clean"
         ENABLE_GPU=true
         ;;
     staging)
@@ -73,14 +82,26 @@ case "$ENVIRONMENT" in
         ENABLE_GPU=false
         ;;
     local|development|dev)
-        COMPOSE_FILES=(
-            "-f" "$PROJECT_ROOT/docker/base/docker-compose.yml"
-            "-f" "$PROJECT_ROOT/docker/base/docker-compose.storage.yml"
-            "-f" "$PROJECT_ROOT/docker/base/docker-compose.observability.yml"
-            "-f" "$PROJECT_ROOT/docker/environments/development/docker-compose.yml"
-        )
         TARGET_HOST="localhost"
         TARGET_DIR="$PROJECT_ROOT"
+        # When running locally, we need to check if we're in the right directory
+        if [[ "$PWD" == "$TARGET_DIR" ]] || [[ -f "./docker/base/docker-compose.yml" ]]; then
+            # We're in the project directory, use relative paths
+            COMPOSE_FILES=(
+                "-f" "./docker/base/docker-compose.yml"
+                "-f" "./docker/base/docker-compose.storage.yml"
+                "-f" "./docker/base/docker-compose.observability.yml"
+                "-f" "./docker/environments/development/docker-compose.yml"
+            )
+        else
+            # We're elsewhere, use absolute paths
+            COMPOSE_FILES=(
+                "-f" "$PROJECT_ROOT/docker/base/docker-compose.yml"
+                "-f" "$PROJECT_ROOT/docker/base/docker-compose.storage.yml"
+                "-f" "$PROJECT_ROOT/docker/base/docker-compose.observability.yml"
+                "-f" "$PROJECT_ROOT/docker/environments/development/docker-compose.yml"
+            )
+        fi
         ENABLE_GPU=false
         # Set default env vars for local development
         export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dev_password}"
