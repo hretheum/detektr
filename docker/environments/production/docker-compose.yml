@@ -146,6 +146,9 @@ services:
       - POSTGRES_DEFAULT_STATISTICS_TARGET=100
       - POSTGRES_RANDOM_PAGE_COST=1.1
       - POSTGRES_EFFECTIVE_IO_CONCURRENCY=200
+      - POSTGRES_USER=${POSTGRES_USER:-detektor}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-detektor_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-detektor}
     deploy:
       resources:
         limits:
