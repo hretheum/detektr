@@ -1,0 +1,76 @@
+version: "3.8"
+
+# Minimal docker-compose for testing sample-processor integration
+# Usage: docker-compose -f docker-compose.test.yml up
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  frame-buffer:
+    image: ghcr.io/hretheum/detektr/frame-buffer:latest
+    build:
+      context: ../../
+      dockerfile: services/frame-buffer/Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - SERVICE_NAME=frame-buffer
+      - PORT=8002
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - LOG_LEVEL=DEBUG
+      - MAX_BUFFER_SIZE=1000
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  sample-processor:
+    image: ghcr.io/hretheum/detektr/sample-processor:latest
+    build:
+      context: ../../
+      dockerfile: examples/sample-processor/Dockerfile
+    ports:
+      - "8099:8099"
+    environment:
+      - SERVICE_NAME=sample-processor
+      - PORT=8099
+      - LOG_LEVEL=DEBUG
+      - ENABLE_FRAME_CONSUMER=true
+      - FRAME_BUFFER_URL=http://frame-buffer:8002
+      - CONSUMER_BATCH_SIZE=5
+      - POLL_INTERVAL_MS=100
+      - DETECTION_THRESHOLD=0.5
+      - PROCESSING_DELAY_MS=10
+    depends_on:
+      - redis
+      - frame-buffer
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8099/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Optional: Jaeger for tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317" # OTLP gRPC
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+networks:
+  default:
+    name: sample-processor-test

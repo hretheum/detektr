@@ -151,6 +151,41 @@ services:
       - ../../services/gpu-demo:/app:ro
       - gpu_demo_cache:/app/__pycache__
 
+  sample-processor:
+    <<: *development-defaults
+    image: ghcr.io/hretheum/detektr/sample-processor:${IMAGE_TAG:-dev}
+    build:
+      context: ../../../
+      dockerfile: examples/sample-processor/Dockerfile
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
+      - DEBUG=true
+      - ENABLE_FRAME_CONSUMER=true
+      - FRAME_BUFFER_URL=http://frame-buffer:8002
+      - DETECTION_THRESHOLD=0.5
+      - SIMULATE_GPU=false
+      - PROCESSING_DELAY_MS=10
+    volumes:
+      - ../../../examples/sample-processor:/app:ro
+      - ../../../services/shared/base-processor:/app/base-processor:ro
+      - ../../../services/shared/frame-tracking:/app/frame-tracking:ro
+      - sample_processor_cache:/app/__pycache__
+    command:
+      [
+        "python",
+        "-m",
+        "sample_processor",
+      ]
+
+  frame-buffer:
+    <<: *development-defaults
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+      - DEBUG=true
+
   # Infrastructure services with development settings
   postgres:
     <<: *development-defaults
@@ -243,6 +278,7 @@ volumes:
   example_otel_cache:
   base_template_cache:
   gpu_demo_cache:
+  sample_processor_cache:
 
 # Development network configuration
 networks:

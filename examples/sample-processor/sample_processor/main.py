@@ -69,6 +69,13 @@ class SampleProcessor(
         # Pass empty kwargs to ensure all mixins initialize
         super().__init__(name=name, **{})
 
+        # Ensure mixins are initialized
+        if hasattr(self, "batch_processor") and hasattr(self.batch_processor, "config"):
+            self.batch_processor.config.batch_size = kwargs.get("batch_size", 10)
+        if hasattr(self, "resource_manager"):
+            self.resource_manager.cpu_cores = kwargs.get("cpu_cores", 1)
+            self.resource_manager.memory_limit_mb = kwargs.get("memory_limit_mb", 512)
+
         self.detection_threshold = detection_threshold
         self.simulate_gpu = simulate_gpu
         self.processing_delay_ms = processing_delay_ms
@@ -82,17 +89,24 @@ class SampleProcessor(
         await asyncio.sleep(0.5)
         self.model_loaded = True
 
-        # Register state callbacks - commented out for now
-        # TODO: Fix state machine callback registration
-        # self.state_machine.on_state_enter(
-        #     StateTransition.COMPLETE, self._on_detection_complete
-        # )
+        # Register state callbacks properly
+        # Use the state enum values directly
+        from base_processor.state_machine import ProcessingState
+
+        if hasattr(self, "state_machine") and hasattr(
+            self.state_machine, "on_state_enter"
+        ):
+            self.state_machine.on_state_enter(
+                ProcessingState.COMPLETE, self._on_detection_complete
+            )
 
         self.log_with_context(
             "info",
             "Model loaded successfully",
             gpu_enabled=self.simulate_gpu,
-            batch_size=self.batch_processor.config.batch_size,
+            batch_size=self.batch_processor.config.batch_size
+            if hasattr(self, "batch_processor")
+            else "N/A",
         )
 
     async def validate_frame(self, frame: np.ndarray, metadata: Dict[str, Any]):
@@ -119,8 +133,19 @@ class SampleProcessor(
         if frame.dtype not in [np.uint8, np.uint16, np.float32]:
             raise ValidationError(f"Unsupported frame dtype: {frame.dtype}")
 
-        # Track frame in state machine
-        await self.track_frame_lifecycle(metadata.get("frame_id", "unknown"), metadata)
+        # Check frame size to prevent memory issues
+        max_size_mb = 100  # 100MB max frame size
+        frame_size_mb = frame.nbytes / (1024 * 1024)
+        if frame_size_mb > max_size_mb:
+            raise ValidationError(
+                f"Frame too large: {frame_size_mb:.1f}MB > {max_size_mb}MB"
+            )
+
+        # Track frame in state machine if available
+        if hasattr(self, "track_frame_lifecycle"):
+            await self.track_frame_lifecycle(
+                metadata.get("frame_id", "unknown"), metadata
+            )
 
     async def process_frame(
         self, frame: np.ndarray, metadata: Dict[str, Any]
@@ -136,43 +161,77 @@ class SampleProcessor(
         """
         frame_id = metadata.get("frame_id", "unknown")
 
-        # Track frame in state machine first
-        await self.track_frame_lifecycle(frame_id, metadata)
+        # Track frame in state machine first if available
+        if hasattr(self, "track_frame_lifecycle"):
+            await self.track_frame_lifecycle(frame_id, metadata)
 
-        # Allocate resources
-        async with self.with_resources(frame_id):
-            # Update state to processing
-            await self.state_machine.transition(frame_id, StateTransition.START)
+        # Allocate resources if resource manager is available
+        resource_context = (
+            self.with_resources(frame_id) if hasattr(self, "with_resources") else None
+        )
 
-            # Simulate processing delay
-            await asyncio.sleep(self.processing_delay_ms / 1000.0)
+        try:
+            if resource_context:
+                async with resource_context:
+                    # Update state to processing if state machine is available
+                    if hasattr(self, "state_machine") and hasattr(
+                        self.state_machine, "transition"
+                    ):
+                        await self.state_machine.transition(
+                            frame_id, StateTransition.START
+                        )
 
-            # Simulate object detection
-            detections = self._simulate_detection(frame)
+                    result = await self._process_frame_internal(
+                        frame, metadata, frame_id
+                    )
+            else:
+                result = await self._process_frame_internal(frame, metadata, frame_id)
 
-            # Filter by threshold
-            filtered_detections = [
-                d for d in detections if d["confidence"] >= self.detection_threshold
-            ]
+            return result
+        except Exception as e:
+            # Update state to error if state machine is available
+            if hasattr(self, "state_machine") and hasattr(
+                self.state_machine, "transition"
+            ):
+                await self.state_machine.transition(
+                    frame_id, StateTransition.ERROR, error=str(e)
+                )
+            raise
 
-            result = {
-                "detections": filtered_detections,
-                "total_objects": len(filtered_detections),
-                "processing_time_ms": self.processing_delay_ms,
-                "frame_shape": frame.shape,
-                "gpu_used": self.simulate_gpu,
-            }
+    async def _process_frame_internal(
+        self, frame: np.ndarray, metadata: Dict[str, Any], frame_id: str
+    ) -> Dict[str, Any]:
+        """Internal frame processing logic."""
+        # Simulate processing delay
+        await asyncio.sleep(self.processing_delay_ms / 1000.0)
 
-            # Update state to completed
+        # Simulate object detection
+        detections = self._simulate_detection(frame)
+
+        # Filter by threshold
+        filtered_detections = [
+            d for d in detections if d["confidence"] >= self.detection_threshold
+        ]
+
+        result = {
+            "detections": filtered_detections,
+            "total_objects": len(filtered_detections),
+            "processing_time_ms": self.processing_delay_ms,
+            "frame_shape": frame.shape,
+            "gpu_used": self.simulate_gpu,
+        }
+
+        # Update state to completed if state machine is available
+        if hasattr(self, "state_machine") and hasattr(self.state_machine, "transition"):
             await self.state_machine.transition(
                 frame_id, StateTransition.COMPLETE, result=result
             )
 
-            # Update metrics
-            self.count_frames("success")
-            # Could also track objects detected as a custom metric if needed
+        # Update metrics
+        self.count_frames("success")
+        # Could also track objects detected as a custom metric if needed
 
-            return result
+        return result
 
     def _simulate_detection(self, frame: np.ndarray) -> list:
         """Simulate object detection on frame.
@@ -220,8 +279,9 @@ class SampleProcessor(
         self.log_with_context("info", "Unloading model...")
         self.model_loaded = False
 
-        # Clean up state machine
-        self.state_machine.cleanup()
+        # Clean up state machine if available
+        if hasattr(self, "state_machine") and hasattr(self.state_machine, "cleanup"):
+            self.state_machine.cleanup()
 
     def supports_batch_processing(self) -> bool:
         """This processor supports batch processing."""  # noqa: D401
@@ -322,20 +382,32 @@ async def main():
         if "average_latency_ms" in metrics:
             print(f"   Average latency: {metrics['average_latency_ms']:.1f}ms")
 
-        # Show state statistics
-        print("\n6. State machine statistics:")
-        state_stats = processor.state_machine.get_statistics()
-        print(f"   Total frames tracked: {state_stats['total_frames']}")
-        for state, count in state_stats["state_counts"].items():
-            if count > 0:
-                print(f"   {state}: {count}")
+        # Show state statistics if available
+        if hasattr(processor, "state_machine") and hasattr(
+            processor.state_machine, "get_statistics"
+        ):
+            print("\n6. State machine statistics:")
+            state_stats = processor.state_machine.get_statistics()
+            print(f"   Total frames tracked: {state_stats['total_frames']}")
+            for state, count in state_stats["state_counts"].items():
+                if count > 0:
+                    print(f"   {state}: {count}")
+        else:
+            print("\n6. State machine not available")
 
-        # Show resource usage
-        print("\n7. Resource statistics:")
-        resource_stats = processor.resource_manager.get_allocation_stats()
-        print(f"   Active allocations: {resource_stats['active_allocations']}")
-        print(f"   Available CPUs: {resource_stats['available_cpus']}")
-        print(f"   Available memory: {resource_stats['available_memory_mb']:.0f} MB")
+        # Show resource usage if available
+        if hasattr(processor, "resource_manager") and hasattr(
+            processor.resource_manager, "get_allocation_stats"
+        ):
+            print("\n7. Resource statistics:")
+            resource_stats = processor.resource_manager.get_allocation_stats()
+            print(f"   Active allocations: {resource_stats['active_allocations']}")
+            print(f"   Available CPUs: {resource_stats['available_cpus']}")
+            print(
+                f"   Available memory: {resource_stats['available_memory_mb']:.0f} MB"
+            )
+        else:
+            print("\n7. Resource manager not available")
 
     except Exception as e:
         print(f"\n✗ Error: {e}")

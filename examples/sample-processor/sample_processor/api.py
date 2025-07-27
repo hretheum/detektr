@@ -1,14 +1,18 @@
 """FastAPI service for sample processor."""
+import asyncio
 import os
+import signal
+import time
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from pydantic import BaseModel, Field, validator
 
-# from .frame_consumer import FrameBufferConsumer
-# Will be used when integrated
+from .frame_consumer import FrameBufferConsumer
 from .main import SampleProcessor
 
 # Frame tracking
@@ -26,10 +30,26 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Global processor instance
-processor = None
-# Global consumer instance
-consumer = None
+# Add CORS middleware for security
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure based on environment
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Application state class to avoid global variables
+class AppState:
+    def __init__(self):
+        self.processor: Optional[SampleProcessor] = None
+        self.consumer: Optional[FrameBufferConsumer] = None
+        self.shutdown_event = asyncio.Event()
+        self.graceful_shutdown_timeout = 30  # seconds
+
+
+app.state.app_state = AppState()
 
 
 class HealthStatus(BaseModel):
@@ -45,8 +65,31 @@ class HealthStatus(BaseModel):
 class ProcessRequest(BaseModel):
     """Frame processing request."""
 
-    frame_data: str  # Base64 encoded frame
-    metadata: Dict[str, Any] = {}
+    frame_data: str = Field(
+        ..., description="Base64 encoded frame data", max_length=10_000_000
+    )  # ~7.5MB limit for base64
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Frame metadata")
+
+    @validator("frame_data")
+    def validate_frame_data(cls, v):
+        if not v:
+            raise ValueError("frame_data cannot be empty")
+        # Basic base64 validation
+        if not all(
+            c in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+            for c in v
+        ):
+            raise ValueError("Invalid base64 encoding")
+        return v
+
+    @validator("metadata")
+    def validate_metadata(cls, v):
+        # Limit metadata size to prevent abuse
+        import json
+
+        if len(json.dumps(v)) > 100_000:  # 100KB limit for metadata
+            raise ValueError("Metadata too large")
+        return v
 
 
 class ProcessResponse(BaseModel):
@@ -62,27 +105,42 @@ class ProcessResponse(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     """Initialize processor on startup."""
-    global processor, consumer
+    app_state = app.state.app_state
 
     print("Starting Sample Processor Service...")
 
+    # Register signal handlers for graceful shutdown
+    def signal_handler(signum, frame):
+        print(f"Received signal {signum}, initiating graceful shutdown...")
+        app_state.shutdown_event.set()
+
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
     # Create processor with configuration
-    processor = SampleProcessor(
+    app_state.processor = SampleProcessor(
         detection_threshold=float(os.getenv("DETECTION_THRESHOLD", "0.5")),
         simulate_gpu=os.getenv("SIMULATE_GPU", "false").lower() == "true",
         processing_delay_ms=int(os.getenv("PROCESSING_DELAY_MS", "10")),
     )
 
     # Initialize processor
-    await processor.initialize()
+    await app_state.processor.initialize()
 
     # Create and start consumer if enabled
     if os.getenv("ENABLE_FRAME_CONSUMER", "true").lower() == "true":
-        # consumer = FrameBufferConsumer(
-        #     frame_buffer_url=os.getenv("FRAME_BUFFER_URL", "http://frame-buffer:8002")
-        # )
-        # await consumer.start()
-        await consumer.start()
+        app_state.consumer = FrameBufferConsumer(
+            processor=app_state.processor,
+            frame_buffer_url=os.getenv("FRAME_BUFFER_URL", "http://frame-buffer:8002"),
+            batch_size=int(os.getenv("CONSUMER_BATCH_SIZE", "10")),
+            poll_interval_ms=int(os.getenv("POLL_INTERVAL_MS", "100")),
+            max_retries=int(os.getenv("MAX_RETRIES", "3")),
+            backoff_ms=int(os.getenv("BACKOFF_MS", "1000")),
+            connection_pool_size=int(os.getenv("CONNECTION_POOL_SIZE", "10")),
+            connection_timeout=int(os.getenv("CONNECTION_TIMEOUT", "30")),
+            read_timeout=int(os.getenv("READ_TIMEOUT", "60")),
+        )
+        await app_state.consumer.start()
         print("Frame consumer started")
 
     print("Sample Processor Service ready!")
@@ -91,41 +149,65 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown."""
-    global processor, consumer
+    app_state = app.state.app_state
+
+    # Set shutdown event
+    app_state.shutdown_event.set()
+
+    # Create shutdown tasks with timeout
+    shutdown_tasks = []
 
     # Stop consumer first
-    if consumer:
-        await consumer.stop()
-        print("Frame consumer stopped")
+    if app_state.consumer:
+        shutdown_tasks.append(app_state.consumer.stop())
 
-    if processor:
-        await processor.cleanup()
+    if app_state.processor:
+        shutdown_tasks.append(app_state.processor.cleanup())
+
+    # Wait for all shutdown tasks with timeout
+    try:
+        await asyncio.wait_for(
+            asyncio.gather(*shutdown_tasks, return_exceptions=True),
+            timeout=app_state.graceful_shutdown_timeout,
+        )
         print("Sample Processor Service shutdown complete")
+    except asyncio.TimeoutError:
+        print(
+            f"Graceful shutdown timed out after {app_state.graceful_shutdown_timeout}s, forcing shutdown"
+        )
 
 
 @app.get("/health", response_model=HealthStatus)
 async def health_check():
     """Health check endpoint."""
-    global processor
+    app_state = app.state.app_state
 
     # Basic health check
     health = {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "details": {
-            "processor_initialized": processor is not None and processor.is_initialized,
-            "consumer_running": consumer is not None and consumer._running,
-            "frame_buffer_url": consumer.frame_buffer_url if consumer else None,
+            "processor_initialized": app_state.processor is not None
+            and app_state.processor.is_initialized,
+            "consumer_enabled": os.getenv("ENABLE_FRAME_CONSUMER", "true").lower()
+            == "true",
+            "consumer_running": app_state.consumer is not None
+            and hasattr(app_state.consumer, "_running")
+            and app_state.consumer._running,
+            "frame_buffer_url": app_state.consumer.frame_buffer_url
+            if app_state.consumer
+            else os.getenv("FRAME_BUFFER_URL", "http://frame-buffer:8002"),
+            "shutting_down": app_state.shutdown_event.is_set(),
         },
     }
 
     # Add processor metrics if available
-    if processor and processor.is_initialized:
+    if app_state.processor and app_state.processor.is_initialized:
         try:
-            metrics = processor.get_metrics()
+            metrics = app_state.processor.get_metrics()
             health["details"]["metrics"] = {
                 "frames_processed": metrics.get("frames_processed", 0),
-                "active_frames": processor.active_frames,
+                "active_frames": app_state.processor.active_frames,
             }
         except Exception as e:
             health["details"]["metrics_error"] = str(e)
@@ -134,12 +216,21 @@ async def health_check():
 
 
 @app.post("/process", response_model=ProcessResponse)
-async def process_frame(request: ProcessRequest):
+async def process_frame(request: ProcessRequest, http_request: Request):
     """Process a single frame."""
-    global processor
+    app_state = app.state.app_state
 
-    if not processor or not processor.is_initialized:
+    # Check if shutting down
+    if app_state.shutdown_event.is_set():
+        raise HTTPException(status_code=503, detail="Service is shutting down")
+
+    if not app_state.processor or not app_state.processor.is_initialized:
         raise HTTPException(status_code=503, detail="Processor not initialized")
+
+    # Add request size validation
+    content_length = http_request.headers.get("content-length")
+    if content_length and int(content_length) > 10_000_000:  # 10MB limit
+        raise HTTPException(status_code=413, detail="Request too large")
 
     try:
         # Decode frame data (in real implementation)
@@ -152,7 +243,7 @@ async def process_frame(request: ProcessRequest):
             metadata["frame_id"] = f"api_frame_{datetime.now().timestamp()}"
 
         # Process frame
-        result = await processor.process(frame, metadata)
+        result = await app_state.processor.process(frame, metadata)
 
         # Return response
         return ProcessResponse(
@@ -170,15 +261,15 @@ async def process_frame(request: ProcessRequest):
 @app.get("/metrics")
 async def get_metrics():
     """Get processor metrics."""
-    global processor
+    app_state = app.state.app_state
 
-    if not processor:
+    if not app_state.processor:
         raise HTTPException(status_code=503, detail="Processor not initialized")
 
     try:
-        metrics = processor.get_metrics()
-        state_stats = processor.state_machine.get_statistics()
-        resource_stats = processor.resource_manager.get_allocation_stats()
+        metrics = app_state.processor.get_metrics()
+        state_stats = app_state.processor.state_machine.get_statistics()
+        resource_stats = app_state.processor.resource_manager.get_allocation_stats()
 
         return {
             "processor_metrics": metrics,
@@ -191,11 +282,15 @@ async def get_metrics():
 
 
 @app.post("/process-with-tracking")
-async def process_frame_with_tracking(request: ProcessRequest):
+async def process_frame_with_tracking(request: ProcessRequest, http_request: Request):
     """Process frame with distributed tracing support."""
-    global processor
+    app_state = app.state.app_state
 
-    if not processor or not processor.is_initialized:
+    # Check if shutting down
+    if app_state.shutdown_event.is_set():
+        raise HTTPException(status_code=503, detail="Service is shutting down")
+
+    if not app_state.processor or not app_state.processor.is_initialized:
         raise HTTPException(status_code=503, detail="Processor not initialized")
 
     if not FRAME_TRACKING_AVAILABLE:
@@ -221,7 +316,7 @@ async def process_frame_with_tracking(request: ProcessRequest):
             ctx.inject_to_carrier(metadata)
 
             # Process with tracking (BaseProcessor has process_frame_with_tracking)
-            result = await processor.process_frame_with_tracking(
+            result = await app_state.processor.process_frame_with_tracking(
                 frame, metadata, frame_id
             )
 
