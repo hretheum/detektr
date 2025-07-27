@@ -4,6 +4,7 @@ import asyncio
 from typing import AsyncGenerator
 
 import pytest
+import pytest_asyncio
 import redis.asyncio as aioredis
 from asyncpg import Connection, create_pool
 from asyncpg.pool import Pool
@@ -17,12 +18,14 @@ def event_loop():
     loop.close()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def redis_client() -> AsyncGenerator[aioredis.Redis, None]:
     """Provide Redis client for tests."""
-    client = await aioredis.from_url(
-        "redis://localhost:6379", encoding="utf-8", decode_responses=True
-    )
+    # Use environment variable or default to localhost for local testing
+    import os
+
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    client = aioredis.from_url(redis_url)
 
     # Clean up any test data
     await client.flushdb()
@@ -34,7 +37,18 @@ async def redis_client() -> AsyncGenerator[aioredis.Redis, None]:
     await client.close()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(autouse=True)
+async def clean_registry(redis_client):
+    """Clean processor registry before each test."""
+    from src.orchestrator.processor_registry import ProcessorRegistry
+
+    registry = ProcessorRegistry(redis_client)
+    await registry.clear_all()
+    yield
+    await registry.clear_all()
+
+
+@pytest_asyncio.fixture
 async def pg_pool() -> AsyncGenerator[Pool, None]:
     """Provide PostgreSQL connection pool for tests."""
     pool = await create_pool(
@@ -52,7 +66,7 @@ async def pg_pool() -> AsyncGenerator[Pool, None]:
     await pool.close()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def pg_connection(pg_pool: Pool) -> AsyncGenerator[Connection, None]:
     """Provide PostgreSQL connection for tests."""
     async with pg_pool.acquire() as connection:
