@@ -76,6 +76,8 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     global redis_client, frame_consumer, shared_buffer
 
+    print("🚀 Starting lifespan...")
+
     # Initialize telemetry
     init_telemetry(SERVICE_NAME)
 
@@ -108,12 +110,17 @@ async def lifespan(app: FastAPI):
 
     # Start frame consumer
     try:
+        print("📡 Creating frame consumer...")
         frame_consumer = await create_consumer_from_env()
+        print("📡 Starting frame consumer...")
         await frame_consumer.start()
         update_health_state("consumer_running", True)
         print("✅ Frame consumer started")
     except Exception as e:
         print(f"❌ Failed to start consumer: {e}")
+        import traceback
+
+        traceback.print_exc()
         update_health_state("consumer_running", False)
 
     yield
@@ -128,6 +135,7 @@ async def lifespan(app: FastAPI):
 
 
 # Create FastAPI app
+print("🏗️ Creating FastAPI app...")
 app = FastAPI(
     title="Frame Buffer Service",
     description="High-performance frame buffering with Redis HA backend",
@@ -136,7 +144,9 @@ app = FastAPI(
 )
 
 # Include routers
+print("🔌 Including health router...")
 app.include_router(health_router)
+print("✅ Health router included")
 
 
 async def get_redis_client() -> redis.Redis:
@@ -547,7 +557,5 @@ async def test_frame_with_trace(test_data: dict):
         }
 
 
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=SERVICE_PORT, log_level="info")
+# Note: Application is started via uvicorn command in Dockerfile
+# Do not use uvicorn.run() here to avoid double initialization

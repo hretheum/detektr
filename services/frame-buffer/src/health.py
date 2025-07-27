@@ -56,6 +56,7 @@ def update_health_state(key: str, value: Any) -> None:
 @health_router.get("/health", response_model=HealthStatus)
 async def health_check():
     """Health check endpoint."""
+    print("🏥 Health check called")
     start_time = _health_state.get("start_time", time.time())
     uptime = time.time() - start_time
 
@@ -115,15 +116,23 @@ async def readiness_probe(response: Response):
 @health_router.get("/metrics")
 async def prometheus_metrics():
     """Prometheus metrics endpoint."""
-    from prometheus_client import REGISTRY
+    print("📊 Metrics endpoint called")
+    try:
+        from prometheus_client import REGISTRY
 
-    metrics_output = generate_latest(REGISTRY)
+        metrics_output = generate_latest(REGISTRY)
 
-    return Response(
-        content=metrics_output,
-        media_type=CONTENT_TYPE_LATEST,
-        headers={
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-        },
-    )
+        return Response(
+            content=metrics_output,
+            media_type=CONTENT_TYPE_LATEST,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+            },
+        )
+    except Exception as e:
+        print(f"❌ Metrics error: {e}")
+        import traceback
+
+        traceback.print_exc()
+        raise
