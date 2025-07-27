@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 Validation script for TDD setup in Detektor project.
+
 This script checks that all testing components are properly configured.
 """
 
 import importlib.util
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -148,10 +148,10 @@ def validate_test_setup():
             check=True,
         )
         if "collected" in result.stdout:
-            print(f"  ✅ Test discovery working")
+            print("  ✅ Test discovery working")
             success_count += 1
         else:
-            print(f"  ❌ Test discovery - No tests found")
+            print("  ❌ Test discovery - No tests found")
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"  ❌ Test discovery failed: {e}")
 
@@ -166,10 +166,10 @@ def validate_test_setup():
                 timeout=30,
             )
             if result.returncode == 0:
-                print(f"  ✅ Unit tests execution")
+                print("  ✅ Unit tests execution")
                 success_count += 1
             else:
-                print(f"  ❌ Unit tests failed")
+                print("  ❌ Unit tests failed")
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             print(f"  ❌ Unit tests error: {e}")
 
@@ -177,7 +177,7 @@ def validate_test_setup():
 
     # Summary
     success_rate = (success_count / total_checks) * 100 if total_checks > 0 else 0
-    print(f"📊 Summary:")
+    print("📊 Summary:")
     print(f"  Total checks: {total_checks}")
     print(f"  Passed: {success_count}")
     print(f"  Failed: {total_checks - success_count}")
@@ -195,7 +195,7 @@ def validate_test_setup():
 
 
 def main():
-    """Main validation function."""
+    """Run main validation function."""
     if not Path("pytest.ini").exists():
         print("❌ This script must be run from the project root directory.")
         return 1

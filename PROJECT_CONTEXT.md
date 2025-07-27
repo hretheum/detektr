@@ -330,3 +330,30 @@ docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d
 - **Aplikacyjne**: rtsp-capture, frame-buffer, frame-tracking (jako serwis event sourcing), metadata-storage, base-template, sample-processor (wszystkie healthy)
 - **Biblioteki**: frame-tracking (shared library) zintegrowana w: frame-buffer, base-processor, metadata-storage, sample-processor
 - **Łącznie**: 11 usług działających na Nebula z pełnym monitoringiem i distributed tracing
+
+## ✅ ROZWIĄZANY PROBLEM: rtsp-capture nie odpowiada na HTTP (2025-07-26 23:20)
+
+### Problem:
+- **`cv2.VideoCapture.read()`** to synchroniczna funkcja która blokowała event loop FastAPI
+- Wszystkie HTTP requesty wisiały w nieskończoność mimo że capture działał
+
+### Rozwiązanie:
+```python
+# Zamiast:
+ret, frame = self.cap.read()
+
+# Używamy:
+loop = asyncio.get_event_loop()
+ret, frame = await loop.run_in_executor(None, self.cap.read)
+```
+
+### Dodatkowe poprawki:
+- Wykomentowano `RedisInstrumentor().instrument()` w observability.py (mogło powodować problemy)
+- Przeniesiono `init_telemetry()` do startup event (zamiast na poziomie modułu)
+
+### Status: ✅ DZIAŁA
+- rtsp-capture działa na porcie 8080
+- Łapie klatki z kamery Reolink (192.168.1.195)
+- Publikuje metadata do Redis Streams
+- Health endpoint `/health` odpowiada poprawnie
+- Wszystkie metryki i monitoring działają

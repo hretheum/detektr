@@ -9,7 +9,7 @@
 #   cp services/shared/base-processor/docker-compose.processor.yml services/my-processor/docker-compose.yml
 #   sed -i 's/\[PROCESSOR_NAME\]/my-processor/g' services/my-processor/docker-compose.yml
 
-version: '3.8'
+version: "3.8"
 
 services:
   [PROCESSOR_NAME]:
@@ -25,40 +25,40 @@ services:
       - ENABLE_METRICS=true
       - ENABLE_TRACING=true
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      
+
       # OpenTelemetry configuration
       - OTEL_SERVICE_NAME=[PROCESSOR_NAME]
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       - OTEL_TRACES_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=prometheus
       - OTEL_LOGS_EXPORTER=otlp
-      
+
       # Service configuration
       - PORT=${PORT:-8080}
       - METRICS_PORT=${METRICS_PORT:-9090}
-      
+
       # Resource limits
       - CPU_CORES=${CPU_CORES:-2}
       - MEMORY_LIMIT_MB=${MEMORY_LIMIT_MB:-1024}
       - PREFER_GPU=${PREFER_GPU:-false}
-      
+
       # Add your processor-specific environment variables here
       # Example:
       # - MODEL_PATH=/app/models
       # - CONFIDENCE_THRESHOLD=0.5
-    
+
     ports:
-      - "${PORT:-8080}:${PORT:-8080}"        # Main service port
-      - "${METRICS_PORT:-9090}:${METRICS_PORT:-9090}"  # Metrics port
-    
+      - "${PORT:-8080}:${PORT:-8080}" # Main service port
+      - "${METRICS_PORT:-9090}:${METRICS_PORT:-9090}" # Metrics port
+
     volumes:
       # Mount models or other data
       # - ./models:/app/models:ro
       # - ./config:/app/config:ro
-    
+
     networks:
       - detektor
-    
+
     # Resource constraints
     deploy:
       resources:
@@ -68,7 +68,7 @@ services:
         reservations:
           cpus: "${CPU_RESERVATION:-0.5}"
           memory: "${MEMORY_RESERVATION:-512M}"
-    
+
     # Health check
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8080}/health"]
@@ -76,7 +76,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    
+
     # Logging
     logging:
       driver: "json-file"
@@ -84,7 +84,7 @@ services:
         max-size: "10m"
         max-file: "3"
         labels: "service=[PROCESSOR_NAME]"
-    
+
     # Dependencies
     depends_on:
       - otel-collector

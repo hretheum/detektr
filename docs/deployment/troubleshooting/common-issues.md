@@ -31,6 +31,33 @@ curl http://localhost:[port]/metrics
 
 ## 📋 RTSP Capture Specific Issues
 
+### Issue 0: Health endpoint timeouts (Event Loop Blocking)
+**Symptoms**:
+```
+curl http://localhost:8080/health hangs forever
+Uvicorn says it's running but no HTTP responses
+```
+
+**Cause**: Synchronous operations blocking FastAPI event loop
+
+**Solutions**:
+```python
+# 1. Fix cv2.read() blocking
+# In frame_capture.py:
+loop = asyncio.get_event_loop()
+ret, frame = await loop.run_in_executor(None, self.cap.read)
+
+# 2. Move telemetry init to startup event
+# In main.py:
+@app.on_event("startup")
+async def startup_event():
+    init_telemetry(...)  # NOT at module level!
+
+# 3. Disable problematic instrumentors
+# In observability.py:
+# RedisInstrumentor().instrument()  # COMMENT OUT
+```
+
 ### Issue 1: RTSP Connection Failed
 **Symptoms**:
 ```

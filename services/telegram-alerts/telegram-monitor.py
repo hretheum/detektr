@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
 Telegram monitoring alerts for Detektor system.
+
 Monitors disk space, Redis memory, container health.
 """
 
 import asyncio
 import os
-from datetime import datetime
 
 import aiohttp
-import docker
 import psutil
 from redis_sentinel import RedisSentinelClient
+
+import docker
 
 
 class TelegramMonitor:
@@ -91,7 +92,9 @@ class TelegramMonitor:
                     if alert_key not in self.alerted_issues:
                         alerts.append(
                             f"📁 *Disk Alert*: {partition.mountpoint}\n"
-                            f"Usage: {usage_percent:.1f}% ({usage.used//1024//1024//1024}GB / {usage.total//1024//1024//1024}GB)\n"
+                            f"Usage: {usage_percent:.1f}% "
+                            f"({usage.used//1024//1024//1024}GB / "
+                            f"{usage.total//1024//1024//1024}GB)\n"
                             f"Free: {usage.free//1024//1024//1024}GB"
                         )
                         self.alerted_issues.add(alert_key)
@@ -102,7 +105,8 @@ class TelegramMonitor:
                     # Clear alert when usage drops 10% below threshold
                     self.alerted_issues.remove(alert_key)
                     alerts.append(
-                        f"✅ Disk usage normalized: {partition.mountpoint} ({usage_percent:.1f}%)"
+                        f"✅ Disk usage normalized: {partition.mountpoint} "
+                        f"({usage_percent:.1f}%)"
                     )
 
         return alerts
@@ -124,7 +128,8 @@ class TelegramMonitor:
                     self.alerted_issues.add(alert_key)
                     return [
                         f"🔴 *Redis Memory Alert*\n"
-                        f"Used: {used_memory_gb:.2f}GB / {self.redis_memory_threshold}GB limit\n"
+                        f"Used: {used_memory_gb:.2f}GB / "
+                        f"{self.redis_memory_threshold}GB limit\n"
                         f"Peak: {info['used_memory_peak_human']}"
                     ]
             elif (
@@ -180,7 +185,7 @@ class TelegramMonitor:
         return alerts
 
     async def monitor_loop(self):
-        """Main monitoring loop."""
+        """Run main monitoring loop."""
         print("Starting Telegram monitoring with Redis Sentinel support...")
         print(f"Bot Token: {'✓' if self.bot_token else '✗'}")
         print(f"Chat ID: {'✓' if self.chat_id else '✗'}")

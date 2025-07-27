@@ -13,7 +13,6 @@ from typing import Any, Dict, Optional
 from frame_buffer import CircularFrameBuffer
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -169,8 +168,8 @@ def init_telemetry(
     # Set as global tracer provider
     trace.set_tracer_provider(provider)
 
-    # Instrument Redis automatically
-    RedisInstrumentor().instrument()
+    # Instrument Redis automatically - DISABLED, might be breaking async
+    # RedisInstrumentor().instrument()
 
     return provider
 

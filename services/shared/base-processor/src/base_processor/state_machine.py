@@ -1,5 +1,6 @@
 """Frame state machine implementation."""
 import asyncio
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
@@ -84,6 +85,7 @@ class FrameStateMachine:
     """State machine for managing frame lifecycle."""
 
     def __init__(self):
+        """Initialize frame state machine."""
         self._frames: Dict[str, FrameMetadata] = {}
         self._state_callbacks: Dict[FrameState, list] = {
             state: [] for state in FrameState
@@ -163,9 +165,8 @@ class FrameStateMachine:
                 )
             elif transition == StateTransition.RETRY:
                 frame_meta.retry_count += 1
-            elif transition == StateTransition.COMPLETE:
-                if "result" in data:
-                    frame_meta.result = data["result"]
+            elif transition == StateTransition.COMPLETE and "result" in data:
+                frame_meta.result = data["result"]
 
             # Trigger callbacks
             await self._trigger_transition_callbacks(frame_id, transition)
@@ -230,28 +231,22 @@ class FrameStateMachine:
     async def _trigger_state_callbacks(self, frame_id: str, state: FrameState):
         """Trigger callbacks for state entry."""
         for callback in self._state_callbacks[state]:
-            try:
+            with suppress(Exception):
                 if asyncio.iscoroutinefunction(callback):
                     await callback(frame_id, self._frames[frame_id])
                 else:
                     callback(frame_id, self._frames[frame_id])
-            except Exception as e:
-                # Log error but don't fail the transition
-                pass
 
     async def _trigger_transition_callbacks(
         self, frame_id: str, transition: StateTransition
     ):
         """Trigger callbacks for transition."""
         for callback in self._transition_callbacks[transition]:
-            try:
+            with suppress(Exception):
                 if asyncio.iscoroutinefunction(callback):
                     await callback(frame_id, self._frames[frame_id])
                 else:
                     callback(frame_id, self._frames[frame_id])
-            except Exception as e:
-                # Log error but don't fail the transition
-                pass
 
     def cleanup(self, states_to_clean: Set[FrameState] = None):
         """Remove frames in specified states.
@@ -306,13 +301,13 @@ class StateMachineMixin:
     """Mixin to add state machine functionality to processors."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize state machine mixin."""
         super().__init__(*args, **kwargs)
         self.state_machine = FrameStateMachine()
         self._setup_state_callbacks()
 
     def _setup_state_callbacks(self):
-        """Setup default state callbacks."""
-
+        """Set up default state callbacks."""
         # Log state transitions
         async def log_state_change(frame_id: str, metadata: FrameMetadata):
             self.log_with_context(
@@ -330,7 +325,7 @@ class StateMachineMixin:
     async def track_frame_lifecycle(self, frame_id: str, metadata: Dict[str, Any]):
         """Track frame through its lifecycle."""
         # Register frame - remove frame_id from metadata to avoid duplicate argument
-        clean_metadata = {k: v for k, v in metadata.items() if k != 'frame_id'}
+        clean_metadata = {k: v for k, v in metadata.items() if k != "frame_id"}
         await self.state_machine.register_frame(frame_id, **clean_metadata)
 
         # Move through validation

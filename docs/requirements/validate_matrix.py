@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Walidacja macierzy wymagań - sprawdza kompletność i spójność
-"""
+"""Walidacja macierzy wymagań - sprawdza kompletność i spójność."""
 
 import sys
 
@@ -9,7 +7,7 @@ import pandas as pd
 
 
 def validate_requirements_matrix(csv_file):
-    """Waliduje macierz wymagań"""
+    """Waliduje macierz wymagań."""
     try:
         # Wczytaj CSV
         df = pd.read_csv(csv_file)

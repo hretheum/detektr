@@ -1,6 +1,4 @@
-"""
-Health check endpoints for frame buffer service.
-"""
+"""Health check endpoints for frame buffer service."""
 
 import time
 from typing import Any, Dict
@@ -34,6 +32,7 @@ class ServiceMetrics:
     """Service metrics helper."""
 
     def __init__(self):
+        """Initialize service metrics."""
         pass
 
     def record_frame_buffered(self):

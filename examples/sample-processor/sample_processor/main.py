@@ -135,7 +135,7 @@ class SampleProcessor(
             Detection results
         """
         frame_id = metadata.get("frame_id", "unknown")
-        
+
         # Track frame in state machine first
         await self.track_frame_lifecycle(frame_id, metadata)
 
@@ -317,9 +317,9 @@ async def main():
         print("\n5. Processor metrics:")
         metrics = processor.get_metrics()
         print(f"   Frames processed: {metrics.get('frames_processed', 0)}")
-        if 'success_rate' in metrics:
+        if "success_rate" in metrics:
             print(f"   Success rate: {metrics['success_rate']:.1%}")
-        if 'average_latency_ms' in metrics:
+        if "average_latency_ms" in metrics:
             print(f"   Average latency: {metrics['average_latency_ms']:.1f}ms")
 
         # Show state statistics

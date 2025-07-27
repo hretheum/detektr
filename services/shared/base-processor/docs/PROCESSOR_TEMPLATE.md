@@ -41,7 +41,7 @@ from base_processor.exceptions import ValidationError
 
 class MyProcessor(BaseProcessor):
     """Custom processor implementation."""
-    
+
     def __init__(self, **kwargs):
         """Initialize processor with custom configuration."""
         super().__init__(
@@ -52,56 +52,56 @@ class MyProcessor(BaseProcessor):
         )
         self.model = None
         self.config = {}
-    
+
     async def setup(self):
         """Initialize processor resources."""
         self.logger.info("Setting up processor")
-        
+
         # Load configuration
         self.config = {
             "threshold": float(self.get_env("CONFIDENCE_THRESHOLD", "0.5")),
             "batch_size": int(self.get_env("BATCH_SIZE", "1")),
         }
-        
+
         # Load model
         model_path = self.get_env("MODEL_PATH", "/app/models/default.onnx")
         self.model = await self.load_model(model_path)
-        
+
         self.logger.info("Processor setup complete", extra={"config": self.config})
-    
+
     async def validate_frame(self, frame: np.ndarray, metadata: Dict[str, Any]):
         """Validate input frame."""
         if frame is None:
             raise ValidationError("Frame is None")
-        
+
         if frame.size == 0:
             raise ValidationError("Frame is empty")
-        
+
         # Check dimensions
         if len(frame.shape) != 3:
             raise ValidationError(f"Invalid frame shape: {frame.shape}")
-        
+
         # Check metadata
         required_fields = ["frame_id", "timestamp", "source"]
         for field in required_fields:
             if field not in metadata:
                 raise ValidationError(f"Missing required metadata field: {field}")
-    
+
     async def process_frame(self, frame: np.ndarray, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """Process a single frame."""
         # Preprocess frame
         processed_frame = await self.preprocess(frame)
-        
+
         # Run inference
         with self.measure_time("inference"):
             predictions = await self.model.predict(processed_frame)
-        
+
         # Filter by confidence
         filtered_predictions = [
-            p for p in predictions 
+            p for p in predictions
             if p["confidence"] >= self.config["threshold"]
         ]
-        
+
         # Log results
         self.logger.info(
             "Frame processed",
@@ -110,21 +110,21 @@ class MyProcessor(BaseProcessor):
                 "predictions_count": len(filtered_predictions),
             }
         )
-        
+
         return {
             "predictions": filtered_predictions,
             "processing_time_ms": metadata.get("processing_time_ms", 0),
             "model_version": self.model.version,
         }
-    
+
     async def cleanup(self):
         """Clean up resources."""
         self.logger.info("Cleaning up processor")
-        
+
         if self.model:
             await self.model.unload()
             self.model = None
-    
+
     async def preprocess(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess frame for model input."""
         # Example preprocessing
@@ -132,7 +132,7 @@ class MyProcessor(BaseProcessor):
         # - Normalize pixel values
         # - Convert color space if needed
         return frame
-    
+
     async def load_model(self, model_path: str):
         """Load AI model."""
         # Implement model loading logic
@@ -143,9 +143,9 @@ class MyProcessor(BaseProcessor):
                 return [{"class": "example", "confidence": 0.95}]
             async def unload(self):
                 pass
-        
+
         return MockModel()
-    
+
     def get_env(self, key: str, default: str = None) -> str:
         """Get environment variable with default."""
         import os
@@ -160,39 +160,39 @@ async def main():
         enable_tracing=True,
         log_level="INFO"
     )
-    
+
     try:
         # Initialize
         await processor.initialize()
-        
+
         # Start health check server
         from aiohttp import web
-        
+
         async def health_handler(request):
             health = await processor.health_check()
             status = 200 if health["status"] == "healthy" else 503
             return web.json_response(health, status=status)
-        
+
         app = web.Application()
         app.router.add_get("/health", health_handler)
-        
+
         # Start server
         runner = web.AppRunner(app)
         await runner.setup()
-        
+
         port = int(processor.get_env("PORT", "8080"))
         site = web.TCPSite(runner, "0.0.0.0", port)
         await site.start()
-        
+
         print(f"Processor started on port {port}")
-        
+
         # Keep running
         while True:
             await asyncio.sleep(60)
             # Log metrics periodically
             metrics = await processor.get_metrics()
             processor.logger.info("Metrics update", extra={"metrics": metrics})
-    
+
     except KeyboardInterrupt:
         print("\nShutting down...")
     finally:
@@ -253,19 +253,19 @@ from base_processor.batch_processor import BatchProcessorMixin
 class MyBatchProcessor(BatchProcessorMixin, BaseProcessor):
     def supports_batch_processing(self):
         return True
-    
+
     def get_batch_size(self):
         return int(self.get_env("BATCH_SIZE", "8"))
-    
+
     async def prepare_batch(self, frames, metadata_list):
         # Stack frames for batch processing
         batch = np.stack([self.preprocess(f) for f in frames])
         return batch, metadata_list
-    
+
     async def process_batch(self, batch, metadata_list):
         # Process entire batch at once
         predictions = await self.model.predict_batch(batch)
-        
+
         # Split results back to individual frames
         results = []
         for i, (pred, meta) in enumerate(zip(predictions, metadata_list)):
@@ -273,7 +273,7 @@ class MyBatchProcessor(BatchProcessorMixin, BaseProcessor):
                 "frame_id": meta["frame_id"],
                 "predictions": pred
             })
-        
+
         return results
 ```
 
@@ -290,10 +290,10 @@ class MyGPUProcessor(ResourceManagerMixin, BaseProcessor):
             "fallback_to_cpu": True
         })
         super().__init__(**kwargs)
-    
+
     async def setup(self):
         await super().setup()
-        
+
         # Check GPU availability
         if self.has_gpu():
             self.logger.info("GPU available, using GPU acceleration")
@@ -311,26 +311,26 @@ from base_processor.state_machine import StateMachineMixin, StateTransition
 class MyStatefulProcessor(StateMachineMixin, BaseProcessor):
     async def process_frame(self, frame, metadata):
         frame_id = metadata["frame_id"]
-        
+
         # Track frame lifecycle
         await self.track_frame_lifecycle(frame_id, metadata)
-        
+
         try:
             # Transition to processing
             await self.state_machine.transition(frame_id, StateTransition.START)
-            
+
             # Do processing
             result = await self._do_processing(frame, metadata)
-            
+
             # Mark as complete
             await self.state_machine.transition(
-                frame_id, 
+                frame_id,
                 StateTransition.COMPLETE,
                 result=result
             )
-            
+
             return result
-            
+
         except Exception as e:
             # Mark as failed
             await self.state_machine.transition(
@@ -417,10 +417,10 @@ async def test_process_frame(processor):
         "timestamp": "2024-01-01T00:00:00Z",
         "source": "test"
     }
-    
+
     # Process frame
     result = await processor.process(frame, metadata)
-    
+
     # Verify result
     assert "predictions" in result
     assert "processing_time_ms" in result
@@ -431,7 +431,7 @@ async def test_validation_error(processor):
     # Invalid frame
     frame = None
     metadata = {"frame_id": "test-001"}
-    
+
     # Should raise validation error
     with pytest.raises(ValidationError):
         await processor.process(frame, metadata)

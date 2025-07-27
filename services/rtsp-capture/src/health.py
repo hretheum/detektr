@@ -241,7 +241,7 @@ class ServiceMetrics:
         """Handle frame received event from camera."""
         update_last_frame(camera_id, time.time())
         # Ensure metrics are initialized
-        from .observability import init_metrics
+        from observability import init_metrics
 
         metrics = init_metrics()
         fc = metrics.get("frame_counter")
@@ -252,7 +252,7 @@ class ServiceMetrics:
     def on_frame_error(self, camera_id: str, error: str):
         """Handle frame processing error."""
         # Ensure metrics are initialized
-        from .observability import init_metrics
+        from observability import init_metrics
 
         metrics = init_metrics()
         fc = metrics.get("frame_counter")
@@ -273,7 +273,7 @@ class ServiceMetrics:
             _health_state["rtsp_connections"][camera_id]["connected"] = connected
 
         # Ensure metrics are initialized
-        from .observability import init_metrics
+        from observability import init_metrics
 
         metrics = init_metrics()
         acg = metrics.get("active_connections_gauge")
@@ -287,7 +287,7 @@ class ServiceMetrics:
     def set_buffer_size(self, camera_id: str, size: int):
         """Update buffer size metric."""
         # Ensure metrics are initialized
-        from .observability import init_metrics
+        from observability import init_metrics
 
         metrics = init_metrics()
         bsg = metrics.get("buffer_size_gauge")
@@ -298,7 +298,7 @@ class ServiceMetrics:
     def record_processing_time(self, camera_id: str, operation: str, duration: float):
         """Record processing time for an operation."""
         # Ensure metrics are initialized
-        from .observability import init_metrics
+        from observability import init_metrics
 
         metrics = init_metrics()
         fpt = metrics.get("frame_processing_time")

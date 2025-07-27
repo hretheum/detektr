@@ -1,5 +1,5 @@
 # Dockerfile template for AI processors based on base-processor framework
-# 
+#
 # Usage:
 # 1. Copy this file to your processor directory
 # 2. Replace [PROCESSOR_NAME] with your processor name

@@ -35,22 +35,22 @@ from typing import Dict, Any
 
 class MyProcessor(BaseProcessor):
     """Custom processor implementation."""
-    
+
     async def setup(self):
         """Initialize your processor."""
         self.model = await self.load_model()
-        
+
     async def validate_frame(self, frame: np.ndarray, metadata: Dict[str, Any]):
         """Validate input frame."""
         if frame is None or frame.size == 0:
             raise ValidationError("Invalid frame")
-            
+
     async def process_frame(self, frame: np.ndarray, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """Process a single frame."""
         # Your processing logic here
         result = await self.model.predict(frame)
         return {"predictions": result}
-        
+
     async def cleanup(self):
         """Clean up resources."""
         await self.model.unload()
@@ -77,7 +77,7 @@ from base_processor.batch_processor import BatchProcessorMixin
 class BatchProcessor(BatchProcessorMixin, BaseProcessor):
     def supports_batch_processing(self):
         return True
-        
+
     async def prepare_batch(self, frames, metadata_list):
         # Prepare frames for batch processing
         return normalized_frames, metadata_list
@@ -100,7 +100,7 @@ class GPUProcessor(ResourceManagerMixin, BaseProcessor):
             "gpu_memory_mb": 4096
         })
         super().__init__(**kwargs)
-        
+
     async def process_frame(self, frame, metadata):
         # Resources automatically allocated
         async with self.with_resources(metadata["frame_id"]):
@@ -115,22 +115,22 @@ from base_processor.state_machine import StateMachineMixin, StateTransition
 class StatefulProcessor(StateMachineMixin, BaseProcessor):
     async def process_frame(self, frame, metadata):
         frame_id = metadata["frame_id"]
-        
+
         # Track frame lifecycle
         await self.track_frame_lifecycle(frame_id, metadata)
-        
+
         # Update state during processing
         await self.state_machine.transition(frame_id, StateTransition.START)
-        
+
         result = await self.do_processing(frame)
-        
+
         # Mark as complete
         await self.state_machine.transition(
-            frame_id, 
+            frame_id,
             StateTransition.COMPLETE,
             result=result
         )
-        
+
         return result
 ```
 

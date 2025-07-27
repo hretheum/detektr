@@ -63,7 +63,13 @@ class RTSPCapture:
             True if connection successful
         """
         try:
+            print(f"[CONNECT] Creating VideoCapture for {self.rtsp_url}")
             self.cap = cv2.VideoCapture(self.rtsp_url)
+
+            # Set timeout properties for RTSP
+            print("[CONNECT] Setting timeouts...")
+            self.cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)  # 5 second open timeout
+            self.cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5000)  # 5 second read timeout
             self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimize buffer
 
             if not self.cap.isOpened():
@@ -138,7 +144,22 @@ class RTSPCapture:
 
         # Capture frame
         with ctx.span("frame.capture") as span:
-            ret, frame = self.cap.read()
+            # Don't spam logs - only log every 100th frame
+            if not hasattr(self, "_capture_count"):
+                self._capture_count = 0
+            self._capture_count += 1
+
+            if self._capture_count % 100 == 1:
+                print(f"[CAPTURE] Reading frame {self._capture_count}...")
+
+            # Run synchronous cv2 read in thread pool to not block event loop
+            import asyncio
+
+            loop = asyncio.get_event_loop()
+            ret, frame = await loop.run_in_executor(None, self.cap.read)
+
+            if self._capture_count % 100 == 1:
+                print(f"[CAPTURE] Frame read result: ret={ret}")
 
             if not ret:
                 ctx.add_event("capture_failed")
@@ -174,7 +195,11 @@ class RTSPCapture:
 
     async def _capture_with_span(self, frame_id: str, span) -> Optional[tuple]:
         """Capture frame with basic span (fallback)."""
-        ret, frame = self.cap.read()
+        # Run synchronous cv2 read in thread pool to not block event loop
+        import asyncio
+
+        loop = asyncio.get_event_loop()
+        ret, frame = await loop.run_in_executor(None, self.cap.read)
 
         if not ret:
             span.add_event("capture_failed")
@@ -207,6 +232,7 @@ class RTSPCapture:
 
     async def capture_loop(self):
         """Run main capture loop with reconnection logic."""
+        print("[CAPTURE_LOOP] Starting capture loop, setting is_running=True")
         self.is_running = True
         last_frame_time = 0
 

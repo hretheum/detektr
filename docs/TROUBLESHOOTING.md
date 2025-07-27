@@ -184,6 +184,42 @@ curl http://127.0.0.1:8001/health
 
 ## Services Issues
 
+### Problem: FastAPI/Uvicorn endpoints nie odpowiadają (timeout)
+
+**Objawy**:
+- Aplikacja startuje, w logach widać "Uvicorn running on http://0.0.0.0:8080"
+- curl do /health lub innych endpointów wisi w nieskończoność
+- Background tasks (np. capture loop) działają normalnie
+
+**Przyczyna**: Synchroniczne operacje blokują event loop FastAPI
+
+**Rozwiązanie**:
+```python
+# 1. Dla synchronicznych operacji (np. cv2.read) używaj run_in_executor:
+loop = asyncio.get_event_loop()
+ret, frame = await loop.run_in_executor(None, self.cap.read)
+
+# 2. Inicjalizuj telemetry w startup event, nie na poziomie modułu:
+@app.on_event("startup")
+async def startup_event():
+    init_telemetry(...)
+
+# 3. Wyłącz problematyczne instrumenty:
+# RedisInstrumentor().instrument()  # WYKOMENTUJ - może blokować async
+```
+
+**Debugowanie**:
+```bash
+# Sprawdź czy endpoint w ogóle odbiera requesty
+docker logs [container] | grep "GET /health"
+
+# Test z timeout
+timeout 5 curl http://localhost:8080/health
+
+# Sprawdź CPU usage (może być 100% jeśli coś blokuje)
+docker stats [container]
+```
+
 ### RTSP Capture Service
 
 **Problem**: Cannot connect to camera

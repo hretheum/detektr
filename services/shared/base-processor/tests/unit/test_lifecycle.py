@@ -1,30 +1,22 @@
 """Tests for frame lifecycle management components."""
 import asyncio
 from datetime import datetime
-from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
 from base_processor.batch_processor import (
     BatchConfig,
     BatchProcessor,
-    BatchProcessorMixin,
     BatchResult,
     create_batched_array,
     unbatch_array,
 )
-from base_processor.resource_manager import (
-    ResourceAllocation,
-    ResourceManager,
-    ResourceManagerMixin,
-    ResourceStats,
-)
 from base_processor.exceptions import ResourceError
+from base_processor.resource_manager import ResourceManager, ResourceStats
 from base_processor.state_machine import (
     FrameState,
     FrameStateMachine,
     InvalidStateTransition,
-    StateMachineMixin,
     StateTransition,
 )
 

@@ -6,7 +6,7 @@ set -e
 echo "Building base-processor package..."
 
 # Clean previous builds
-rm -rf dist/ build/ *.egg-info src/*.egg-info
+rm -rf dist/ build/ ./*.egg-info src/*.egg-info
 
 # Create dist directory
 mkdir -p dist
