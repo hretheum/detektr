@@ -10,10 +10,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY metadata-storage/requirements.txt ./
+COPY services/metadata-storage/requirements.txt ./
 
 # Copy frame-tracking library for installation
-COPY shared/frame-tracking /tmp/frame-tracking
+COPY services/shared/frame-tracking /tmp/frame-tracking
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt && \
@@ -35,8 +35,8 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
-COPY metadata-storage/src/ ./src/
-COPY metadata-storage/scripts/ ./scripts/
+COPY services/metadata-storage/src/ ./src/
+COPY services/metadata-storage/scripts/ ./scripts/
 
 # Create non-root user
 RUN useradd -m -s /bin/bash detektor && \
