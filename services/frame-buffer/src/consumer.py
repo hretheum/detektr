@@ -36,8 +36,8 @@ class FrameConsumer:
         self.stream_key = stream_key
         self.consumer_group = consumer_group
         self.consumer_name = consumer_name
-        # Use shared buffer instance to ensure API and consumer use same buffer
-        self.frame_buffer = frame_buffer or SharedFrameBuffer.get_instance_sync()
+        # Frame buffer will be initialized in start() method
+        self.frame_buffer = frame_buffer
         self.batch_size = batch_size
         self.block_ms = block_ms
         self.redis: Optional[aioredis.Redis] = None
@@ -53,6 +53,11 @@ class FrameConsumer:
         logger.info(
             f"Starting consumer {self.consumer_name} for stream {self.stream_key}"
         )
+
+        # Initialize shared buffer if not provided
+        if not self.frame_buffer:
+            self.frame_buffer = await SharedFrameBuffer.get_instance()
+            logger.info("✅ Consumer: Shared buffer initialized")
 
         # Connect to Redis
         self.redis = aioredis.from_url(
@@ -172,8 +177,12 @@ class FrameConsumer:
                         continue
 
                     # Add to buffer
-                    await self.frame_buffer.put(frame_data)
-                    frames_consumed_total.inc()
+                    put_success = await self.frame_buffer.put(frame_data)
+                    if put_success:
+                        frames_consumed_total.inc()
+                        logger.info(f"✅ Consumer: Added frame {frame_data.get('frame_id')} to buffer")
+                    else:
+                        logger.warning(f"❌ Consumer: Failed to add frame {frame_data.get('frame_id')} to buffer")
 
                     # Update lag metric
                     if "timestamp" in data:
@@ -212,14 +221,32 @@ class FrameConsumer:
 
     def _parse_frame_data(self, data: Dict) -> Dict:
         """Parse frame data from Redis message."""
+        # Parse resolution if available
+        width, height = 0, 0
+        if "resolution" in data:
+            try:
+                # Handle resolution as string like "[640, 360]"
+                resolution_str = data["resolution"]
+                if isinstance(resolution_str, str):
+                    resolution_str = resolution_str.strip("[]")
+                    width, height = map(int, resolution_str.split(","))
+                elif isinstance(resolution_str, list):
+                    width, height = resolution_str[0], resolution_str[1]
+            except (ValueError, IndexError, TypeError):
+                logger.warning(f"Could not parse resolution: {data.get('resolution')}")
+        
+        # Use direct width/height if available (fallback)
+        width = int(data.get("width", width))
+        height = int(data.get("height", height))
+
         # Extract frame data
         frame_data = {
             "frame_id": data.get("frame_id"),
             "camera_id": data.get("camera_id"),
             "timestamp": data.get("timestamp"),
-            "width": int(data.get("width", 0)),
-            "height": int(data.get("height", 0)),
-            "format": data.get("format", "jpeg"),
+            "width": width,
+            "height": height,
+            "format": data.get("format", "bgr24"),  # Default to bgr24 as seen in Redis data
             "size_bytes": int(data.get("size_bytes", 0)),
         }
 
