@@ -91,13 +91,13 @@ class SampleProcessor(
 
         # Register state callbacks properly
         # Use the state enum values directly
-        from base_processor.state_machine import ProcessingState
+        from base_processor.state_machine import FrameState
 
         if hasattr(self, "state_machine") and hasattr(
             self.state_machine, "on_state_enter"
         ):
             self.state_machine.on_state_enter(
-                ProcessingState.COMPLETE, self._on_detection_complete
+                FrameState.COMPLETED, self._on_detection_complete
             )
 
         self.log_with_context(
@@ -201,7 +201,7 @@ class SampleProcessor(
     async def _process_frame_internal(
         self, frame: np.ndarray, metadata: Dict[str, Any], frame_id: str
     ) -> Dict[str, Any]:
-        """Internal frame processing logic."""
+        """Process frame with simulated detection logic."""
         # Simulate processing delay
         await asyncio.sleep(self.processing_delay_ms / 1000.0)
 
