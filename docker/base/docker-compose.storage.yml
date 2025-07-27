@@ -156,3 +156,4 @@ volumes:
 networks:
   detektor-network:
     external: true
+    name: detektor-network

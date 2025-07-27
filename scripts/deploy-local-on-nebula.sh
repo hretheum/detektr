@@ -118,6 +118,10 @@ start_infrastructure() {
         return 0
     fi
 
+    # Najpierw utwórz sieć jeśli nie istnieje
+    log "Tworzenie sieci Docker jeśli nie istnieje..."
+    sudo docker network create detektor-network 2>/dev/null || true
+
     # Uruchom storage (PostgreSQL, Redis)
     log "Uruchamianie storage services..."
     sudo COMPOSE_PROJECT_NAME=detektr docker compose \

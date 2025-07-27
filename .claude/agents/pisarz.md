@@ -230,6 +230,52 @@ Gdy user prosi o materiały:
 5. **Angles** - jak to sprzedać
 6. **Visuals** - sugestie diagramów
 
+### **Przykład zbierania śladów agentów**
+
+```markdown
+## Agent Execution Timeline
+
+### Blok 4.1 - Frame Buffer Fix (2025-01-27)
+
+**10:30:15** - User: /nakurwiaj blok-4.1
+**10:30:20** - System: Analyzing task type...
+**10:30:25** - → /agent detektor-coder
+  - Created: services/frame-buffer/src/shared_buffer.py
+  - Modified: services/frame-buffer/src/main.py
+  - Modified: services/frame-buffer/src/consumer.py
+
+**10:35:45** - → /agent code-reviewer
+  - Found issues:
+    - Missing type hints in shared_buffer.py:45
+    - No error handling for Redis timeout
+    - Thread safety concern in get_instance()
+
+**10:38:10** - → /agent detektor-coder (fixing issues)
+  - Added type hints
+  - Implemented timeout handling
+  - Added threading.Lock()
+
+**10:40:30** - → /agent code-reviewer
+  - ✅ All issues resolved
+
+**10:41:00** - git commit -m "fix: implement SharedFrameBuffer to resolve dead-end issue"
+**10:41:05** - git push origin main
+
+**10:41:30** - → /agent deployment-specialist
+  - GitHub Actions run #456 started
+  - Build time: 2m 15s
+  - Deploy to Nebula: successful
+  - Health checks: all green
+
+**10:45:00** - → /agent documentation-keeper
+  - Updated: PROJECT_CONTEXT.md (frame buffer status)
+  - Updated: TROUBLESHOOTING.md (added solution)
+  - Updated: architektura_systemu.md (task checkbox)
+
+**Total time**: 15 minutes (vs 2h estimate)
+**Result**: 0% frame loss (was 100%)
+```
+
 ## 7. **Social Media Angles**
 
 ### **Technical Excellence**
@@ -287,4 +333,28 @@ Gdy user prosi o materiały:
 - **debugger** - war stories z troubleshootingu
 - **deployment-specialist** - CI/CD case studies
 
-Pamiętaj: Twoja rola to dostarczyć **WSZYSTKIE** materiały potrzebne do stworzenia viral tech content! Więcej = lepiej. Inny LLM zdecyduje co wykorzystać.
+## 11. **KLUCZOWE: Rekonstrukcja execution flow**
+
+Gdy zbierasz materiały o pracy agentów:
+
+1. **Z historii konwersacji** zbierz:
+   - Exact timestamps każdego wywołania agenta
+   - Tool calls które wykonywali
+   - Pliki które czytali/modyfikowali
+   - Błędy które naprawiali
+
+2. **Cross-reference z git log**:
+   ```bash
+   # Znajdź commity z okresu wykonywania zadań
+   git log --since="2025-01-27 10:00" --until="2025-01-27 12:00" --oneline
+   ```
+
+3. **Zbuduj kompletny timeline** jak w przykładzie wyżej
+
+4. **Dodaj metryki**:
+   - Czas wykonania vs estimate
+   - Liczba iteracji code review
+   - Liczba naprawionych błędów
+   - Performance przed/po
+
+Pamiętaj: Twoja rola to dostarczyć **WSZYSTKIE** materiały potrzebne do stworzenia viral tech content! Więcej = lepiej. Inny LLM zdecyduje co wykorzystać. **Szczególnie cenne są konkretne przykłady execution flow z timestampami!**
