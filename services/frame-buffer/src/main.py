@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 import redis.asyncio as redis
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Query, status
 
 # Import frame tracking
 try:
@@ -40,6 +40,9 @@ from prometheus_client import Counter, Gauge, Histogram
 # Import Redis Sentinel client
 from redis_sentinel import RedisSentinelClient
 
+# Import shared buffer for consistent state
+from shared_buffer import SharedFrameBuffer
+
 # Configuration
 FRAME_QUEUE_NAME = os.getenv("FRAME_QUEUE_NAME", "frame_queue")
 DLQ_NAME = os.getenv("DLQ_NAME", "frame_dlq")
@@ -61,18 +64,24 @@ dlq_counter = Counter("frame_buffer_dlq_total", "Frames sent to DLQ", ["reason"]
 redis_sentinel: Optional[RedisSentinelClient] = None
 # Global consumer instance
 frame_consumer: Optional[FrameConsumer] = None
+# Global shared buffer instance
+shared_buffer: Optional[FrameBuffer] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    global redis_sentinel, frame_consumer
+    global redis_sentinel, frame_consumer, shared_buffer
 
     # Initialize telemetry
     init_telemetry(SERVICE_NAME)
 
     # Update health state
     update_health_state("start_time", time.time())
+
+    # Initialize shared buffer
+    shared_buffer = await SharedFrameBuffer.get_instance()
+    print("✅ Shared buffer initialized")
 
     # Connect to Redis via Sentinel
     try:
@@ -192,86 +201,50 @@ async def enqueue_frame(frame_data: dict):
 
 
 @app.get("/frames/dequeue")
-async def dequeue_frame(count: int = 1):
-    """Retrieve frames from buffer with trace context extraction."""
-    client = await get_redis_client()
+async def dequeue_frame(count: int = Query(default=1, ge=1, le=100)):
+    """Retrieve frames from shared in-memory buffer with trace context extraction."""
+    global shared_buffer
+
+    if not shared_buffer:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Shared buffer not initialized",
+        )
 
     with frame_processing_time.labels(operation="dequeue").time():
         try:
-            # Read frames
-            frames = await client.xread(
-                {FRAME_QUEUE_NAME: "0"}, count=count, block=1000  # 1 second timeout
-            )
-
-            if not frames:
-                return {
-                    "frames": [],
-                    "remaining": await client.xlen(FRAME_QUEUE_NAME),
-                }
-
-            # Extract and parse frame data
+            # Get frames from shared in-memory buffer
             result_frames = []
-            message_ids = []
 
-            for _, messages in frames:
-                for message_id, data in messages:
-                    try:
-                        # Parse JSON frame data
-                        frame_json = data.get(b"frame_data", b"{}")
-                        if isinstance(frame_json, bytes):
-                            frame_json = frame_json.decode("utf-8")
-                        frame_data = json.loads(frame_json)
+            for _ in range(count):
+                # Check if buffer has frames (synchronous method)
+                if shared_buffer.is_empty():
+                    break
 
-                        # Extract trace context if available
-                        if FRAME_TRACKING_AVAILABLE:
-                            # Convert bytes keys to strings for trace propagation
-                            str_data = {
-                                k.decode()
-                                if isinstance(k, bytes)
-                                else k: v.decode()
-                                if isinstance(v, bytes)
-                                else v
-                                for k, v in data.items()
-                            }
+                # Get frame from buffer
+                frame_data = await shared_buffer.get()
+                if frame_data:
+                    # Extract existing trace context or create new one
+                    if FRAME_TRACKING_AVAILABLE and "frame_id" in frame_data:
+                        # Try to extract existing trace context
+                        if "traceparent" in frame_data:
+                            # Extract and continue existing trace
+                            with TraceContext.extract_from_carrier(frame_data) as ctx:
+                                ctx.add_event("frame_buffer_dequeue")
+                                ctx.set_attribute("buffer.size", shared_buffer.size())
+                                ctx.set_attribute("frame.id", frame_data["frame_id"])
+                        else:
+                            # Create new trace context if none exists
+                            with TraceContext.inject(frame_data["frame_id"]) as ctx:
+                                ctx.add_event("frame_buffer_dequeue")
+                                ctx.set_attribute("buffer.size", shared_buffer.size())
+                                ctx.set_attribute("frame.id", frame_data["frame_id"])
 
-                            # Extract and use trace context
-                            extracted_context = TraceContext.extract_from_carrier(
-                                str_data
-                            )
-                            if extracted_context:
-                                with TraceContext.inject(
-                                    frame_data.get("frame_id", "unknown")
-                                ) as ctx:
-                                    ctx.add_event("frame_buffer_dequeue")
-                                    ctx.set_attribute(
-                                        "buffer.message_id",
-                                        message_id.decode()
-                                        if isinstance(message_id, bytes)
-                                        else message_id,
-                                    )
+                    result_frames.append(frame_data)
+                    frame_counter.labels(operation="dequeue", status="success").inc()
 
-                                    # Re-inject trace context for downstream
-                                    ctx.inject_to_carrier(frame_data)
-
-                        result_frames.append(frame_data)
-                        message_ids.append(message_id)
-                    except Exception as e:
-                        # Send to DLQ if parsing fails
-                        await client.xadd(
-                            DLQ_NAME,
-                            {"frame": str(data), "reason": f"parse_failed: {str(e)}"},
-                        )
-                        dlq_counter.labels(reason="parse_failed").inc()
-
-            # Acknowledge and remove frames
-            if message_ids:
-                await client.xdel(FRAME_QUEUE_NAME, *message_ids)
-                frame_counter.labels(operation="dequeue", status="success").inc(
-                    len(message_ids)
-                )
-
-            # Update buffer size
-            remaining = await client.xlen(FRAME_QUEUE_NAME)
+            # Update metrics (synchronous method)
+            remaining = shared_buffer.size()
             buffer_size_gauge.set(remaining)
 
             return {
@@ -289,19 +262,37 @@ async def dequeue_frame(count: int = 1):
 
 @app.get("/frames/status")
 async def get_buffer_status():
-    """Get current buffer status."""
+    """Get current buffer status from shared in-memory buffer."""
+    global shared_buffer
+
     try:
-        client = await get_redis_client()
-        queue_size = await client.xlen(FRAME_QUEUE_NAME)
-        dlq_size = await client.xlen(DLQ_NAME)
+        # Get in-memory buffer status
+        if shared_buffer:
+            buffer_size = shared_buffer.size()
+            buffer_usage = (buffer_size / MAX_BUFFER_SIZE) * 100
+        else:
+            buffer_size = 0
+            buffer_usage = 0
+
+        # Also check Redis for comparison
+        try:
+            client = await get_redis_client()
+            redis_queue_size = await client.xlen(FRAME_QUEUE_NAME)
+            dlq_size = await client.xlen(DLQ_NAME)
+        except Exception:
+            redis_queue_size = -1
+            dlq_size = -1
 
         return {
             "connected": True,
             "consumer_running": frame_consumer is not None and frame_consumer._running,
-            "size": queue_size,
-            "max_size": MAX_BUFFER_SIZE,
-            "usage_percent": (queue_size / MAX_BUFFER_SIZE) * 100,
-            "dlq_size": dlq_size,
+            "buffer": {
+                "size": buffer_size,
+                "max_size": MAX_BUFFER_SIZE,
+                "usage_percent": buffer_usage,
+                "is_full": buffer_size >= MAX_BUFFER_SIZE,
+            },
+            "redis": {"queue_size": redis_queue_size, "dlq_size": dlq_size},
         }
     except Exception as e:
         return {"connected": False, "error": str(e)}
@@ -396,7 +387,10 @@ async def reprocess_dlq(max_items: int = 100):
         for msg_id, data in messages:
             try:
                 # Try to add back to main queue
-                frame_data = eval(data.get("frame", "{}"))  # Careful with eval!
+                frame_json = data.get("frame", "{}")
+                if isinstance(frame_json, bytes):
+                    frame_json = frame_json.decode("utf-8")
+                frame_data = json.loads(frame_json)
                 await client.xadd(FRAME_QUEUE_NAME, frame_data)
                 await client.xdel(DLQ_NAME, msg_id)
                 reprocessed += 1

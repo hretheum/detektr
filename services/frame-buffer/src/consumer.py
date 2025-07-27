@@ -1,5 +1,6 @@
+"""Frame consumer module for processing frames from Redis Stream."""
+
 import asyncio
-import json
 import logging
 import os
 from typing import Dict, List, Optional, Tuple
@@ -13,6 +14,7 @@ from metrics import (
     frames_consumed_total,
     frames_dropped_total,
 )
+from shared_buffer import SharedFrameBuffer
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,8 @@ class FrameConsumer:
         self.stream_key = stream_key
         self.consumer_group = consumer_group
         self.consumer_name = consumer_name
-        self.frame_buffer = frame_buffer or FrameBuffer()
+        # Use shared buffer instance to ensure API and consumer use same buffer
+        self.frame_buffer = frame_buffer or SharedFrameBuffer.get_instance_sync()
         self.batch_size = batch_size
         self.block_ms = block_ms
         self.redis: Optional[aioredis.Redis] = None

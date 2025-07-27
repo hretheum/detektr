@@ -287,7 +287,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 
 #### Zadania atomowe
 
-1. **[ ] Analiza i dokumentacja problemu architektonicznego**
+1. **[x] Analiza i dokumentacja problemu architektonicznego** ✅
    - **Metryka**: Zidentyfikowane wszystkie punkty braku integracji
    - **Walidacja**:
      ```bash
@@ -306,7 +306,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
    - **Quality Gate**: Problem w pełni udokumentowany
    - **Czas**: 0.5h
 
-2. **[ ] Implementacja SharedFrameBuffer (Quick Fix)**
+2. **[x] Implementacja SharedFrameBuffer (Quick Fix)** ✅
    - **Metryka**: Consumer i API używają tego samego bufora w pamięci
    - **Implementacja**:
      ```python
@@ -332,7 +332,7 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
    - **Quality Gate**: API i consumer współdzielą stan
    - **Czas**: 1h
 
-3. **[ ] Naprawienie API endpoint /frames/dequeue**
+3. **[x] Naprawienie API endpoint /frames/dequeue** ✅
    - **Metryka**: Endpoint pobiera z bufora w pamięci, nie z Redis
    - **Implementacja zmian**:
      ```python
