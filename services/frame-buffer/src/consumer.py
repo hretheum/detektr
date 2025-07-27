@@ -1,6 +1,7 @@
 """Frame consumer module for processing frames from Redis Stream."""
 
 import asyncio
+import contextlib
 import logging
 import os
 from typing import Dict, List, Optional, Tuple
@@ -32,6 +33,7 @@ class FrameConsumer:
         batch_size: int = 10,
         block_ms: int = 1000,
     ):
+        """Initialize frame consumer."""
         self.redis_url = redis_url
         self.stream_key = stream_key
         self.consumer_group = consumer_group
@@ -92,10 +94,8 @@ class FrameConsumer:
 
         if self._consumer_task:
             self._consumer_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._consumer_task
-            except asyncio.CancelledError:
-                pass
 
         if self.redis:
             await self.redis.close()
@@ -103,7 +103,7 @@ class FrameConsumer:
         logger.info("Consumer stopped")
 
     async def _consume_loop(self):
-        """Main consumer loop."""
+        """Run main consumer loop."""
         while self._running:
             try:
                 # Read messages from stream
@@ -140,7 +140,7 @@ class FrameConsumer:
 
             # Extract messages from result
             messages = []
-            for stream_name, stream_messages in result:
+            for _stream_name, stream_messages in result:
                 for msg_id, data in stream_messages:
                     messages.append((msg_id, data))
 
@@ -180,9 +180,13 @@ class FrameConsumer:
                     put_success = await self.frame_buffer.put(frame_data)
                     if put_success:
                         frames_consumed_total.inc()
-                        logger.info(f"✅ Consumer: Added frame {frame_data.get('frame_id')} to buffer")
+                        frame_id = frame_data.get("frame_id")
+                        logger.info(f"✅ Consumer: Added frame {frame_id} to buffer")
                     else:
-                        logger.warning(f"❌ Consumer: Failed to add frame {frame_data.get('frame_id')} to buffer")
+                        frame_id = frame_data.get("frame_id")
+                        logger.warning(
+                            f"❌ Consumer: Failed to add frame {frame_id} to buffer"
+                        )
 
                     # Update lag metric
                     if "timestamp" in data:
@@ -234,7 +238,7 @@ class FrameConsumer:
                     width, height = resolution_str[0], resolution_str[1]
             except (ValueError, IndexError, TypeError):
                 logger.warning(f"Could not parse resolution: {data.get('resolution')}")
-        
+
         # Use direct width/height if available (fallback)
         width = int(data.get("width", width))
         height = int(data.get("height", height))
@@ -246,7 +250,9 @@ class FrameConsumer:
             "timestamp": data.get("timestamp"),
             "width": width,
             "height": height,
-            "format": data.get("format", "bgr24"),  # Default to bgr24 as seen in Redis data
+            "format": data.get(
+                "format", "bgr24"
+            ),  # Default to bgr24 as seen in Redis data
             "size_bytes": int(data.get("size_bytes", 0)),
         }
 
