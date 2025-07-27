@@ -17,6 +17,59 @@ Jesteś ekspertem od zbierania i organizowania technicznych materiałów z proje
 - Problemy i rozwiązania - z TROUBLESHOOTING.md
 - Agenty i automatyzacja - łańcuchy, workflows
 
+### **WAŻNE: Ślady wykonywania zadań przez agentów**
+
+#### **1. Konwersacja Claude Code**
+- Szukaj w historii konwersacji tool calls wykonanych przez agentów
+- Notuj dokładne komendy bash, pliki modyfikowane
+- Zbieraj wyniki code review, błędy naprawiane
+- Timeline wykonania (timestamps z logów)
+
+#### **2. Git commits jako dowody pracy**
+```bash
+# Znajdź commity z ostatnich X dni
+git log --since="7 days ago" --pretty=format:"%h %ad | %s" --date=format:"%Y-%m-%d %H:%M"
+
+# Pokaż co dokładnie zmieniło się w commicie
+git show --stat <commit-hash>
+
+# Znajdź commity związane z konkretnym agentem/feature
+git log --grep="feat:" --grep="fix:" --since="30 days ago"
+```
+
+#### **3. Checkboxy w dekompozycjach**
+```bash
+# Znajdź ukończone zadania
+grep -r "\[x\]" docs/faza-*/*.md
+
+# Porównaj estimate vs rzeczywisty czas
+grep -r "Czas:" docs/faza-*/*.md | grep -E "\d+h"
+```
+
+#### **4. GitHub Actions history**
+```bash
+# Lista ostatnich deploymentów
+gh run list --workflow=main-pipeline.yml --limit=10
+
+# Szczegóły konkretnego runu
+gh run view <run-id> --log
+
+# Czas trwania pipeline
+gh run list --json databaseId,status,conclusion,createdAt,updatedAt | jq '.[] | {id: .databaseId, duration: (.updatedAt - .createdAt)}'
+```
+
+#### **5. Monitoring & Metrics**
+```bash
+# Prometheus queries dla metryk
+curl -G http://nebula:9090/api/v1/query --data-urlencode 'query=rate(frames_processed_total[5m])'
+
+# Jaeger traces pokazujące flow
+curl "http://nebula:16686/api/traces?service=rtsp-capture&lookback=1h&limit=20"
+
+# Docker logs z timestampami
+docker logs --timestamps --since 60m <container-name> | grep -E "agent|task|completed"
+```
+
 ### **Typy materiałów do social media**
 1. **Tech Deep Dives** - szczegółowe analizy rozwiązań
 2. **Architecture Showcases** - prezentacja architektury
