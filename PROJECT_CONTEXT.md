@@ -308,15 +308,15 @@ docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d
 
 **Lekcja**: Rozróżniaj między serwisami infrastrukturalnymi (event sourcing) a bibliotekami współdzielonymi (tracing).
 
-## Status Fazy 2: Akwizycja i Storage (2025-07-26)
+## Status Fazy 2: Akwizycja i Storage (2025-01-27)
 
 ### ✅ Ukończone zadania (6/8):
-1. **RTSP Capture Service** - Działający na Nebula:8080, konfiguracja Reolink, status "degraded" (czeka na Redis)
-2. **Frame Buffer z Redis** - Throughput 80k frames/s, latency 0.01ms, DLQ skonfigurowane
+1. **RTSP Capture Service** - Działający na Nebula:8080, generuje FrameID, publikuje do Redis Stream
+2. **Frame Buffer z Redis** - Consumer działa, ale architektura niekompletna (dead-end)
 3. **Redis Configuration** - 4GB limit, persistence, monitoring, Telegram alerts
 4. **PostgreSQL/TimescaleDB** - 100GB volume, PGBouncer, hypertables ready
 5. **Frame Processor Base Service** - Framework w services/shared/base-processor/, sample-processor na Nebula:8099
-6. **Frame tracking z distributed tracing** - Biblioteka w services/shared/frame-tracking, zintegrowana w 4 serwisach, trace propagation działa
+6. **Frame tracking z distributed tracing** - Biblioteka frame-tracking zintegrowana, ale brak pełnego flow
 
 ### ⏳ W trakcie realizacji (0/8):
 - Brak aktywnych zadań
@@ -325,11 +325,29 @@ docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d
 7. Dashboard: Frame Pipeline Overview
 8. Alerty: frame drop, latency, queue size
 
+### 🚨 Krytyczne problemy architekturalne (2025-01-27):
+1. **Frame Buffer Dead-End**:
+   - Consumer pobiera z Redis Stream → buforuje w pamięci → ❌ nikt nie konsumuje
+   - Buffer się zapełnia (1000 klatek) i zaczyna odrzucać wszystkie nowe
+   - Brak konfiguracji procesorów do pobierania z frame-buffer API
+   - Skutek: 100% frame loss po zapełnieniu bufora
+
+2. **Niekompletny pipeline**:
+   - Oczekiwany: RTSP → Redis → Frame Buffer → Processors → Storage
+   - Rzeczywisty: RTSP → Redis → Frame Buffer → ❌ (ślepa uliczka)
+   - Sample-processor nie jest skonfigurowany do pobierania z frame-buffer
+
+3. **Trace propagation niepełna**:
+   - rtsp-capture: ✅ generuje FrameID i trace
+   - frame-buffer: ✅ propaguje trace context (z TraceContext.inject)
+   - processors: ❌ nie pobierają klatek więc nie ma dalszej propagacji
+   - metadata-storage: ✅ gotowy ale nie otrzymuje danych
+
 ### 🔧 Działające usługi produkcyjne:
 - **Infrastruktura**: postgres, pgbouncer, redis, prometheus, grafana, jaeger (wszystkie healthy)
-- **Aplikacyjne**: rtsp-capture, frame-buffer, frame-tracking (jako serwis event sourcing), metadata-storage, base-template, sample-processor (wszystkie healthy)
-- **Biblioteki**: frame-tracking (shared library) zintegrowana w: frame-buffer, base-processor, metadata-storage, sample-processor
-- **Łącznie**: 11 usług działających na Nebula z pełnym monitoringiem i distributed tracing
+- **Aplikacyjne**: rtsp-capture, frame-buffer (z consumer), frame-events, metadata-storage, base-template, sample-processor
+- **Sieć**: Wszystkie serwisy na jednej sieci `detektor-network` (naprawiono problem z `detektr_default`)
+- **Frame-buffer consumer**: Konsumuje ~1000 frames/sec ale buffer się zapycha
 
 ## ✅ ROZWIĄZANY PROBLEM: rtsp-capture nie odpowiada na HTTP (2025-07-26 23:20)
 

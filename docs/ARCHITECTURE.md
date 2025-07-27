@@ -213,11 +213,16 @@ graph TB
 ### 1. Video Processing Pipeline
 
 ```
-Camera → RTSP Capture → Frame Buffer → Redis Streams → AI Services → HA Bridge → Home Assistant
-                              ↓
-                         PostgreSQL
+Camera → RTSP Capture → Redis Streams → Frame Buffer → ??? → AI Services → HA Bridge → Home Assistant
+                              ↓                          ↑
+                         PostgreSQL                   (brak połączenia)
                          (metadata)
 ```
+
+**⚠️ UWAGA: Pipeline niekompletny (2025-01-27)**
+- Frame Buffer konsumuje z Redis Stream ale nic nie konsumuje z bufora
+- Brak mechanizmu przekazywania klatek do AI Services
+- Skutek: 100% frame loss po zapełnieniu bufora (1000 klatek)
 
 ### 2. Event Flow
 

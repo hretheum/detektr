@@ -2,16 +2,68 @@
 
 ## Spis treści
 
-1. [Najczęstsze problemy](#najczęstsze-problemy)
-2. [Docker & Containers](#docker--containers)
-3. [Networking](#networking)
-4. [Services Issues](#services-issues)
-5. [Performance](#performance)
-6. [GPU & CUDA](#gpu--cuda)
-7. [Secrets & Authentication](#secrets--authentication)
-8. [CI/CD & Deployment](#cicd--deployment)
-9. [Monitoring & Observability](#monitoring--observability)
-10. [Emergency Procedures](#emergency-procedures)
+1. [Known Architectural Issues](#known-architectural-issues)
+2. [Najczęstsze problemy](#najczęstsze-problemy)
+3. [Docker & Containers](#docker--containers)
+4. [Networking](#networking)
+5. [Services Issues](#services-issues)
+6. [Performance](#performance)
+7. [GPU & CUDA](#gpu--cuda)
+8. [Secrets & Authentication](#secrets--authentication)
+9. [CI/CD & Deployment](#cicd--deployment)
+10. [Monitoring & Observability](#monitoring--observability)
+11. [Emergency Procedures](#emergency-procedures)
+
+## Known Architectural Issues
+
+### Frame Buffer Dead-End (2025-01-27)
+
+**Problem**: Frame buffer fills up and drops 100% of frames
+
+**Symptoms**:
+- Frame buffer logs show: `Buffer full, dropping frame...`
+- Consumer metrics: `frame_buffer_consumer_frames_consumed_total` increases
+- But buffer stays full: `size: 1000, usage_percent: 100.0`
+- No processor is consuming frames from buffer
+
+**Root Cause**:
+- Frame buffer has active consumer reading from Redis Stream `frames:metadata`
+- Consumer successfully buffers frames in memory
+- BUT: Nothing consumes frames FROM the buffer (architectural dead-end)
+- Buffer fills up (1000 frames) → starts dropping all new frames
+
+**Current Flow**:
+```
+RTSP Capture → Redis Stream → Frame Buffer Consumer → Memory Buffer → ❌ Nobody
+                                                                    ↓
+                                                               (dropped)
+```
+
+**Temporary Workaround**:
+```bash
+# Option 1: Clear buffer manually (data loss!)
+curl -X POST http://nebula:8002/buffer/clear
+
+# Option 2: Stop frame production
+docker stop detektr-rtsp-capture-1
+
+# Option 3: Increase buffer size (delays the problem)
+docker exec detektr-frame-buffer-1 \
+  curl -X POST http://localhost:8002/admin/buffer-size -d '{"size": 10000}'
+```
+
+**Permanent Fix Options**:
+1. **Configure processors to pull from frame-buffer REST API**:
+   - Processors should call `GET /frames/dequeue` periodically
+   - Requires processor code changes
+
+2. **Make frame-buffer publish to another Redis Stream**:
+   - After buffering, publish to `frames:buffered` stream
+   - Processors consume from new stream
+
+3. **Remove frame-buffer from pipeline**:
+   - Let processors consume directly from `frames:metadata`
+   - Simplest but loses buffering benefits
 
 ## Najczęstsze problemy
 

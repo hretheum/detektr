@@ -10,10 +10,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY requirements.txt ./
+COPY metadata-storage/requirements.txt ./
+
+# Copy frame-tracking library for installation
+COPY shared/frame-tracking /tmp/frame-tracking
 
 # Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir /tmp/frame-tracking
 
 # Runtime stage
 FROM python:3.11-slim
@@ -31,8 +35,8 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
-COPY src/ ./src/
-COPY scripts/ ./scripts/
+COPY metadata-storage/src/ ./src/
+COPY metadata-storage/scripts/ ./scripts/
 
 # Create non-root user
 RUN useradd -m -s /bin/bash detektor && \

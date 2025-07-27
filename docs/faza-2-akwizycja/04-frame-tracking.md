@@ -274,10 +274,12 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 
 #### Metryki sukcesu całego bloku
 
-- 100% serwisów przetwarzających klatki ma frame-tracking
-- Pełna ciągłość trace przez cały pipeline
-- <1ms overhead na serwis
-- Zero lost traces
+- 100% serwisów przetwarzających klatki ma frame-tracking ⚠️ (biblioteka jest, ale pipeline przerwany)
+- Pełna ciągłość trace przez cały pipeline ❌ (brak flow: buffer → processor → storage)
+- <1ms overhead na serwis ✅ (TraceContext ma minimalny overhead)
+- Zero lost traces ❌ (100% frame loss z powodu architectural bottleneck)
+
+**STATUS (2025-01-27)**: Blok 4 technicznie ukończony (biblioteka zintegrowana) ale funkcjonalnie niepełny z powodu braku kompletnego pipeline. Frame-buffer jest "ślepą uliczką" - konsumuje ale nikt nie konsumuje z niego.
 
 ### Blok 5: WALIDACJA BIBLIOTEKI W SERWISACH 🔄
 

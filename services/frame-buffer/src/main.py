@@ -27,6 +27,9 @@ except ImportError:
     FRAME_TRACKING_AVAILABLE = False
     print("Warning: frame-tracking library not available")
 
+# Import consumer
+from consumer import FrameConsumer, create_consumer_from_env
+
 # Import health check router
 from health import health_router, update_health_state
 
@@ -56,12 +59,14 @@ dlq_counter = Counter("frame_buffer_dlq_total", "Frames sent to DLQ", ["reason"]
 
 # Global Redis client with Sentinel support
 redis_sentinel: Optional[RedisSentinelClient] = None
+# Global consumer instance
+frame_consumer: Optional[FrameConsumer] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    global redis_sentinel
+    global redis_sentinel, frame_consumer
 
     # Initialize telemetry
     init_telemetry(SERVICE_NAME)
@@ -79,9 +84,23 @@ async def lifespan(app: FastAPI):
         print(f"❌ Failed to connect to Redis: {e}")
         update_health_state("redis_connected", False)
 
+    # Start frame consumer
+    try:
+        frame_consumer = await create_consumer_from_env()
+        await frame_consumer.start()
+        update_health_state("consumer_running", True)
+        print("✅ Frame consumer started")
+    except Exception as e:
+        print(f"❌ Failed to start consumer: {e}")
+        update_health_state("consumer_running", False)
+
     yield
 
     # Cleanup
+    if frame_consumer:
+        await frame_consumer.stop()
+        print("Frame consumer stopped")
+
     if redis_sentinel:
         await redis_sentinel.close()
 
@@ -278,6 +297,7 @@ async def get_buffer_status():
 
         return {
             "connected": True,
+            "consumer_running": frame_consumer is not None and frame_consumer._running,
             "size": queue_size,
             "max_size": MAX_BUFFER_SIZE,
             "usage_percent": (queue_size / MAX_BUFFER_SIZE) * 100,
