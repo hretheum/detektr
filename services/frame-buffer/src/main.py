@@ -13,10 +13,11 @@ import json
 import os
 import time
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import redis.asyncio as redis
-from fastapi import FastAPI, HTTPException, Query, status
+from fastapi import FastAPI, HTTPException
+from starlette import status
 
 # Import frame tracking
 try:
@@ -29,6 +30,7 @@ except ImportError:
 
 # Import consumer
 from consumer import FrameConsumer, create_consumer_from_env
+from frame_buffer import FrameBuffer
 
 # Import health check router
 from health import health_router, update_health_state
@@ -201,9 +203,15 @@ async def enqueue_frame(frame_data: dict):
 
 
 @app.get("/frames/dequeue")
-async def dequeue_frame(count: int = Query(default=1, ge=1, le=100)):
+async def dequeue_frame(count: int = 1):
     """Retrieve frames from shared in-memory buffer with trace context extraction."""
     global shared_buffer
+
+    # Validate count parameter
+    if count < 1:
+        count = 1
+    elif count > 100:
+        count = 100
 
     if not shared_buffer:
         raise HTTPException(
@@ -283,6 +291,11 @@ async def get_buffer_status():
             redis_queue_size = -1
             dlq_size = -1
 
+        # Get backpressure stats
+        backpressure_stats = {}
+        if shared_buffer:
+            backpressure_stats = shared_buffer.get_backpressure_stats()
+
         return {
             "connected": True,
             "consumer_running": frame_consumer is not None and frame_consumer._running,
@@ -291,11 +304,99 @@ async def get_buffer_status():
                 "max_size": MAX_BUFFER_SIZE,
                 "usage_percent": buffer_usage,
                 "is_full": buffer_size >= MAX_BUFFER_SIZE,
+                "backpressure": backpressure_stats,
             },
             "redis": {"queue_size": redis_queue_size, "dlq_size": dlq_size},
         }
     except Exception as e:
         return {"connected": False, "error": str(e)}
+
+
+@app.get("/buffer/backpressure")
+async def get_backpressure_status():
+    """Get detailed backpressure monitoring information."""
+    global shared_buffer
+
+    if not shared_buffer:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Shared buffer not initialized",
+        )
+
+    # Get current buffer status
+    current_size = shared_buffer.size()
+    usage_ratio = shared_buffer.usage_ratio()
+    backpressure_stats = shared_buffer.get_backpressure_stats()
+
+    # Calculate backpressure severity
+    severity = "none"
+    if usage_ratio > 0.9:
+        severity = "critical"
+    elif usage_ratio > 0.7:
+        severity = "high"
+    elif usage_ratio > 0.5:
+        severity = "moderate"
+
+    # Get consumer status
+    consumer_status = {
+        "running": frame_consumer is not None and frame_consumer._running,
+        "batch_size": frame_consumer.batch_size if frame_consumer else 0,
+    }
+
+    return {
+        "buffer": {
+            "current_size": current_size,
+            "max_size": MAX_BUFFER_SIZE,
+            "usage_ratio": usage_ratio,
+            "usage_percent": usage_ratio * 100,
+        },
+        "backpressure": {
+            "severity": severity,
+            "is_experiencing_backpressure": usage_ratio > 0.7,
+            "total_events": backpressure_stats["backpressure_events"],
+            "last_event_time": backpressure_stats["last_backpressure_time"],
+            "seconds_since_last_event": (
+                backpressure_stats["seconds_since_last_backpressure"]
+            ),
+        },
+        "consumer": consumer_status,
+        "recommendations": _get_backpressure_recommendations(
+            usage_ratio, backpressure_stats
+        ),
+    }
+
+
+def _get_backpressure_recommendations(
+    usage_ratio: float, stats: Dict[str, Any]
+) -> list[str]:
+    """Generate recommendations based on backpressure status."""
+    recommendations = []
+
+    if usage_ratio > 0.9:
+        recommendations.append(
+            "CRITICAL: Buffer is almost full. Consider scaling consumers."
+        )
+        recommendations.append(
+            "Increase consumer batch size or add more consumer instances."
+        )
+    elif usage_ratio > 0.7:
+        recommendations.append("WARNING: High buffer usage. Monitor closely.")
+        recommendations.append(
+            "Consider increasing buffer size or optimizing consumer performance."
+        )
+
+    if stats["backpressure_events"] > 100:
+        recommendations.append("High number of dropped frames. Review system capacity.")
+
+    if (
+        stats["seconds_since_last_backpressure"]
+        and stats["seconds_since_last_backpressure"] < 60
+    ):
+        recommendations.append(
+            "Recent backpressure detected. System may be under load."
+        )
+
+    return recommendations
 
 
 @app.post("/buffer/clear")

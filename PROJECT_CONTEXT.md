@@ -4,6 +4,16 @@
 META LLM PROMPT:
 Ten plik służy do szybkiego wprowadzenia LLM w kontekst projektu.
 Wczytaj go na początku każdej nowej sesji/konwersacji.
+
+WAŻNE: Po wczytaniu tego pliku, NATYCHMIAST wczytaj również konfiguracje agentów:
+- /Users/hretheum/dev/bezrobocie/detektor/.claude/agents/architecture-advisor.md
+- /Users/hretheum/dev/bezrobocie/detektor/.claude/agents/code-reviewer.md
+- /Users/hretheum/dev/bezrobocie/detektor/.claude/agents/debugger.md
+- /Users/hretheum/dev/bezrobocie/detektor/.claude/agents/deployment-specialist.md
+- /Users/hretheum/dev/bezrobocie/detektor/.claude/agents/pipeline-debugger.md
+- /Users/hretheum/dev/bezrobocie/detektor/.claude/agents/detektor-coder.md
+- /Users/hretheum/dev/bezrobocie/detektor/.claude/agents/documentation-keeper.md
+- /Users/hretheum/dev/bezrobocie/detektor/.claude/agents/pisarz.md
 -->
 
 ## O projekcie
@@ -54,7 +64,7 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 /PROJECT_CONTEXT.md          # Ten plik
 ```
 
-## Workflow wykonywania zadań
+## Workflow wykonywania zadań - Automatyczny łańcuch agentów
 
 ### Development Flow
 1. **Start**: Sprawdź aktualną fazę w `architektura_systemu.md`
@@ -63,6 +73,112 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 4. **Wykonaj**: Użyj `/nakurwiaj <numer_bloku>`
 5. **Code Review**: Po KAŻDYM zadaniu atomowym uruchom `/agent code-reviewer`
 6. **Waliduj**: Po każdym bloku - testy, metryki, git commit
+
+### Reguły generalne dla /nakurwiaj - Automatyczny łańcuch agentów
+
+Gdy LLM otrzymuje komendę `/nakurwiaj`, automatycznie stosuje następujący łańcuch:
+
+#### 1. Analiza kontekstu zadania
+```
+IF task contains "implement|create|add|napisz|stwórz|dodaj":
+    → /agent detektor-coder
+ELIF task contains "debug|fix|investigate|napraw|zbadaj":
+    → /agent debugger lub pipeline-debugger
+ELIF task contains "refactor|optimize|zoptymalizuj":
+    → /agent architecture-advisor → detektor-coder
+ELIF task contains "deploy|deployment|wdróż":
+    → /agent deployment-specialist
+```
+
+#### 2. Quality Gate (ZAWSZE po każdym zadaniu)
+```
+AFTER each atomic task:
+    → /agent code-reviewer
+    IF critical_issues:
+        → Loop back to previous agent with feedback
+        → Maximum 3 iterations
+        → Auto-fix issues without asking
+```
+
+#### 3. Deployment Flow (warunkowy)
+```
+IF block contains deployment tasks OR "CI/CD" OR "GitHub Actions":
+    → git add -A && git commit -m "feat: [nazwa bloku]"
+    → git push origin main (triggers CI/CD)
+    → /agent deployment-specialist (monitor pipeline)
+    → Verify health checks on Nebula
+    → IF failed: automatic rollback + debug
+```
+
+#### 3.5. Documentation Sync (ZAWSZE przed przejściem do kolejnego bloku)
+```
+BEFORE moving to next block:
+    → /agent documentation-keeper
+    → Synchronize:
+        - Task checkboxes [x] in decomposition files
+        - Service ports in PROJECT_CONTEXT.md
+        - Status in architektura_systemu.md
+        - New problems in TROUBLESHOOTING.md
+        - Service READMEs if new services added
+    → Verify all docs are consistent
+```
+
+#### 4. Automatyzacja i autonomia
+- ✅ Automatyczne commity z descriptive messages (format: "feat: [task name]" lub "fix: [issue]")
+- ✅ Automatyczny push (chyba że user explicite mówi "bez push" lub "no push")
+- ✅ Kontynuacja do następnego bloku (chyba że user mówi "tylko ten blok" lub "only this block")
+- ✅ Brak pytań o potwierdzenie - pełne zaufanie do agentów i ich decyzji
+- ✅ Automatyczne naprawianie błędów znalezionych przez code-reviewer
+- ✅ Używanie wielu agentów równolegle gdy to możliwe
+
+#### 5. Przykład pełnego flow
+```
+User: /nakurwiaj blok-1
+
+LLM:
+[Blok 1/N] Frame Processor Implementation
+=========================================
+
+[Zadanie 1/3] "Implement RTSP capture service"
+→ Wywołuję: /agent detektor-coder
+  ✓ Created: services/rtsp-capture/
+  ✓ Tests: 15/15 passing
+→ Wywołuję: /agent code-reviewer
+  ! Found 2 issues - auto-fixing...
+→ Wywołuję: /agent detektor-coder --fix
+  ✓ Issues resolved
+→ Wywołuję: /agent code-reviewer
+  ✓ Code approved
+
+[Zadanie 2/3] "Add distributed tracing"
+→ Wywołuję: /agent detektor-coder --feature=tracing
+  ✓ OpenTelemetry integrated
+  ✓ Trace context propagation added
+→ Wywołuję: /agent code-reviewer
+  ✓ No issues found
+
+[Zadanie 3/3] "Deploy to production"
+→ Executing: git add -A && git commit -m "feat: rtsp-capture service with distributed tracing"
+→ Executing: git push origin main
+→ Wywołuję: /agent deployment-specialist
+  ✓ CI/CD pipeline passed
+  ✓ Health check: http://nebula:8080/health - OK
+  ✓ Metrics endpoint verified
+
+→ Wywołuję: /agent documentation-keeper
+  ✓ Updated PROJECT_CONTEXT.md - service ports
+  ✓ Updated architektura_systemu.md - task checkboxes
+  ✓ Synced README.md - service list
+  ✓ All documentation consistent
+
+Blok 1 completed successfully. Proceeding to Blok 2...
+```
+
+#### 6. Specjalne przypadki
+- **Błąd w pipeline**: Automatyczny rollback, następnie `/agent debugger` → napraw → ponów deployment
+- **Test failures**: `/agent detektor-coder --fix-tests` → re-run tests → proceed
+- **Performance issues**: `/agent architecture-advisor` → recommendations → `/agent detektor-coder` → implement
+- **Brak dostępu/credentials**: Pause → inform user → wait for fix → resume
 
 ### CI/CD Flow (OBOWIĄZKOWY od Fazy 1)
 1. **Build**: Obrazy Docker budowane w GitHub Actions
@@ -104,6 +220,21 @@ git push origin main  # → Automatyczny build i deploy
 - **Faza 4**: Integracja z Home Assistant
 - **Faza 5**: Zaawansowane AI i voice
 - **Faza 6**: Optymalizacja i refinement
+
+## Dostępne Sub-Agenty (AI Assistants)
+
+Projekt posiada 8 wyspecjalizowanych agentów pomocniczych:
+
+1. **`/agent architecture-advisor`** - Ekspert od Clean Architecture, DDD, wzorców projektowych
+2. **`/agent code-reviewer`** - Code review, refaktoring, best practices (OBOWIĄZKOWY po każdym zadaniu atomowym!)
+3. **`/agent debugger`** - Troubleshooting, analiza logów, debugging runtime
+4. **`/agent deployment-specialist`** - CI/CD, Docker, GitHub Actions, deployment na Nebula
+5. **`/agent pipeline-debugger`** - Dedykowany dla problemów w pipeline przetwarzania klatek
+6. **`/agent detektor-coder`** - Implementacja zadań atomowych, TDD, observability-first
+7. **`/agent documentation-keeper`** - Synchronizacja dokumentacji, aktualizacja statusów (URUCHAMIANY przed przejściem do kolejnego bloku)
+8. **`/agent pisarz`** - Zbiera materiały do tech deep dives na social media (zapisuje w /socmedia/)
+
+Konfiguracje agentów znajdują się w: `/Users/hretheum/dev/bezrobocie/detektor/.claude/agents/`
 
 ## Porty serwisów
 

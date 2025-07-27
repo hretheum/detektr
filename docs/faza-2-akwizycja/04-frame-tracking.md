@@ -443,33 +443,65 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
    - **Quality Gate**: Frame IDs są generowane
    - **Czas**: 15min
 
-2. **[ ] Weryfikacja trace propagation**
-   - **Metryka**: Traces z frame.id widoczne w Jaeger
+2. **[ ] Weryfikacja trace propagation przez cały pipeline**
+   - **Metryka**: Traces z frame.id widoczne w Jaeger przez wszystkie serwisy
    - **Walidacja**:
      ```bash
-     # Sprawdź czy rtsp-capture wysyła traces
-     curl -s "http://nebula:16686/api/services" | jq '. | map(select(. == "rtsp-capture"))'
+     # Sprawdź czy wszystkie serwisy są w Jaeger
+     curl -s "http://nebula:16686/api/services" | jq '. | map(select(. == "rtsp-capture" or . == "frame-buffer" or . == "sample-processor" or . == "metadata-storage"))'
 
      # Znajdź trace z frame.id
      curl -s "http://nebula:16686/api/traces?service=rtsp-capture&limit=10" | \
        jq '.[].spans[].tags[] | select(.key == "frame.id")'
-     ```
-   - **Quality Gate**: Każdy trace ma frame.id
-   - **Czas**: 15min
 
-3. **[ ] Test frame search functionality**
-   - **Metryka**: Można wyszukać klatkę po ID
+     # NOWE: Sprawdź pełny flow przez pipeline
+     TRACE_ID=$(curl -s "http://nebula:16686/api/traces?service=rtsp-capture&limit=1" | jq -r '.[0].traceID')
+     curl -s "http://nebula:16686/api/traces/$TRACE_ID" | \
+       jq '.[0].spans[] | {service: .process.serviceName, operation: .operationName}' | \
+       jq -s 'map(.service) | unique'
+     # Should show: ["rtsp-capture", "frame-buffer", "sample-processor", "metadata-storage"]
+
+     # Weryfikuj że trace context jest propagowany poprawnie
+     curl -s "http://nebula:16686/api/traces/$TRACE_ID" | \
+       jq '.[0].spans | group_by(.traceID) | length'
+     # Should be 1 (wszystkie spans mają ten sam traceID)
+     ```
+   - **Quality Gate**:
+     - Każdy trace ma frame.id
+     - Trace zawiera spans ze wszystkich 4 serwisów
+     - Brak orphaned spans
+   - **Czas**: 30min
+
+3. **[ ] Test frame search functionality przez cały pipeline**
+   - **Metryka**: Można wyszukać klatkę po ID i zobaczyć jej pełną podróż
    - **Walidacja**:
      ```bash
-     # Pobierz przykładowy frame ID
-     FRAME_ID=$(curl -s "http://nebula:16686/api/traces?service=rtsp-capture&limit=1" | \
-       jq -r '.[0].spans[0].tags[] | select(.key == "frame.id") | .value')
+     # Pobierz przykładowy frame ID który przeszedł przez cały pipeline
+     FRAME_ID=$(curl -s "http://nebula:16686/api/traces?service=rtsp-capture&limit=10" | \
+       jq -r '.[].spans[].tags[] | select(.key == "frame.id") | .value' | head -1)
 
      # Użyj trace_analyzer.py
      ./scripts/trace_analyzer.py search "$FRAME_ID" --jaeger-url http://nebula:16686
+
+     # NOWE: Weryfikuj że frame był w każdym serwisie
+     TRACE_ID=$(curl -s "http://nebula:16686/api/traces?tags=frame.id:$FRAME_ID" | jq -r '.[0].traceID')
+
+     # Sprawdź obecność we wszystkich serwisach
+     SERVICES=$(curl -s "http://nebula:16686/api/traces/$TRACE_ID" | \
+       jq -r '.[0].spans[].process.serviceName' | sort | uniq)
+
+     echo "Frame $FRAME_ID found in services: $SERVICES"
+     # Should include: rtsp-capture, frame-buffer, sample-processor, metadata-storage
+
+     # Sprawdź czy frame dotarł do metadata-storage
+     curl -s "http://nebula:8005/frames?frame_id=$FRAME_ID" | jq '.'
+     # Should return frame metadata with trace_id
      ```
-   - **Quality Gate**: Trace znaleziony w <1s
-   - **Czas**: 15min
+   - **Quality Gate**:
+     - Trace znaleziony w <1s
+     - Frame obecny we wszystkich 4 serwisach
+     - Metadata przechowane w bazie
+   - **Czas**: 30min
 
 4. **[ ] Performance validation biblioteki**
    - **Metryka**: <1ms overhead na klatkę
@@ -489,13 +521,124 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
    - **Dostępny**: http://nebula:3000/d/frame-tracking
    - **Dokumentacja**: dashboards/README.md
 
-6. **[ ] Dokumentacja integracji**
-   - **Metryka**: Każdy serwis wie jak użyć biblioteki
+6. **[ ] Dokumentacja integracji z frame-buffer API**
+   - **Metryka**: Każdy serwis wie jak użyć biblioteki i pobierać z frame-buffer
    - **Tasks**:
      - [ ] Utwórz `docs/guides/frame-tracking-integration.md`
      - [ ] Dodaj przykłady dla różnych serwisów
+     - [ ] **NOWE**: Sekcja o pobieraniu z frame-buffer z trace context
+     - [ ] **NOWE**: Przykład kodu dla procesorów:
+       ```python
+       # Prawidłowe pobieranie z frame-buffer API
+       async def consume_from_frame_buffer():
+           async with httpx.AsyncClient() as client:
+               while True:
+                   # Pobierz batch klatek
+                   response = await client.get(
+                       f"{FRAME_BUFFER_URL}/frames/dequeue?count=10"
+                   )
+                   frames = response.json()["frames"]
+
+                   for frame in frames:
+                       # Ekstraktuj trace context
+                       if "trace_context" in frame:
+                           TraceContext.extract(frame["trace_context"])
+
+                       # Przetwarzaj z trace context
+                       with tracer.start_as_current_span("process_frame") as span:
+                           span.set_attribute("frame.id", frame["frame_id"])
+                           await process_frame(frame)
+
+                   await asyncio.sleep(0.1)  # Rate limiting
+       ```
+     - [ ] **NOWE**: Troubleshooting sekcja:
+       - Co robić gdy trace context się gubi
+       - Jak debugować brakujące spans
+       - Weryfikacja propagacji między serwisami
      - [ ] Zaktualizuj README główne
-   - **Quality Gate**: Dokumentacja kompletna
+   - **Quality Gate**:
+     - Dokumentacja kompletna
+     - Przykłady kodu działają
+     - Troubleshooting pokrywa znane problemy
+   - **Czas**: 1.5h
+
+7. **[ ] Weryfikacja end-to-end trace completeness**
+   - **Metryka**: 100% klatek ma kompletny trace przez wszystkie serwisy
+   - **Walidacja**:
+     ```bash
+     # Wyślij 100 testowych klatek
+     for i in {1..100}; do
+       curl -X POST http://nebula:8080/capture/test -d "{\"test_frame\": $i}"
+       sleep 0.1
+     done
+
+     # Poczekaj na przetworzenie
+     sleep 30
+
+     # Sprawdź trace completeness
+     TOTAL_FRAMES=100
+     COMPLETE_TRACES=$(curl -s "http://nebula:16686/api/traces?service=rtsp-capture&limit=100" | \
+       jq '[.[] | select(.spans | map(.process.serviceName) | unique | length >= 4)] | length')
+
+     echo "Complete traces: $COMPLETE_TRACES / $TOTAL_FRAMES"
+     echo "Completeness: $((COMPLETE_TRACES * 100 / TOTAL_FRAMES))%"
+
+     # Sprawdź orphaned spans
+     ORPHANED=$(curl -s "http://nebula:16686/api/traces?service=rtsp-capture&limit=100" | \
+       jq '[.[].spans[] | select(.references | length == 0 and .operationName != "capture_frame")] | length')
+
+     echo "Orphaned spans: $ORPHANED"
+
+     # Weryfikuj że każda klatka dotarła do storage
+     STORED_FRAMES=$(docker exec postgres psql -U detektor -d detektor_db -t -c \
+       "SELECT COUNT(DISTINCT frame_id) FROM frame_metadata WHERE created_at > NOW() - INTERVAL '5 minutes'")
+
+     echo "Frames in storage: $STORED_FRAMES"
+     ```
+   - **Quality Gate**:
+     - Trace completeness = 100%
+     - Zero orphaned spans
+     - Wszystkie klatki w storage
+   - **Czas**: 1h
+
+8. **[ ] Load test z pełnym pipeline**
+   - **Metryka**: System obsługuje 30fps z pełnym tracing
+   - **Walidacja**:
+     ```bash
+     # Start load test - 30fps przez 5 minut
+     ./scripts/load-test.py --fps 30 --duration 300 --camera-url rtsp://192.168.1.195:554/stream
+
+     # Monitor w czasie rzeczywistym
+     watch -n 1 'curl -s http://nebula:8002/metrics | grep -E "buffer_size|frames_dropped"'
+
+     # Po teście sprawdź metryki
+     END_TIME=$(date +%s)
+     START_TIME=$((END_TIME - 300))
+
+     # Frame loss
+     FRAME_LOSS=$(curl -s http://nebula:8002/metrics | grep frames_dropped_total | awk '{print $2}')
+     EXPECTED_FRAMES=$((30 * 300))  # 9000 frames
+     LOSS_PERCENT=$(echo "scale=2; $FRAME_LOSS * 100 / $EXPECTED_FRAMES" | bc)
+
+     echo "Frame loss: $LOSS_PERCENT%"
+
+     # Trace completeness podczas load
+     LOAD_TRACES=$(curl -s "http://nebula:16686/api/traces?service=rtsp-capture&start=$START_TIME&end=$END_TIME&limit=1000" | \
+       jq '[.[] | select(.spans | map(.process.serviceName) | unique | length >= 4)] | length')
+
+     TOTAL_LOAD_TRACES=$(curl -s "http://nebula:16686/api/traces?service=rtsp-capture&start=$START_TIME&end=$END_TIME&limit=1000" | jq 'length')
+
+     COMPLETENESS=$((LOAD_TRACES * 100 / TOTAL_LOAD_TRACES))
+     echo "Trace completeness under load: $COMPLETENESS%"
+
+     # Latency P95
+     P95_LATENCY=$(curl -s http://nebula:8080/metrics | grep 'frame_processing_duration_seconds{quantile="0.95"}' | awk '{print $2}')
+     echo "P95 latency: ${P95_LATENCY}s"
+     ```
+   - **Quality Gate**:
+     - Frame loss < 1%
+     - Trace completeness > 99%
+     - P95 latency < 100ms
    - **Czas**: 1h
 
 #### 🚀 Quick Reference

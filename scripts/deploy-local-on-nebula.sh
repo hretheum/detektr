@@ -49,11 +49,11 @@ check_required_files() {
     log "Sprawdzanie wymaganych plików..."
 
     local required_files=(
-        "docker-compose.yml"
-        "docker-compose.observability.yml"
-        "docker-compose.storage.yml"
-        "docker-compose.prod.yml"
-        "prometheus.yml"
+        "docker/base/docker-compose.yml"
+        "docker/base/docker-compose.observability.yml"
+        "docker/base/docker-compose.storage.yml"
+        "docker/environments/production/docker-compose.yml"
+        "docker/base/config/prometheus.yml"
     )
 
     for file in "${required_files[@]}"; do
@@ -62,19 +62,6 @@ check_required_files() {
             exit 1
         fi
     done
-
-    # Specjalne sprawdzenie dla prometheus.yml - musi być plikiem, nie katalogiem
-    if [[ -d "$PROJECT_ROOT/prometheus.yml" ]]; then
-        warning "prometheus.yml jest katalogiem zamiast pliku! Naprawiam..."
-        sudo rm -rf "$PROJECT_ROOT/prometheus.yml"
-        # Skopiuj prawidłowy plik jeśli istnieje
-        if [[ -f "$PROJECT_ROOT/config/prometheus/prometheus.yml" ]]; then
-            cp "$PROJECT_ROOT/config/prometheus/prometheus.yml" "$PROJECT_ROOT/prometheus.yml"
-        else
-            error "Brak źródłowego pliku prometheus.yml"
-            exit 1
-        fi
-    fi
 
     log "Wszystkie pliki są obecne ✓"
 }
@@ -110,16 +97,19 @@ start_infrastructure() {
     # Utwórz network jeśli nie istnieje
     sudo docker network create detektor-network 2>/dev/null || true
 
+    # Ensure consistent project name
+    export COMPOSE_PROJECT_NAME=detektr
+
     # Sprawdź czy infrastruktura już działa
     local infra_running=true
 
     # Sprawdź kontenery storage
-    if ! sudo docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" ps --format json | grep -q '"State":"running"'; then
+    if ! sudo COMPOSE_PROJECT_NAME=detektr docker compose -f "$PROJECT_ROOT/docker/base/docker-compose.storage.yml" ps --format json | grep -q '"State":"running"'; then
         infra_running=false
     fi
 
     # Sprawdź kontenery observability
-    if ! sudo docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" ps --format json | grep -q '"State":"running"'; then
+    if ! sudo COMPOSE_PROJECT_NAME=detektr docker compose -f "$PROJECT_ROOT/docker/base/docker-compose.observability.yml" ps --format json | grep -q '"State":"running"'; then
         infra_running=false
     fi
 
@@ -130,13 +120,19 @@ start_infrastructure() {
 
     # Uruchom storage (PostgreSQL, Redis)
     log "Uruchamianie storage services..."
-    sudo docker compose -f "$PROJECT_ROOT/docker-compose.storage.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" up -d --remove-orphans || {
+    sudo COMPOSE_PROJECT_NAME=detektr docker compose \
+        -f "$PROJECT_ROOT/docker/base/docker-compose.storage.yml" \
+        -f "$PROJECT_ROOT/docker/environments/production/docker-compose.yml" \
+        up -d --remove-orphans || {
         warning "Niektóre kontenery storage mogą już działać, kontynuuję..."
     }
 
     # Uruchom observability (Prometheus, Jaeger, Grafana)
     log "Uruchamianie observability services..."
-    sudo docker compose -f "$PROJECT_ROOT/docker-compose.observability.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" up -d --remove-orphans || {
+    sudo COMPOSE_PROJECT_NAME=detektr docker compose \
+        -f "$PROJECT_ROOT/docker/base/docker-compose.observability.yml" \
+        -f "$PROJECT_ROOT/docker/environments/production/docker-compose.yml" \
+        up -d --remove-orphans || {
         warning "Niektóre kontenery observability mogą już działać, kontynuuję..."
     }
 
@@ -184,19 +180,31 @@ start_services() {
 
             # Zatrzymaj stary kontener
             log "  → Zatrzymywanie starego kontenera..."
-            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" stop "$service" 2>/dev/null || true
+            sudo COMPOSE_PROJECT_NAME=detektr docker compose \
+                -f "$PROJECT_ROOT/docker/base/docker-compose.yml" \
+                -f "$PROJECT_ROOT/docker/environments/production/docker-compose.yml" \
+                stop "$service" 2>/dev/null || true
 
             # Usuń stary kontener
             log "  → Usuwanie starego kontenera..."
-            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" rm -f "$service" 2>/dev/null || true
+            sudo COMPOSE_PROJECT_NAME=detektr docker compose \
+                -f "$PROJECT_ROOT/docker/base/docker-compose.yml" \
+                -f "$PROJECT_ROOT/docker/environments/production/docker-compose.yml" \
+                rm -f "$service" 2>/dev/null || true
 
             # Pobierz najnowszy obraz
             log "  → Pobieranie najnowszego obrazu..."
-            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" pull "$service"
+            sudo COMPOSE_PROJECT_NAME=detektr docker compose \
+                -f "$PROJECT_ROOT/docker/base/docker-compose.yml" \
+                -f "$PROJECT_ROOT/docker/environments/production/docker-compose.yml" \
+                pull "$service"
 
             # Uruchom nowy kontener
             log "  → Uruchamianie nowego kontenera..."
-            sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" up -d --no-deps "$service"
+            sudo COMPOSE_PROJECT_NAME=detektr docker compose \
+                -f "$PROJECT_ROOT/docker/base/docker-compose.yml" \
+                -f "$PROJECT_ROOT/docker/environments/production/docker-compose.yml" \
+                up -d --no-deps "$service"
         done
     else
         # Pełny deployment - zatrzymaj, usuń i uruchom wszystko
@@ -213,15 +221,30 @@ start_services() {
 
         # Zatrzymaj wszystkie kontenery przez docker-compose
         log "Zatrzymywanie kontenerów przez docker-compose..."
-        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" down --remove-orphans --volumes || true
+        sudo COMPOSE_PROJECT_NAME=detektr docker compose \
+            -f "$PROJECT_ROOT/docker/base/docker-compose.yml" \
+            -f "$PROJECT_ROOT/docker/base/docker-compose.storage.yml" \
+            -f "$PROJECT_ROOT/docker/base/docker-compose.observability.yml" \
+            -f "$PROJECT_ROOT/docker/environments/production/docker-compose.yml" \
+            down --remove-orphans --volumes || true
 
         # Pull wszystkich obrazów
         log "Pobieranie najnowszych obrazów..."
-        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" pull
+        sudo COMPOSE_PROJECT_NAME=detektr docker compose \
+            -f "$PROJECT_ROOT/docker/base/docker-compose.yml" \
+            -f "$PROJECT_ROOT/docker/base/docker-compose.storage.yml" \
+            -f "$PROJECT_ROOT/docker/base/docker-compose.observability.yml" \
+            -f "$PROJECT_ROOT/docker/environments/production/docker-compose.yml" \
+            pull
 
         # Uruchom wszystkie serwisy
         log "Uruchamianie wszystkich serwisów..."
-        sudo docker compose -f "$PROJECT_ROOT/docker-compose.yml" -f "$PROJECT_ROOT/docker-compose.prod.yml" up -d
+        sudo COMPOSE_PROJECT_NAME=detektr docker compose \
+            -f "$PROJECT_ROOT/docker/base/docker-compose.yml" \
+            -f "$PROJECT_ROOT/docker/base/docker-compose.storage.yml" \
+            -f "$PROJECT_ROOT/docker/base/docker-compose.observability.yml" \
+            -f "$PROJECT_ROOT/docker/environments/production/docker-compose.yml" \
+            up -d
     fi
 
     log "Serwisy aplikacji uruchomione ✓"
@@ -303,8 +326,14 @@ check_ports() {
     if [[ "$has_conflicts" == true ]]; then
         warning "Porty były zajęte, próbuję inteligentne czyszczenie..."
 
-        # Najpierw zatrzymaj tylko kontenery projektu detektor
-        warning "Zatrzymuję kontenery projektu detektor..."
+        # Najpierw zatrzymaj tylko kontenery projektu detektr (new project name)
+        warning "Zatrzymuję kontenery projektu detektr..."
+        # shellcheck disable=SC2046
+        sudo docker stop $(sudo docker ps -q --filter "label=com.docker.compose.project=detektr") 2>/dev/null || true
+        # shellcheck disable=SC2046
+        sudo docker rm -f $(sudo docker ps -aq --filter "label=com.docker.compose.project=detektr") 2>/dev/null || true
+
+        # Also clean up old project name containers
         # shellcheck disable=SC2046
         sudo docker stop $(sudo docker ps -q --filter "label=com.docker.compose.project=detektor") 2>/dev/null || true
         # shellcheck disable=SC2046

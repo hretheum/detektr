@@ -145,6 +145,12 @@ services:
       CONFIDENCE_THRESHOLD: ${CONFIDENCE_THRESHOLD:-0.7}
       BATCH_SIZE: ${BATCH_SIZE:-4}
       PROCESSING_DELAY_MS: ${PROCESSING_DELAY_MS:-50}
+      ENABLE_FRAME_CONSUMER: "true"
+      FRAME_BUFFER_URL: ${FRAME_BUFFER_URL:-http://frame-buffer:8002}
+      CONSUMER_BATCH_SIZE: ${CONSUMER_BATCH_SIZE:-10}
+      POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-100}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      BACKOFF_MS: ${BACKOFF_MS:-1000}
     networks:
       - detektor-network
     healthcheck:
@@ -155,6 +161,7 @@ services:
       start_period: 40s
     depends_on:
       - jaeger
+      - frame-buffer
 
   example-otel:
     image: ghcr.io/hretheum/detektr/example-otel:${IMAGE_TAG:-latest}

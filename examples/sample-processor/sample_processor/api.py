@@ -7,6 +7,8 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+# from .frame_consumer import FrameBufferConsumer
+# Will be used when integrated
 from .main import SampleProcessor
 
 # Frame tracking
@@ -26,6 +28,8 @@ app = FastAPI(
 
 # Global processor instance
 processor = None
+# Global consumer instance
+consumer = None
 
 
 class HealthStatus(BaseModel):
@@ -58,7 +62,7 @@ class ProcessResponse(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     """Initialize processor on startup."""
-    global processor
+    global processor, consumer
 
     print("Starting Sample Processor Service...")
 
@@ -71,13 +75,28 @@ async def startup_event():
 
     # Initialize processor
     await processor.initialize()
+
+    # Create and start consumer if enabled
+    if os.getenv("ENABLE_FRAME_CONSUMER", "true").lower() == "true":
+        # consumer = FrameBufferConsumer(
+        #     frame_buffer_url=os.getenv("FRAME_BUFFER_URL", "http://frame-buffer:8002")
+        # )
+        # await consumer.start()
+        await consumer.start()
+        print("Frame consumer started")
+
     print("Sample Processor Service ready!")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown."""
-    global processor
+    global processor, consumer
+
+    # Stop consumer first
+    if consumer:
+        await consumer.stop()
+        print("Frame consumer stopped")
 
     if processor:
         await processor.cleanup()
@@ -95,6 +114,8 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "details": {
             "processor_initialized": processor is not None and processor.is_initialized,
+            "consumer_running": consumer is not None and consumer._running,
+            "frame_buffer_url": consumer.frame_buffer_url if consumer else None,
         },
     }
 
