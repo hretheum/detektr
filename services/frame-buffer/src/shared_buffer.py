@@ -1,93 +1,79 @@
-"""
-Shared Frame Buffer - Singleton pattern for sharing buffer between consumer and API.
-
-This module provides a thread-safe singleton implementation of FrameBuffer
-to ensure that both the consumer and API endpoints use the same buffer instance.
-"""
+"""Shared frame buffer implementation to fix dead-end issue."""
 
 import asyncio
-import threading
-from typing import Optional
+import logging
+from collections import deque
+from datetime import datetime
+from typing import Any, Dict, Optional
 
-from frame_buffer import FrameBuffer
+logger = logging.getLogger(__name__)
 
 
 class SharedFrameBuffer:
-    """
-    Singleton wrapper for FrameBuffer to ensure shared state between components.
+    """Thread-safe shared frame buffer accessible by both consumer and API."""
 
-    This class implements a thread-safe singleton pattern to guarantee that
-    all parts of the application (consumer, API endpoints) use the same
-    FrameBuffer instance.
-    """
-
-    _instance: Optional["SharedFrameBuffer"] = None
-    _buffer: Optional[FrameBuffer] = None
+    _instance = None
     _lock = asyncio.Lock()
-    _sync_lock = threading.Lock()
 
-    def __new__(cls) -> "SharedFrameBuffer":
-        """Ensure only one instance exists."""
+    def __new__(cls):
+        """Create singleton instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
         return cls._instance
 
-    @classmethod
-    async def get_instance(cls) -> FrameBuffer:
-        """
-        Get the shared FrameBuffer instance.
+    def __init__(self, max_size: int = 1000):
+        """Initialize shared frame buffer."""
+        if self._initialized:
+            return
 
-        This method is thread-safe and ensures that only one FrameBuffer
-        instance is created, even when called concurrently.
+        self.max_size = max_size
+        self.buffer = deque(maxlen=max_size)
+        self.dropped_count = 0
+        self.total_processed = 0
+        self._initialized = True
+        logger.info(f"SharedFrameBuffer initialized with max_size={max_size}")
 
-        Returns:
-            FrameBuffer: The shared buffer instance
-        """
-        if cls._buffer is None:
-            async with cls._lock:
-                # Double-check pattern to avoid race conditions
-                if cls._buffer is None:
-                    cls._buffer = FrameBuffer()
-        return cls._buffer
-
-    @classmethod
-    def get_instance_sync(cls) -> FrameBuffer:
-        """
-        Synchronous version for compatibility with sync code.
-
-        This method is thread-safe and can be called from synchronous contexts.
-
-        Returns:
-            FrameBuffer: The shared buffer instance
-
-        Raises:
-            RuntimeError: If called within an already running event loop
-        """
-        # Check if we're in an async context
-        try:
-            loop = asyncio.get_running_loop()
-            if loop.is_running():
-                raise RuntimeError(
-                    "Cannot use get_instance_sync in async context. "
-                    "Use await get_instance() instead."
+    async def add_frame(self, frame_data: Dict[str, Any]) -> bool:
+        """Add frame to buffer."""
+        async with self._lock:
+            if len(self.buffer) >= self.max_size:
+                self.dropped_count += 1
+                logger.warning(
+                    f"Buffer full, dropping frame. Total dropped: {self.dropped_count}"
                 )
-        except RuntimeError:
-            # No event loop running, safe to proceed
-            pass
+                return False
 
-        with cls._sync_lock:
-            if cls._buffer is None:
-                cls._buffer = FrameBuffer()
-            return cls._buffer
+            # Add timestamp
+            frame_data["buffered_at"] = datetime.now().isoformat()
+            self.buffer.append(frame_data)
+            self.total_processed += 1
+            return True
 
-    @classmethod
-    def reset(cls) -> None:
-        """
-        Reset the singleton instance.
+    async def get_frame(self) -> Optional[Dict[str, Any]]:
+        """Get oldest frame from buffer."""
+        async with self._lock:
+            if not self.buffer:
+                return None
+            return self.buffer.popleft()
 
-        This is mainly useful for testing to ensure clean state between tests.
-        This method is thread-safe.
-        """
-        with cls._sync_lock:
-            cls._buffer = None
-            cls._instance = None
+    async def get_status(self) -> Dict[str, Any]:
+        """Get buffer status."""
+        async with self._lock:
+            return {
+                "size": len(self.buffer),
+                "max_size": self.max_size,
+                "dropped_count": self.dropped_count,
+                "total_processed": self.total_processed,
+                "is_full": len(self.buffer) >= self.max_size,
+            }
+
+    async def clear(self):
+        """Clear the buffer."""
+        async with self._lock:
+            self.buffer.clear()
+            logger.info("Buffer cleared")
+
+
+# Global shared instance
+shared_buffer = SharedFrameBuffer()

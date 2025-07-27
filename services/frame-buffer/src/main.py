@@ -30,7 +30,6 @@ except ImportError:
 
 # Import consumer
 from consumer import FrameConsumer, create_consumer_from_env
-from frame_buffer import FrameBuffer
 
 # Import health check router
 from health import health_router, update_health_state
@@ -40,7 +39,7 @@ from observability import init_telemetry
 from prometheus_client import Counter, Gauge, Histogram
 
 # Import shared buffer for consistent state
-from shared_buffer import SharedFrameBuffer
+from shared_buffer import shared_buffer
 
 # Regular Redis client - Sentinel disabled for now
 # from redis_sentinel import RedisSentinelClient
@@ -67,14 +66,12 @@ dlq_counter = Counter("frame_buffer_dlq_total", "Frames sent to DLQ", ["reason"]
 redis_client: Optional[redis.Redis] = None
 # Global consumer instance
 frame_consumer: Optional[FrameConsumer] = None
-# Global shared buffer instance
-shared_buffer: Optional[FrameBuffer] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    global redis_client, frame_consumer, shared_buffer
+    global redis_client, frame_consumer
 
     print("🚀 Starting lifespan...")
 
@@ -84,9 +81,8 @@ async def lifespan(app: FastAPI):
     # Update health state
     update_health_state("start_time", time.time())
 
-    # Initialize shared buffer
-    shared_buffer = await SharedFrameBuffer.get_instance()
-    print("✅ Shared buffer initialized")
+    # Shared buffer is already initialized as singleton
+    print("✅ Using shared buffer singleton")
 
     # Connect to Redis (regular connection, not Sentinel)
     try:
@@ -228,19 +224,11 @@ async def enqueue_frame(frame_data: dict):
 @app.get("/frames/dequeue")
 async def dequeue_frame(count: int = 1):
     """Retrieve frames from shared in-memory buffer with trace context extraction."""
-    global shared_buffer
-
     # Validate count parameter
     if count < 1:
         count = 1
     elif count > 100:
         count = 100
-
-    if not shared_buffer:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Shared buffer not initialized",
-        )
 
     with frame_processing_time.labels(operation="dequeue").time():
         try:
@@ -248,12 +236,8 @@ async def dequeue_frame(count: int = 1):
             result_frames = []
 
             for _ in range(count):
-                # Check if buffer has frames (synchronous method)
-                if shared_buffer.is_empty():
-                    break
-
                 # Get frame from buffer
-                frame_data = await shared_buffer.get()
+                frame_data = await shared_buffer.get_frame()
                 if frame_data:
                     # Extract existing trace context or create new one
                     if FRAME_TRACKING_AVAILABLE and "frame_id" in frame_data:
@@ -262,20 +246,23 @@ async def dequeue_frame(count: int = 1):
                             # Extract and continue existing trace
                             with TraceContext.extract_from_carrier(frame_data) as ctx:
                                 ctx.add_event("frame_buffer_dequeue")
-                                ctx.set_attribute("buffer.size", shared_buffer.size())
+                                status = await shared_buffer.get_status()
+                                ctx.set_attribute("buffer.size", status["size"])
                                 ctx.set_attribute("frame.id", frame_data["frame_id"])
                         else:
                             # Create new trace context if none exists
                             with TraceContext.inject(frame_data["frame_id"]) as ctx:
                                 ctx.add_event("frame_buffer_dequeue")
-                                ctx.set_attribute("buffer.size", shared_buffer.size())
+                                status = await shared_buffer.get_status()
+                                ctx.set_attribute("buffer.size", status["size"])
                                 ctx.set_attribute("frame.id", frame_data["frame_id"])
 
                     result_frames.append(frame_data)
                     frame_counter.labels(operation="dequeue", status="success").inc()
 
-            # Update metrics (synchronous method)
-            remaining = shared_buffer.size()
+            # Update metrics
+            status = await shared_buffer.get_status()
+            remaining = status["size"]
             buffer_size_gauge.set(remaining)
 
             return {
@@ -294,16 +281,11 @@ async def dequeue_frame(count: int = 1):
 @app.get("/frames/status")
 async def get_buffer_status():
     """Get current buffer status from shared in-memory buffer."""
-    global shared_buffer
-
     try:
         # Get in-memory buffer status
-        if shared_buffer:
-            buffer_size = shared_buffer.size()
-            buffer_usage = (buffer_size / MAX_BUFFER_SIZE) * 100
-        else:
-            buffer_size = 0
-            buffer_usage = 0
+        status = await shared_buffer.get_status()
+        buffer_size = status["size"]
+        buffer_usage = (buffer_size / MAX_BUFFER_SIZE) * 100
 
         # Also check Redis for comparison
         try:
@@ -314,10 +296,8 @@ async def get_buffer_status():
             redis_queue_size = -1
             dlq_size = -1
 
-        # Get backpressure stats
-        backpressure_stats = {}
-        if shared_buffer:
-            backpressure_stats = shared_buffer.get_backpressure_stats()
+        # Get dropped count from status
+        dropped_count = status.get("dropped_count", 0)
 
         return {
             "connected": True,
@@ -327,7 +307,8 @@ async def get_buffer_status():
                 "max_size": MAX_BUFFER_SIZE,
                 "usage_percent": buffer_usage,
                 "is_full": buffer_size >= MAX_BUFFER_SIZE,
-                "backpressure": backpressure_stats,
+                "dropped_count": dropped_count,
+                "total_processed": status.get("total_processed", 0),
             },
             "redis": {"queue_size": redis_queue_size, "dlq_size": dlq_size},
         }
@@ -338,18 +319,17 @@ async def get_buffer_status():
 @app.get("/buffer/backpressure")
 async def get_backpressure_status():
     """Get detailed backpressure monitoring information."""
-    global shared_buffer
-
-    if not shared_buffer:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Shared buffer not initialized",
-        )
-
     # Get current buffer status
-    current_size = shared_buffer.size()
-    usage_ratio = shared_buffer.usage_ratio()
-    backpressure_stats = shared_buffer.get_backpressure_stats()
+    status = await shared_buffer.get_status()
+    current_size = status["size"]
+    usage_ratio = current_size / MAX_BUFFER_SIZE
+
+    # Simple backpressure stats based on dropped count
+    backpressure_stats = {
+        "backpressure_events": status.get("dropped_count", 0),
+        "last_backpressure_time": None,  # We don't track this in simple implementation
+        "seconds_since_last_backpressure": None,
+    }
 
     # Calculate backpressure severity
     severity = "none"

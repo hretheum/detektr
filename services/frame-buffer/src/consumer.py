@@ -7,7 +7,6 @@ import os
 from typing import Dict, List, Optional, Tuple
 
 import redis.asyncio as aioredis
-from frame_buffer import FrameBuffer
 from frame_tracking import TraceContext
 from metrics import (
     consumer_errors_total,
@@ -15,7 +14,7 @@ from metrics import (
     frames_consumed_total,
     frames_dropped_total,
 )
-from shared_buffer import SharedFrameBuffer
+from shared_buffer import shared_buffer
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ class FrameConsumer:
         stream_key: str = "frames:metadata",
         consumer_group: str = "frame-buffer-group",
         consumer_name: str = "frame-buffer-1",
-        frame_buffer: Optional[FrameBuffer] = None,
+        frame_buffer=None,
         batch_size: int = 10,
         block_ms: int = 1000,
     ):
@@ -56,10 +55,10 @@ class FrameConsumer:
             f"Starting consumer {self.consumer_name} for stream {self.stream_key}"
         )
 
-        # Initialize shared buffer if not provided
+        # Use shared buffer singleton
         if not self.frame_buffer:
-            self.frame_buffer = await SharedFrameBuffer.get_instance()
-            logger.info("✅ Consumer: Shared buffer initialized")
+            self.frame_buffer = shared_buffer
+            logger.info("✅ Consumer: Using shared buffer instance")
 
         # Connect to Redis
         self.redis = aioredis.from_url(
@@ -168,16 +167,8 @@ class FrameConsumer:
                     # Parse frame data
                     frame_data = self._parse_frame_data(data)
 
-                    # Check if buffer is full
-                    if self.frame_buffer.is_full():
-                        logger.warning(
-                            f"Buffer full, dropping frame {frame_data.get('frame_id')}"
-                        )
-                        frames_dropped_total.labels(reason="buffer_full").inc()
-                        continue
-
                     # Add to buffer
-                    put_success = await self.frame_buffer.put(frame_data)
+                    put_success = await self.frame_buffer.add_frame(frame_data)
                     if put_success:
                         frames_consumed_total.inc()
                         frame_id = frame_data.get("frame_id")
@@ -185,8 +176,10 @@ class FrameConsumer:
                     else:
                         frame_id = frame_data.get("frame_id")
                         logger.warning(
-                            f"❌ Consumer: Failed to add frame {frame_id} to buffer"
+                            f"❌ Consumer: Failed to add frame {frame_id} "
+                            f"to buffer (buffer full)"
                         )
+                        frames_dropped_total.labels(reason="buffer_full").inc()
 
                     # Update lag metric
                     if "timestamp" in data:
