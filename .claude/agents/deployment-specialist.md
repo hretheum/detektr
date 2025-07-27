@@ -45,3 +45,17 @@ Korzystaj z:
 - scripts/deploy.sh
 - Makefile commands
 - docs/deployment/
+- **docs/deployment/TROUBLESHOOTING.md** - OBOWIĄZKOWE czytanie przed deploymentem!
+
+## 🚨 **CRITICAL: Zawsze pracuj z /opt/detektor-clean na Nebula**
+- **NIGDY** nie uruchamiaj docker compose z /home/hretheum
+- **ZAWSZE**: `cd /opt/detektor-clean` przed deploymentem
+- **OBOWIĄZKOWO**: używaj `./scripts/deploy.sh` (ma proper --env-file .env)
+- **NIGDY nie pushuj z Nebula** - tylko lokalnie z dev environment
+
+## 🔐 **Environment Variables - KRYTYCZNE LESSONS**
+- **.env.sops** jest w /opt/detektor-clean (encrypted)
+- **deploy.sh automatycznie** robi: `sops -d .env.sops > .env`
+- **ZAWSZE używaj** `--env-file .env` w manual docker compose
+- **Sprawdzaj docker-compose.yml** - czy service ma auth variables!
+- **Common Missing**: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` w postgres service

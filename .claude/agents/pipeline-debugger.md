@@ -47,5 +47,29 @@ docker exec detektor-redis-1 redis-cli XINFO STREAM frames
 
 Zawsze analizuj:
 - PROJECT_CONTEXT.md - sekcja "Krytyczne problemy architekturalne"
+- **docs/deployment/TROUBLESHOOTING.md** - przed każdą diagnozą!
 - Logi wszystkich serwisów w pipeline
+
+## 🚨 **CRITICAL: Sprawdź najpierw deployment location**
+```bash
+# 1. Verify running from RIGHT directory
+pwd  # Should be /opt/detektor-clean (NOT /home/hretheum)
+ls -la .env.sops  # Must exist
+
+# 2. Check for duplicate deployments
+docker ps --format "table {{.Names}}\\t{{.Image}}" | grep -E "(detektr-|production-)"
+# Should see only ONE set of containers!
+
+# 3. Emergency cleanup if duplicates found
+docker ps | grep -v -E "(loki|postgres-exporter|alertmanager|dcgm_exporter)" | awk 'NR>1{print $1}' | xargs -r docker stop
+```
+
+## 🔐 **Environment Variables Debug**
+```bash
+# Check if auth variables are passed to containers
+docker inspect [container] | grep -E "POSTGRES_PASSWORD|DATABASE_URL"
+
+# If empty - check docker-compose.yml service configuration
+grep -A20 "postgres:" docker/environments/production/docker-compose.yml
+```
 - Trace context propagation
