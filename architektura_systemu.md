@@ -1215,10 +1215,78 @@ def detect_objects(frame: Frame, confidence: float = 0.8) -> list[Detection]:
 - Home Assistant: już posiadany
 - Wszystkie usługi self-hosted: $0
 
-## 7. Następne Kroki
+## 7. Self-Learning Agents - Strategiczny Projekt ML Enhancement
+
+### 7.1 Przegląd Projektu
+
+**Status**: 📋 **ROADMAP READY** - Gotowy do implementacji
+**Timeline**: 4-6 miesięcy (sierpień 2025 - styczeń 2026)
+**ROI**: 413% w pierwszym roku
+
+### 7.2 Cel Biznesowy
+
+Transformacja istniejących 8 agentów AI (code-reviewer, deployment-specialist, detektor-coder, etc.) z deterministic rules na ML-enhanced decision making z zachowaniem pełnej backward compatibility.
+
+### 7.3 Kluczowe Fazy
+
+1. **Faza SL-1: ML Infrastructure** (4 tygodnie)
+   - MLflow + MinIO model registry
+   - Feature Store (Feast) z PostgreSQL backend
+   - Security & privacy layer (GDPR compliance)
+   - Advanced monitoring dla ML operations
+
+2. **Faza SL-2: Shadow Learning** (3 tygodnie)
+   - Async CQRS architecture (zero production impact)
+   - Shadow mode dla pierwszego agenta
+   - Circuit breakers i automatic fallback
+   - Data collection pipeline
+
+3. **Faza SL-3: Production Rollout** (6 tygodni)
+   - A/B testing framework
+   - Gradual rollout 5% → 100%
+   - Explainable AI dashboard
+   - Production hardening
+
+4. **Faza SL-4: Multi-Agent Expansion** (8 tygodni)
+   - Wszystkich 8 agentów z ML enhancement
+   - Cross-agent learning patterns
+   - Agent chain optimization
+
+5. **Faza SL-5: Advanced Features** (ongoing)
+   - Transfer learning between projects
+   - Community sharing platform
+
+### 7.4 Integration z Agent Chains
+
+```bash
+# Compatible z existing workflows
+/nakurwiaj faza-sl-1      # Start ML infrastructure
+/nakurwiaj sl-2-blok-1    # Shadow mode implementation
+
+# Enhanced agent usage
+/agent code-reviewer              # Auto ML-enhanced
+/agent code-reviewer --explain    # Show ML reasoning
+/agent code-reviewer --deterministic  # Force old behavior
+```
+
+### 7.5 Kluczowe Metryki Sukcesu
+
+- **Zero Production Impact**: <1ms latency variance podczas shadow mode
+- **Accuracy Improvement**: >20% lepsze task estimation
+- **System Reliability**: 99.9% uptime z automatic rollback <30s
+- **Security**: GDPR compliant z full audit trail
+
+### 7.6 Dokumentacja
+
+**Complete roadmap**: [docs/self-learning-agents/roadmap.md](docs/self-learning-agents/roadmap.md)
+
+**Quick start**: `/nakurwiaj faza-sl-1`
+
+## 8. Następne Kroki
 
 1. **Walidacja wymagań**: Przegląd i doprecyzowanie wymagań
 2. **Proof of Concept**: Prosty pipeline kamera → detekcja → akcja
 3. **Wybór technologii**: Finalna decyzja o stacku technologicznym
 4. **Setup środowiska**: Przygotowanie dev environment na Mac OS
 5. **Rozpoczęcie Fazy 1**: Implementacja fundamentów systemu
+6. **🧠 Self-Learning Agents**: Po ukończeniu Fazy 2, rozpoczęcie ML enhancement agentów
