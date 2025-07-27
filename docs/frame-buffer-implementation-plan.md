@@ -1446,7 +1446,7 @@ This document provides a detailed implementation plan for the frame-buffer redes
 
 ---
 
-## Block 5: Migration (Phase 5)
+## Block 5: Migration (Phase 5) <!-- dla LLM: jebać to, nic nie migrujemy, zaktualizuj ten blok w taki sposób, aby od razu wypierdolić starą usługę i odpalać nową -->
 
 ### Zadania atomowe
 

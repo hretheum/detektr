@@ -258,6 +258,29 @@ ssh nebula "ls -la /home/github-runner/.config/sops/age/keys.txt"
 age-keygen -o keys.txt
 ```
 
+### 4. Environment Variables Mismatch
+```bash
+# Problem: .env has RTSP_URL_MAIN but docker-compose expects RTSP_URL
+# Solution: Override during deployment
+RTSP_URL=$RTSP_URL_MAIN docker compose up -d
+
+# Or run with explicit export
+export RTSP_URL='rtsp://admin:password@camera-ip:554/stream'
+./scripts/deploy.sh production deploy
+```
+
+### 5. Deployment Script Killing Services
+```bash
+# Problem: deploy.sh cleanup_ports() kills all services
+# Solution: Deploy specific services or use docker compose directly
+COMPOSE_PROJECT_NAME=detektr docker compose --env-file .env \
+  -f docker/base/docker-compose.yml \
+  -f docker/base/docker-compose.storage.yml \
+  -f docker/base/docker-compose.observability.yml \
+  -f docker/environments/production/docker-compose.yml \
+  up -d
+```
+
 ## 📚 Dokumentacja Serwisów
 
 ### Podstawowe serwisy

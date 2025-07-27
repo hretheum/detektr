@@ -10,6 +10,7 @@ import redis.asyncio as aioredis
 
 from src.models import FrameReadyEvent
 from src.orchestrator.processor_registry import ProcessorInfo, ProcessorRegistry
+from src.orchestrator.trace_context import TraceContext, create_trace_span
 
 logger = logging.getLogger(__name__)
 
@@ -126,28 +127,54 @@ class FrameDistributor:
 
     async def distribute_frame(self, frame: FrameReadyEvent) -> bool:
         """Distribute a frame to appropriate processor."""
+        # Extract or create trace context
+        trace_ctx = None
+        if frame.trace_context:
+            trace_ctx = TraceContext.from_dict(frame.trace_context)
+
         try:
-            processor = await self.select_processor(frame)
-            if not processor:
-                logger.warning(
-                    f"No processor available for frame {frame.frame_id} "
-                    f"with capability {frame.metadata.get('detection_type')}"
+            # Create span for distribution
+            if trace_ctx:
+                async with create_trace_span("frame_distribution", trace_ctx) as span:
+                    span.add_attribute("frame.id", frame.frame_id)
+                    span.add_attribute("camera.id", frame.camera_id)
+
+                    processor = await self.select_processor(frame)
+                    if not processor:
+                        logger.warning(
+                            f"No processor available for frame {frame.frame_id} "
+                            f"with capability {frame.metadata.get('detection_type')}"
+                        )
+                        span.add_attribute("processor.found", False)
+                        return False
+
+                    span.add_attribute("processor.id", processor.id)
+                    span.add_attribute("processor.queue", processor.queue)
+
+                    msg_id = await self.dispatch_to_processor(processor, frame)
+                    span.add_attribute("message.id", msg_id)
+
+                    logger.debug(
+                        f"Dispatched frame {frame.frame_id} to processor {processor.id} "
+                        f"(queue: {processor.queue}, msg_id: {msg_id})"
+                    )
+                    return True
+            else:
+                # No trace context - proceed without tracing
+                processor = await self.select_processor(frame)
+                if not processor:
+                    logger.warning(
+                        f"No processor available for frame {frame.frame_id} "
+                        f"with capability {frame.metadata.get('detection_type')}"
+                    )
+                    return False
+
+                msg_id = await self.dispatch_to_processor(processor, frame)
+                logger.debug(
+                    f"Dispatched frame {frame.frame_id} to processor {processor.id} "
+                    f"(queue: {processor.queue}, msg_id: {msg_id})"
                 )
-                return False
-
-            msg_id = await self.dispatch_to_processor(processor, frame)
-            logger.debug(
-                f"Dispatched frame {frame.frame_id} to processor {processor.id} "
-                f"(queue: {processor.queue}, msg_id: {msg_id})"
-            )
-
-            # TODO: Update metrics when metrics system is implemented
-            # self.metrics.frames_distributed.inc(
-            #     processor_id=processor.id,
-            #     camera_id=frame.camera_id
-            # )
-
-            return True
+                return True
 
         except Exception as e:
             logger.error(
