@@ -75,8 +75,8 @@ jobs:
               - 'docker-compose.rtsp.yml'
             frame-events:
               - 'services/frame-events/**'
-            frame-buffer:
-              - 'services/frame-buffer/**'
+            frame-buffer-v2-v2:
+              - 'services/frame-buffer-v2-v2/**'
             telegram-alerts:
               - 'services/telegram-alerts/**'
             metadata-storage:
@@ -116,7 +116,7 @@ jobs:
             services=(
               "rtsp-capture"
               "frame-events"
-              "frame-buffer"
+              "frame-buffer-v2-v2"
               "telegram-alerts"
               "metadata-storage"
               "example-otel"
@@ -144,7 +144,7 @@ jobs:
               echo "Changed files: $changed_files"
 
               # Check each service path
-              for service in rtsp-capture frame-events frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
+              for service in rtsp-capture frame-events frame-buffer-v2 telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
                 service_path="services/$service"
                 if [[ "$service" == "sample-processor" ]]; then
                   service_path="examples/sample-processor"
@@ -162,7 +162,7 @@ jobs:
 
             if [[ "$changes" != "{}" && "$changes" != "null" && "$changes" != "[]" ]]; then
               # Parse JSON and extract service names that changed
-              for service in rtsp-capture frame-events frame-buffer telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
+              for service in rtsp-capture frame-events frame-buffer-v2 telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
                 # Check from path-filter output directly
                 service_key=$(echo "$service" | tr '-' '_')
                 # Use direct check for each service
@@ -171,7 +171,7 @@ jobs:
                   "sample-processor") service_changed="${{ steps.changes.outputs.sample-processor }}" ;;
                   "rtsp-capture") service_changed="${{ steps.changes.outputs.rtsp-capture }}" ;;
                   "frame-events") service_changed="${{ steps.changes.outputs.frame-events }}" ;;
-                  "frame-buffer") service_changed="${{ steps.changes.outputs.frame-buffer }}" ;;
+                  "frame-buffer-v2-v2") service_changed="${{ steps.changes.outputs.frame-buffer-v2 }}" ;;
                   "telegram-alerts") service_changed="${{ steps.changes.outputs.telegram-alerts }}" ;;
                   "metadata-storage") service_changed="${{ steps.changes.outputs.metadata-storage }}" ;;
                   "example-otel") service_changed="${{ steps.changes.outputs.example-otel }}" ;;
