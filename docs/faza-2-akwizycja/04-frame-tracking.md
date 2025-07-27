@@ -281,6 +281,148 @@ Implementować kompleksowy system śledzenia każdej klatki przez cały pipeline
 
 **STATUS (2025-01-27)**: Blok 4 technicznie ukończony (biblioteka zintegrowana) ale funkcjonalnie niepełny z powodu braku kompletnego pipeline. Frame-buffer jest "ślepą uliczką" - konsumuje ale nikt nie konsumuje z niego.
 
+### Blok 4.1: Naprawa Frame Buffer Dead-End 🚨
+
+> **KRYTYCZNY PROBLEM**: Frame Buffer jest "ślepą uliczką" - konsumuje klatki ale procesory nie pobierają z jego API.
+
+#### Zadania atomowe
+
+1. **[ ] Analiza i dokumentacja problemu architektonicznego**
+   - **Metryka**: Zidentyfikowane wszystkie punkty braku integracji
+   - **Walidacja**:
+     ```bash
+     # Sprawdź stan bufora vs rzeczywiste klatki
+     ssh nebula "curl -s http://localhost:8002/health | jq '.checks.buffer'"
+     # Shows: size=0 mimo że consumer działa
+
+     # Sprawdź logi frame loss
+     ssh nebula "docker logs detektr-frame-buffer-1 --tail 100 | grep -c 'Buffer full'"
+     # >1000 dropped frames
+
+     # Sprawdź czy procesory pobierają
+     ssh nebula "docker logs detektr-sample-processor-1 --tail 100 | grep -c 'GET /frames/dequeue'"
+     # Should be >0, but is 0
+     ```
+   - **Quality Gate**: Problem w pełni udokumentowany
+   - **Czas**: 0.5h
+
+2. **[ ] Implementacja SharedFrameBuffer (Quick Fix)**
+   - **Metryka**: Consumer i API używają tego samego bufora w pamięci
+   - **Implementacja**:
+     ```python
+     # services/frame-buffer/src/shared_buffer.py
+     class SharedFrameBuffer:
+         _instance = None
+         _buffer = None
+
+         @classmethod
+         def get_instance(cls):
+             if cls._instance is None:
+                 cls._instance = cls()
+                 cls._buffer = FrameBuffer()
+             return cls._buffer
+     ```
+   - **Walidacja**:
+     ```bash
+     # Po deploymencie sprawdź
+     curl -X POST http://nebula:8002/test-frame -d '{"frame_id": "test-shared"}'
+     curl http://nebula:8002/frames/status
+     # buffer.size > 0 jeśli działa
+     ```
+   - **Quality Gate**: API i consumer współdzielą stan
+   - **Czas**: 1h
+
+3. **[ ] Naprawienie API endpoint /frames/dequeue**
+   - **Metryka**: Endpoint pobiera z bufora w pamięci, nie z Redis
+   - **Implementacja zmian**:
+     ```python
+     @app.get("/frames/dequeue")
+     async def dequeue_frame(count: int = 1):
+         # Użyj shared buffer zamiast Redis
+         buffer = SharedFrameBuffer.get_instance()
+         frames = await buffer.get_batch(count)
+
+         # Propaguj trace context
+         for frame in frames:
+             with TraceContext.inject(frame["frame_id"]) as ctx:
+                 ctx.add_event("frame_dequeued")
+
+         return {"frames": frames, "remaining": buffer.size()}
+     ```
+   - **Walidacja**:
+     ```bash
+     # Test dequeue
+     curl http://nebula:8002/frames/dequeue?count=5
+     # Should return frames from memory buffer
+     ```
+   - **Quality Gate**: Procesory mogą pobierać klatki
+   - **Czas**: 1h
+
+4. **[ ] Konfiguracja sample-processor do pobierania z frame-buffer**
+   - **Metryka**: Sample-processor aktywnie konsumuje z frame-buffer API
+   - **Implementacja**:
+     ```python
+     # W sample-processor main.py
+     async def consume_frames():
+         while True:
+             response = await http_client.get(
+                 f"{FRAME_BUFFER_URL}/frames/dequeue?count=10"
+             )
+             frames = response.json()["frames"]
+             for frame in frames:
+                 await process_frame(frame)
+             await asyncio.sleep(0.1)  # Rate limiting
+     ```
+   - **Walidacja**:
+     ```bash
+     # Sprawdź integrację
+     ssh nebula "docker logs detektr-sample-processor-1 --tail 50 | grep 'dequeue'"
+     # Powinny być requesty co 100ms
+
+     # Sprawdź metryki
+     curl http://nebula:8099/metrics | grep frames_processed_total
+     ```
+   - **Quality Gate**: End-to-end flow działa
+   - **Czas**: 1.5h
+
+5. **[ ] Implementacja backpressure i monitoring**
+   - **Metryka**: System gracefully degraduje przy przeciążeniu
+   - **Implementacja**:
+     - Circuit breaker gdy buffer >80%
+     - Adaptive rate limiting
+     - Prometheus metrics dla queue depth
+   - **Walidacja**:
+     ```bash
+     # Test backpressure
+     for i in {1..2000}; do
+       curl -X POST http://nebula:8080/capture -d '{"simulate": true}'
+     done
+
+     # Sprawdź metryki
+     curl http://nebula:8002/metrics | grep 'buffer_utilization|frames_dropped'
+     ```
+   - **Quality Gate**: <1% frame loss pod obciążeniem
+   - **Czas**: 2h
+
+#### Metryki sukcesu bloku 4.1
+
+- **Frame loss**: 0% (obecnie 100% po zapełnieniu bufora)
+- **E2E latency**: <100ms (obecnie brak przepływu)
+- **Buffer utilization**: 20-80% (obecnie 0% lub 100%)
+- **Trace completeness**: 100% przez cały pipeline
+
+#### Rollback plan
+
+1. **Jeśli shared buffer nie działa**:
+   - Przywróć poprzednią wersję frame-buffer
+   - Procesory konsumują bezpośrednio z Redis Stream
+   - Frame-buffer staje się optional cache
+
+2. **Jeśli performance degraduje**:
+   - Zwiększ batch size
+   - Dodaj więcej workerów
+   - Skaluj horyzontalnie
+
 ### Blok 5: WALIDACJA BIBLIOTEKI W SERWISACH 🔄
 
 > **📚 ZMIANA**: Ponieważ frame-tracking to biblioteka, nie ma własnego deploymentu. Zamiast tego walidujemy jej użycie w innych serwisach.
