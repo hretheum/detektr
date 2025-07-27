@@ -1,5 +1,5 @@
 # Build stage
-FROM python:3.11-slim as builder
+FROM python:3.13-slim as builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir /tmp/frame-tracking
 
 # Runtime stage
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
