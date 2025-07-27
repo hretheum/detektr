@@ -894,11 +894,13 @@ Kluczowe zasady:
 3. SOLID principles w każdym komponencie
 4. Event Sourcing dla frame tracking
 5. Observability wbudowana od początku (nie jako afterthought)
+6. CODE REVIEW OBOWIĄZKOWY - po każdym zadaniu atomowym uruchom `/agent code-reviewer`
 
 Przy implementacji nowego serwisu:
 - Użyj BaseService template (sekcja 1.4)
 - Struktura katalogów jak w sekcji 4.2
 - Testy na 3 poziomach (unit, integration, e2e)
+- Code review po każdej implementacji
 -->
 
 ### 4.1 Test-Driven Development (TDD)

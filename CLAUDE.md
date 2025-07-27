@@ -39,6 +39,11 @@ Developer → GitHub (detektr) → GitHub Actions → ghcr.io/hretheum/detektr �
    - **Always use**: `git push origin main` (CI/CD)
    - **Never use**: Manual deployment (deprecated)
 
+4. **CODE REVIEW REQUIREMENT** ⚡
+   - **OBOWIĄZKOWE**: Po każdym zadaniu atomowym uruchom `/agent code-reviewer`
+   - **Przed commitem**: Zawsze przeprowadź code review
+   - **W blokach zadań**: Po ukończeniu każdego zadania atomowego
+
 ### **For New Service Development**
 ```bash
 # 1. Copy template

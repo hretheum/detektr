@@ -53,6 +53,7 @@ Dekomponując ten blok:
    - Być wykonalne przez jedną osobę bez przerw
    - Mieć jasne kryterium "done"
    - NIE wymagać czekania na zewnętrzne zależności
+   - Po ukończeniu ZAWSZE wymagać code review przez `/agent code-reviewer`
    -->
    - **Metryka**: [Konkretna liczba/procent/stan - np. "Response time <100ms w 95% przypadków"]
    - **Walidacja**:
@@ -61,6 +62,7 @@ Dekomponując ten blok:
      # który JEDNOZNACZNIE potwierdzi osiągnięcie metryki
      [komenda która zwraca measureable output]
      ```
+   - **Code Review**: `/agent code-reviewer` (OBOWIĄZKOWE po implementacji)
    - **Czas**: [MAX 3h, realistically estimated]
 
 2. **[ ] [Nazwa zadania atomowego]**
@@ -178,6 +180,7 @@ Po ukończeniu tego zadania, przejdź do:
 3. **Reguła mierzalności**: Każda metryka musi mieć komendę do weryfikacji
 4. **Reguła kompletności**: Suma zadań atomowych = 100% zakresu bloku
 5. **Reguła wykonalności**: Zadanie może wykonać jedna osoba bez przerw
+6. **Reguła CODE REVIEW**: Po KAŻDYM zadaniu atomowym obowiązkowy `/agent code-reviewer`
 
 ### Struktura dekompozycji
 

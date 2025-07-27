@@ -61,7 +61,8 @@ Wczytaj go na początku każdej nowej sesji/konwersacji.
 2. **Wybierz zadanie**: Znajdź [ ] checkbox (nieukończone)
 3. **Otwórz dekompozycję**: Kliknij link "Szczegóły →"
 4. **Wykonaj**: Użyj `/nakurwiaj <numer_bloku>`
-5. **Waliduj**: Po każdym bloku - testy, metryki, git commit
+5. **Code Review**: Po KAŻDYM zadaniu atomowym uruchom `/agent code-reviewer`
+6. **Waliduj**: Po każdym bloku - testy, metryki, git commit
 
 ### CI/CD Flow (OBOWIĄZKOWY od Fazy 1)
 1. **Build**: Obrazy Docker budowane w GitHub Actions
@@ -85,6 +86,7 @@ git push origin main  # → Automatyczny build i deploy
 - **CI/CD first** - build w GitHub Actions, deploy z registry
 - **Clean Architecture** - separacja warstw
 - **Zadania atomowe** - max 3h na zadanie
+- **Code Review OBOWIĄZKOWY** - po każdym zadaniu atomowym `/agent code-reviewer`
 - **No hardcoded secrets** - wszystko przez SOPS
 
 ## Bounded Contexts
