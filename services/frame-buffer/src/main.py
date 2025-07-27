@@ -39,11 +39,12 @@ from health import health_router, update_health_state
 from observability import init_telemetry
 from prometheus_client import Counter, Gauge, Histogram
 
-# Import Redis Sentinel client
-from redis_sentinel import RedisSentinelClient
-
 # Import shared buffer for consistent state
 from shared_buffer import SharedFrameBuffer
+
+# Regular Redis client - Sentinel disabled for now
+# from redis_sentinel import RedisSentinelClient
+
 
 # Configuration
 FRAME_QUEUE_NAME = os.getenv("FRAME_QUEUE_NAME", "frame_queue")
@@ -62,8 +63,8 @@ frame_processing_time = Histogram(
 )
 dlq_counter = Counter("frame_buffer_dlq_total", "Frames sent to DLQ", ["reason"])
 
-# Global Redis client with Sentinel support
-redis_sentinel: Optional[RedisSentinelClient] = None
+# Global Redis client (regular, not Sentinel)
+redis_client: Optional[redis.Redis] = None
 # Global consumer instance
 frame_consumer: Optional[FrameConsumer] = None
 # Global shared buffer instance
@@ -73,7 +74,7 @@ shared_buffer: Optional[FrameBuffer] = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    global redis_sentinel, frame_consumer, shared_buffer
+    global redis_client, frame_consumer, shared_buffer
 
     # Initialize telemetry
     init_telemetry(SERVICE_NAME)
@@ -85,12 +86,22 @@ async def lifespan(app: FastAPI):
     shared_buffer = await SharedFrameBuffer.get_instance()
     print("✅ Shared buffer initialized")
 
-    # Connect to Redis via Sentinel
+    # Connect to Redis (regular connection, not Sentinel)
     try:
-        redis_sentinel = RedisSentinelClient()
-        await redis_sentinel.connect()
+        redis_host = os.getenv("REDIS_HOST", "redis")
+        redis_port = int(os.getenv("REDIS_PORT", "6379"))
+        redis_db = int(os.getenv("REDIS_DB", "0"))
+
+        redis_client = redis.from_url(
+            f"redis://{redis_host}:{redis_port}/{redis_db}",
+            encoding="utf-8",
+            decode_responses=True,
+        )
+
+        # Test connection
+        await redis_client.ping()
         update_health_state("redis_connected", True)
-        print("✅ Connected to Redis via Sentinel HA setup")
+        print(f"✅ Connected to Redis at {redis_host}:{redis_port}")
     except Exception as e:
         print(f"❌ Failed to connect to Redis: {e}")
         update_health_state("redis_connected", False)
@@ -112,8 +123,8 @@ async def lifespan(app: FastAPI):
         await frame_consumer.stop()
         print("Frame consumer stopped")
 
-    if redis_sentinel:
-        await redis_sentinel.close()
+    if redis_client:
+        await redis_client.close()
 
 
 # Create FastAPI app
@@ -129,15 +140,17 @@ app.include_router(health_router)
 
 
 async def get_redis_client() -> redis.Redis:
-    """Get Redis client with HA support."""
-    if not redis_sentinel:
+    """Get Redis client."""
+    if not redis_client:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Redis Sentinel not initialized",
+            detail="Redis client not initialized",
         )
 
     try:
-        return await redis_sentinel.get_client()
+        # Verify connection is still alive
+        await redis_client.ping()
+        return redis_client
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
