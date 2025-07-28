@@ -13,10 +13,10 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 )
 
-from services.shared.processor_client import ProcessorClient
+from services.shared.processor_client import ProcessorClient  # noqa: E402
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s v1.1: %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -110,13 +110,13 @@ class SampleProcessor(ProcessorClient):
         if self.frames_processed % 100 == 0:
             logger.info(
                 f"Processed {self.frames_processed} frames, "
-                f"average time: {(time.time() - self.start_time) / self.frames_processed:.3f}s"
+                f"avg: {(time.time() - self.start_time) / self.frames_processed:.3f}s"
             )
 
         return processing_result
 
     async def on_start(self):
-        """Called when processor starts."""
+        """Handle processor startup."""
         logger.info(f"Sample processor {self.processor_id} started")
         logger.info(f"Orchestrator URL: {self.orchestrator_url}")
         logger.info(f"Redis: {self.redis_host}:{self.redis_port}")
@@ -124,7 +124,7 @@ class SampleProcessor(ProcessorClient):
         logger.info(f"Result stream: {self.result_stream}")
 
     async def on_stop(self):
-        """Called when processor stops."""
+        """Handle processor shutdown."""
         runtime = time.time() - self.start_time
         logger.info(
             f"Sample processor {self.processor_id} stopped. "
@@ -134,7 +134,7 @@ class SampleProcessor(ProcessorClient):
 
 
 async def main():
-    """Main entry point for sample processor."""
+    """Run the sample processor."""
     # Get configuration from environment
     processor_id = os.getenv("PROCESSOR_ID", "sample-processor-1")
     orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://frame-buffer-v2:8002")
