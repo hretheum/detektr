@@ -10,7 +10,7 @@ on:
         options:
           - rtsp-capture
           - frame-events
-          - frame-buffer
+          - frame-buffer-v2
           - telegram-alerts
           - metadata-storage
           - example-otel
