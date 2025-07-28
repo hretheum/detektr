@@ -231,7 +231,10 @@ async def capture_loop_with_publish(capture: RTSPCapture):
                     # Add frame location info for downstream processors
                     redis_metadata["frame_buffer_key"] = f"frame:{frame_id}"
                     redis_metadata["capture_timestamp"] = timestamp
-
+                    # Add detection_type for Frame Buffer v2 routing
+                    redis_metadata["detection_type"] = os.getenv(
+                        "DETECTION_TYPE", "object_detection"
+                    )
                     # Publish to Redis queue with trace propagation
                     try:
                         if redis_queue:
