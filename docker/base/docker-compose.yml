@@ -32,13 +32,13 @@ services:
     depends_on:
       - redis
 
-  frame-buffer:
-    image: ghcr.io/hretheum/detektr/frame-buffer:${IMAGE_TAG:-latest}
+  frame-buffer-v2-v2:
+    image: ghcr.io/hretheum/detektr/frame-buffer-v2-v2:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
       - "8002:8002"
     environment:
-      SERVICE_NAME: frame-buffer
+      SERVICE_NAME: frame-buffer-v2-v2
       PORT: 8002
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
@@ -146,7 +146,7 @@ services:
       BATCH_SIZE: ${BATCH_SIZE:-4}
       PROCESSING_DELAY_MS: ${PROCESSING_DELAY_MS:-50}
       ENABLE_FRAME_CONSUMER: "true"
-      FRAME_BUFFER_URL: ${FRAME_BUFFER_URL:-http://frame-buffer:8002}
+      FRAME_BUFFER_URL: ${FRAME_BUFFER_URL:-http://frame-buffer-v2:8002}
       CONSUMER_BATCH_SIZE: ${CONSUMER_BATCH_SIZE:-10}
       POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-100}
       MAX_RETRIES: ${MAX_RETRIES:-3}
@@ -161,7 +161,7 @@ services:
       start_period: 40s
     depends_on:
       - jaeger
-      - frame-buffer
+      - frame-buffer-v2
 
   example-otel:
     image: ghcr.io/hretheum/detektr/example-otel:${IMAGE_TAG:-latest}
