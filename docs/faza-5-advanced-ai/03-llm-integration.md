@@ -58,7 +58,61 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
 
 #### Zadania atomowe
 
-1. **[ ] Projektowanie prompt engineering**
+1. **[ ] Integration z ProcessorClient dla voice transcripts**
+   - **Metryka**: LLM intent processor konsumuje z voice:transcribed stream
+   - **Walidacja**:
+
+     ```python
+     # services/llm-intent/src/main.py
+     from services.frame_buffer_v2.src.processors.client import ProcessorClient
+
+     class LLMIntentProcessor(ProcessorClient):
+         def __init__(self):
+             super().__init__(
+                 processor_id="llm-intent-1",
+                 capabilities=["intent_recognition", "natural_language"],
+                 orchestrator_url=os.getenv("ORCHESTRATOR_URL"),
+                 capacity=50,  # LLM calls can handle many requests
+                 result_stream="intents:recognized"
+             )
+             self.llm_client = self._init_llm_client()
+             self.intent_cache = Redis()
+
+         async def process_frame(self, frame_data: Dict[bytes, bytes]) -> Dict:
+             # Process transcribed voice input
+             if b"transcript" not in frame_data:
+                 return None
+
+             transcript = frame_data[b"transcript"].decode()
+
+             # Check cache first
+             cached = await self.intent_cache.get(transcript)
+             if cached:
+                 return json.loads(cached)
+
+             # Call LLM for intent recognition
+             intent = await self.recognize_intent(transcript)
+
+             # Cache result
+             await self.intent_cache.setex(
+                 transcript,
+                 300,  # 5 min TTL
+                 json.dumps(intent)
+             )
+
+             return {
+                 "frame_id": frame_data[b"frame_id"].decode(),
+                 "transcript": transcript,
+                 "intent": intent["action"],
+                 "entities": intent["entities"],
+                 "confidence": intent["confidence"],
+                 "processor_id": self.processor_id
+             }
+     ```
+
+   - **Czas**: 2h
+
+2. **[ ] Projektowanie prompt engineering**
    - **Metryka**: Prompt <500 tokens, clear instructions
    - **Walidacja**: Test na 50 przykładach, >95% accuracy
    - **Czas**: 4h
@@ -92,6 +146,7 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
 - Natural language → correct action
 - Context aware responses
 - Graceful degradation
+- Integrated with voice processing pipeline via ProcessorClient
 
 ### Blok 3: Cost monitoring i optimization
 
@@ -234,7 +289,10 @@ Zintegrować zewnętrzne LLM (OpenAI/Anthropic) do rozpoznawania intencji użytk
   - Voice processing (Whisper STT)
   - Message queue for requests
   - HA Bridge for action execution
+  - Frame-buffer-v2 z ProcessorClient pattern
+  - Result stream voice:transcribed z voice-processing
 - **Blokuje**: Full voice control functionality
+- **Integracja**: Konsumuje transkrypcje z voice-processing poprzez ProcessorClient - zobacz [Processor Client Migration Guide](../processor-client-migration-guide.md)
 
 ## Ryzyka i mitigacje
 

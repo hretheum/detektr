@@ -149,7 +149,50 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
 
 #### Zadania atomowe
 
-1. **[ ] Event matching and filtering**
+1. **[ ] Integration z ProcessorClient dla event-driven triggers**
+   - **Metryka**: Automation engine konsumuje z result streams jako ProcessorClient
+   - **Walidacja**:
+
+     ```python
+     # services/automation-engine/src/main.py
+     from services.frame_buffer_v2.src.processors.client import ProcessorClient
+
+     class AutomationProcessor(ProcessorClient):
+         def __init__(self):
+             super().__init__(
+                 processor_id="automation-engine-1",
+                 capabilities=["rule_execution", "event_processing"],
+                 orchestrator_url=os.getenv("ORCHESTRATOR_URL"),
+                 capacity=100,  # High capacity for event processing
+                 result_stream="automation:executed"
+             )
+             self.rule_engine = RuleEngine()
+
+         async def process_frame(self, frame_data: Dict[bytes, bytes]) -> Dict:
+             # Extract event from detection results
+             event = self.extract_event(frame_data)
+
+             # Match against rules
+             matched_rules = self.rule_engine.match_event(event)
+
+             # Execute matched rules
+             execution_results = []
+             for rule in matched_rules:
+                 if await self.evaluate_conditions(rule, event):
+                     result = await self.execute_actions(rule, event)
+                     execution_results.append(result)
+
+             return {
+                 "event": event,
+                 "matched_rules": len(matched_rules),
+                 "executed_rules": len(execution_results),
+                 "results": execution_results
+             }
+     ```
+
+   - **Czas**: 2h
+
+2. **[ ] Event matching and filtering**
    - **Metryka**: Wydajne dopasowanie eventów do triggerów
    - **Walidacja**:
 
@@ -256,6 +299,7 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
 - Szybkie dopasowanie eventów (<0.1ms per event)
 - Złożone warunki z pełną logiką boolowską
 - Niezawodne wykonanie akcji z retry
+- Konsumuje detection results z AI services poprzez ProcessorClient
 
 ### Blok 3: Monitoring and debugging
 
@@ -358,10 +402,13 @@ Zaimplementować elastyczny silnik reguł umożliwiający tworzenie złożonych 
   - PostgreSQL database
   - Redis cache
   - MQTT broker for actions
+  - Frame-buffer-v2 z ProcessorClient pattern
+  - Result streams z AI services (detection events)
 - **Blokuje**:
   - Advanced automations
   - Scene management
   - Scheduled tasks
+- **Integracja**: Konsumuje eventy z procesorów AI - zobacz [Processor Client Migration Guide](../processor-client-migration-guide.md)
 
 ## Ryzyka i mitigacje
 

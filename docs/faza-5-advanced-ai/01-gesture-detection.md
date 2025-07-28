@@ -87,7 +87,53 @@ Implementować detekcję gestów przy użyciu MediaPipe z wysoką dokładności�
 
 #### Zadania atomowe
 
-1. **[ ] API endpoints z validation**
+1. **[ ] Integration z ProcessorClient pattern**
+   - **Metryka**: Gesture detection jako ProcessorClient w systemie
+   - **Walidacja**:
+
+     ```python
+     # services/gesture-detection/src/main.py
+     from services.frame_buffer_v2.src.processors.client import ProcessorClient
+
+     class GestureDetectionProcessor(ProcessorClient):
+         def __init__(self):
+             super().__init__(
+                 processor_id="gesture-detection-1",
+                 capabilities=["gesture_detection", "hand_tracking"],
+                 orchestrator_url=os.getenv("ORCHESTRATOR_URL"),
+                 capacity=5,  # Complex processing, lower capacity
+                 result_stream="gestures:detected"
+             )
+             self.hand_tracker = HandTracker()
+             self.gesture_classifier = None
+
+         async def start(self):
+             # Load gesture classifier before starting
+             self.gesture_classifier = await self.load_model()
+             await super().start()
+
+         async def process_frame(self, frame_data: Dict[bytes, bytes]) -> Dict:
+             # Extract and process frame
+             frame_id = frame_data[b"frame_id"].decode()
+             image_data = base64.b64decode(frame_data[b"image_data"])
+
+             # Detect hands and gestures
+             landmarks = await self.hand_tracker.process_frame(image_data)
+             if landmarks:
+                 gesture = await self.gesture_classifier.predict(landmarks)
+                 return {
+                     "frame_id": frame_id,
+                     "gesture": gesture["type"],
+                     "confidence": gesture["confidence"],
+                     "hand": gesture["hand"],
+                     "processor_id": self.processor_id
+                 }
+             return None
+     ```
+
+   - **Czas**: 2h
+
+2. **[ ] API endpoints z validation**
    - **Metryka**: REST API for gesture detection
    - **Walidacja**:
 
@@ -129,6 +175,7 @@ Implementować detekcję gestów przy użyciu MediaPipe z wysoką dokładności�
 - API functional
 - Robust detection
 - Multi-hand capable
+- Integrated with ProcessorClient pattern
 
 ### Blok 3: Monitoring and optimization
 
@@ -191,7 +238,10 @@ Implementować detekcję gestów przy użyciu MediaPipe z wysoką dokładności�
 - **Wymaga**:
   - GPU available
   - Training dataset
+  - Frame-buffer-v2 z ProcessorClient pattern
+  - Redis dla work queues
 - **Blokuje**: Gesture-based automations
+- **Integracja**: Używa ProcessorClient - zobacz [Processor Client Migration Guide](../processor-client-migration-guide.md)
 
 ## Ryzyka i mitigacje
 

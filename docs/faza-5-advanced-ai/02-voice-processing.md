@@ -134,7 +134,62 @@ Wdrożyć Whisper do rozpoznawania mowy w języku polskim z niskim WER (<10%) i 
 
 #### Zadania atomowe
 
-1. **[ ] Voice activity detection**
+1. **[ ] Integration z ProcessorClient dla audio streams**
+   - **Metryka**: Voice processor jako ProcessorClient konsumuje audio frames
+   - **Walidacja**:
+
+     ```python
+     # services/voice-processing/src/main.py
+     from services.frame_buffer_v2.src.processors.client import ProcessorClient
+
+     class VoiceProcessor(ProcessorClient):
+         def __init__(self):
+             super().__init__(
+                 processor_id="voice-processing-1",
+                 capabilities=["speech_to_text", "whisper", "polish"],
+                 orchestrator_url=os.getenv("ORCHESTRATOR_URL"),
+                 capacity=3,  # Audio processing is intensive
+                 result_stream="voice:transcribed"
+             )
+             self.whisper_model = None
+             self.vad = VoiceActivityDetector()
+
+         async def start(self):
+             # Load Whisper model before starting
+             model_size = os.getenv("WHISPER_MODEL_SIZE", "medium")
+             self.whisper_model = whisper.load_model(model_size)
+             await super().start()
+
+         async def process_frame(self, frame_data: Dict[bytes, bytes]) -> Dict:
+             # Extract audio data
+             if b"audio_data" not in frame_data:
+                 return None
+
+             audio_data = frame_data[b"audio_data"]
+
+             # Voice activity detection
+             if not self.vad.contains_speech(audio_data):
+                 return None
+
+             # Transcribe with Whisper
+             result = self.whisper_model.transcribe(
+                 audio_data,
+                 language="pl",
+                 task="transcribe"
+             )
+
+             return {
+                 "frame_id": frame_data[b"frame_id"].decode(),
+                 "transcript": result["text"],
+                 "language": "pl",
+                 "confidence": result.get("confidence", 0.0),
+                 "processor_id": self.processor_id
+             }
+     ```
+
+   - **Czas**: 2h
+
+2. **[ ] Voice activity detection**
    - **Metryka**: Detect speech segments
    - **Walidacja**:
 
@@ -165,6 +220,7 @@ Wdrożyć Whisper do rozpoznawania mowy w języku polskim z niskim WER (<10%) i 
 - VAD working
 - Metrics tracked
 - Dashboard ready
+- Integrated with ProcessorClient pattern
 
 ## Całościowe metryki sukcesu zadania
 
@@ -190,9 +246,12 @@ Wdrożyć Whisper do rozpoznawania mowy w języku polskim z niskim WER (<10%) i 
 ## Zależności
 
 - **Wymaga**:
-  - GPU with 4GB+ VRAM
+  - GPU with 4GB+ VRAM (for medium/large models)
   - Audio input available
+  - Frame-buffer-v2 z ProcessorClient pattern
+  - Redis dla work queues
 - **Blokuje**: Voice commands
+- **Integracja**: Używa ProcessorClient dla audio frames - zobacz [Processor Client Migration Guide](../processor-client-migration-guide.md)
 
 ## Ryzyka i mitigacje
 

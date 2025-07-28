@@ -129,14 +129,30 @@ Wdrożyć wysokowydajny serwis detekcji obiektów oparty na YOLO v8 z pełnym mo
 
 #### Zadania atomowe
 
-1. **[ ] Queue consumer z batching**
-   - **Metryka**: Process frames in batches of 8
+1. **[ ] ProcessorClient integration z batching**
+   - **Metryka**: Process frames in batches of 8 using ProcessorClient
    - **Walidacja**:
 
-     ```bash
-     # Monitor batch sizes
-     redis-cli XINFO STREAM detection_queue
-     # Batches of 8 being processed
+     ```python
+     # services/object-detection/src/main.py
+     from services.frame_buffer_v2.src.processors.client import ProcessorClient
+
+     class ObjectDetectionProcessor(ProcessorClient):
+         def __init__(self):
+             super().__init__(
+                 processor_id="object-detection-1",
+                 capabilities=["object_detection", "yolo_v8"],
+                 orchestrator_url=os.getenv("ORCHESTRATOR_URL"),
+                 capacity=8,  # Batch size
+                 result_stream="objects:detected"
+             )
+             self.batch = []
+
+         async def process_frame(self, frame_data: Dict[bytes, bytes]) -> Dict:
+             # Batch processing logic for YOLO
+             self.batch.append(frame_data)
+             if len(self.batch) >= 8:
+                 return await self.process_batch()
      ```
 
    - **Czas**: 2h
@@ -183,8 +199,10 @@ Wdrożyć wysokowydajny serwis detekcji obiektów oparty na YOLO v8 z pełnym mo
 
 - **Wymaga**:
   - NVIDIA GPU access
-  - Frame queue running
+  - Frame-buffer-v2 z ProcessorClient pattern
+  - Redis dla work queues
 - **Blokuje**: Automation decisions
+- **Integracja**: Używa ProcessorClient - zobacz [Processor Client Migration Guide](../processor-client-migration-guide.md)
 
 ## Ryzyka i mitigacje
 

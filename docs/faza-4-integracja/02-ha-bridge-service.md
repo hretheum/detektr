@@ -90,7 +90,38 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
 
 #### Zadania atomowe
 
-1. **[ ] Action queue processor**
+1. **[ ] Integration z ProcessorClient dla action triggers**
+   - **Metryka**: HA bridge konsumuje z result streams od procesorów
+   - **Walidacja**:
+
+     ```python
+     # services/ha-bridge/src/main.py
+     from services.frame_buffer_v2.src.processors.client import ProcessorClient
+
+     class HABridgeProcessor(ProcessorClient):
+         def __init__(self):
+             super().__init__(
+                 processor_id="ha-bridge-1",
+                 capabilities=["home_automation", "action_execution"],
+                 orchestrator_url=os.getenv("ORCHESTRATOR_URL"),
+                 capacity=20,  # HA calls are fast
+                 result_stream="ha:actions:executed"
+             )
+             self.ha_client = HAClient()
+
+         async def process_frame(self, frame_data: Dict[bytes, bytes]) -> Dict:
+             # Consume detection results from AI services
+             if b"faces_detected" in frame_data:
+                 await self.handle_face_detection(frame_data)
+             elif b"objects_detected" in frame_data:
+                 await self.handle_object_detection(frame_data)
+             elif b"gestures_detected" in frame_data:
+                 await self.handle_gesture_detection(frame_data)
+     ```
+
+   - **Czas**: 2h
+
+2. **[ ] Action queue processor**
    - **Metryka**: Sequential execution, priority support
    - **Walidacja**:
 
@@ -103,7 +134,7 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
 
    - **Czas**: 2h
 
-2. **[ ] Conditional action logic**
+3. **[ ] Conditional action logic**
    - **Metryka**: If-then-else, time conditions
    - **Walidacja**:
 
@@ -124,6 +155,7 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
 - Complex automations supported
 - Reliable execution
 - Flexible conditions
+- Consumes from AI service result streams
 
 ### Blok 3: Observability
 
@@ -189,7 +221,10 @@ Zbudować serwis integracyjny z Home Assistant API umożliwiający wykonywanie a
 - **Wymaga**:
   - Home Assistant running
   - API token configured
+  - Frame-buffer-v2 z ProcessorClient pattern
+  - Result streams z AI services (faces:detected, objects:detected, gestures:detected)
 - **Blokuje**: Automation execution
+- **Integracja**: Konsumuje wyniki z procesorów AI poprzez result streams - zobacz [Processor Client Migration Guide](../processor-client-migration-guide.md)
 
 ## Ryzyka i mitigacje
 

@@ -79,10 +79,33 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
 
    - **Czas**: 6h
 
-4. **[ ] API layer z FastAPI**
-   - **Metryka**: REST endpoint, OpenAPI docs
-   - **Walidacja**: `curl -X POST localhost:8002/detect -F "image=@test.jpg"`
+4. **[ ] Integracja z ProcessorClient pattern**
+   - **Metryka**: Service dziedziczy z ProcessorClient, nie używa polling
+   - **Walidacja**:
+     ```python
+     # services/face-recognition/src/main.py
+     from services.frame_buffer_v2.src.processors.client import ProcessorClient
+
+     class FaceRecognitionProcessor(ProcessorClient):
+         def __init__(self):
+             super().__init__(
+                 processor_id="face-recognition-1",
+                 capabilities=["face_detection", "face_recognition"],
+                 orchestrator_url=os.getenv("ORCHESTRATOR_URL"),
+                 capacity=10,
+                 result_stream="faces:detected"
+             )
+
+         async def process_frame(self, frame_data: Dict[bytes, bytes]) -> Dict:
+             # Twoja logika przetwarzania
+             pass
+     ```
    - **Czas**: 3h
+
+5. **[ ] Health endpoint i monitoring API**
+   - **Metryka**: /health endpoint, metrics endpoint
+   - **Walidacja**: `curl localhost:8003/health` zwraca status procesora
+   - **Czas**: 2h
 
 #### Metryki sukcesu bloku
 
@@ -182,9 +205,20 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
 
    - **Czas**: 2h
 
-2. **[ ] Docker Compose integration**
-   - **Metryka**: Service starts with full stack
-   - **Walidacja**: `docker compose up face-recognition && curl localhost:8002/health`
+2. **[ ] Docker Compose integration z ProcessorClient**
+   - **Metryka**: Service starts with orchestrator configuration
+   - **Walidacja**:
+     ```yaml
+     # docker-compose.yml
+     face-recognition:
+       environment:
+         - ORCHESTRATOR_URL=http://frame-buffer-v2:8002
+         - PROCESSOR_ID=face-recognition-1
+         - REDIS_HOST=redis
+       depends_on:
+         frame-buffer-v2:
+           condition: service_healthy
+     ```
    - **Czas**: 1h
 
 3. **[ ] Health checks i readiness probes**
@@ -227,8 +261,10 @@ Zaimplementować wydajny serwis rozpoznawania twarzy wykorzystujący GPU, z peł
 - **Wymaga**:
   - Docker z GPU support (Faza 1)
   - Observability stack (Faza 1)
-  - Message queue (Faza 2)
+  - Frame-buffer-v2 z ProcessorClient (Faza 2)
+  - Redis dla queue management
 - **Blokuje**: Gesture detection, full pipeline testing
+- **Nowy pattern**: Używa ProcessorClient zamiast polling - zobacz [Processor Client Migration Guide](../processor-client-migration-guide.md)
 
 ## Ryzyka i mitigacje
 

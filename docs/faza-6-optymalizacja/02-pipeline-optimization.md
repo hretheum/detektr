@@ -41,7 +41,27 @@ Zoptymalizować pipeline przetwarzania na podstawie analizy traces z Jaeger, osi
 
 #### Zadania atomowe
 
-1. **[ ] Identify sequential operations**
+1. **[ ] Optimize ProcessorClient orchestration**
+   - **Metryka**: Smarter frame distribution to processors
+   - **Walidacja**:
+
+     ```python
+     # Optimize frame-buffer-v2 orchestrator
+     orchestration_config = {
+         "dynamic_capacity": True,  # Adjust based on queue depth
+         "affinity_routing": True,  # Route similar frames to same processor
+         "predictive_scaling": True,  # Pre-scale based on patterns
+     }
+
+     # Verify improved distribution
+     distribution_stats = measure_frame_distribution()
+     assert distribution_stats.queue_depth_variance < 0.2  # Even distribution
+     assert distribution_stats.processor_utilization > 0.8  # High utilization
+     ```
+
+   - **Czas**: 2h
+
+2. **[ ] Identify sequential operations**
    - **Metryka**: Sequential spans that can parallelize
    - **Walidacja**:
 
@@ -81,6 +101,7 @@ Zoptymalizować pipeline przetwarzania na podstawie analizy traces z Jaeger, osi
 
 #### Metryki sukcesu bloku
 
+- ProcessorClient orchestration optimized
 - Parallelization working
 - Batching implemented
 - Latency reduced
@@ -193,7 +214,10 @@ Zoptymalizować pipeline przetwarzania na podstawie analizy traces z Jaeger, osi
 - **Wymaga**:
   - Bottleneck analysis complete
   - Test environment ready
+  - All processors using ProcessorClient pattern
+  - Frame-buffer-v2 orchestrator operational
 - **Blokuje**: Production deployment
+- **Optymalizuje**: ProcessorClient orchestration algorithms - zobacz [Processor Client Migration Guide](../processor-client-migration-guide.md)
 
 ## Ryzyka i mitigacje
 
