@@ -1796,6 +1796,623 @@ This document provides a detailed implementation plan for the frame-buffer redes
 
 ---
 
+## Block 3.1: Service Integration & Pipeline Completion (NEW)
+
+### Zadania atomowe
+
+1. **[ ] Implementacja Face Recognition Processor z ProcessorClient**
+   - **Metryka**: Face recognition service konsumuje klatki z frame-buffer-v2
+   - **TDD Test Cases**:
+     ```python
+     # services/face-recognition/tests/test_processor.py
+     async def test_face_recognition_processor():
+         """Test face recognition processor implementation."""
+         processor = FaceRecognitionProcessor(
+             processor_id="face-recognition-1",
+             orchestrator_url="http://localhost:8002",
+             model_path="/models/face_recognition"
+         )
+
+         # Test frame processing
+         frame_data = {
+             b"frame_id": b"test_123",
+             b"camera_id": b"cam01",
+             b"image_data": base64.b64encode(test_image_bytes),
+             b"width": b"1920",
+             b"height": b"1080"
+         }
+
+         result = await processor.process_frame(frame_data)
+
+         assert result["frame_id"] == "test_123"
+         assert "faces" in result
+         assert isinstance(result["faces"], list)
+
+     async def test_face_embedding_extraction():
+         """Test face embedding extraction."""
+         processor = FaceRecognitionProcessor()
+
+         # Load test image with known face
+         test_image = load_test_face_image()
+
+         faces = await processor.detect_and_extract(test_image)
+
+         assert len(faces) > 0
+         assert "embedding" in faces[0]
+         assert len(faces[0]["embedding"]) == 512  # InsightFace embedding size
+         assert "bbox" in faces[0]
+         assert "confidence" in faces[0]
+     ```
+   - **Implementation**:
+     ```python
+     # services/face-recognition/src/main.py
+     from base_processor import ProcessorClient
+     import insightface
+     import cv2
+     import numpy as np
+
+     class FaceRecognitionProcessor(ProcessorClient):
+         def __init__(self, **kwargs):
+             super().__init__(
+                 capabilities=["face_detection", "face_recognition"],
+                 result_stream="faces:detected",
+                 **kwargs
+             )
+             self.model = insightface.app.FaceAnalysis(
+                 name='buffalo_l',
+                 providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
+             )
+             self.model.prepare(ctx_id=0, det_size=(640, 640))
+
+         async def process_frame(self, frame_data: Dict[bytes, bytes]) -> Dict:
+             # Decode frame
+             image_bytes = base64.b64decode(frame_data[b"image_data"])
+             nparr = np.frombuffer(image_bytes, np.uint8)
+             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+             # Detect faces
+             faces = self.model.get(img)
+
+             return {
+                 "frame_id": frame_data[b"frame_id"].decode(),
+                 "camera_id": frame_data[b"camera_id"].decode(),
+                 "faces": [
+                     {
+                         "bbox": face.bbox.tolist(),
+                         "confidence": float(face.det_score),
+                         "embedding": face.normed_embedding.tolist(),
+                         "age": int(face.age) if hasattr(face, 'age') else None,
+                         "gender": face.gender if hasattr(face, 'gender') else None
+                     }
+                     for face in faces
+                 ],
+                 "face_count": len(faces)
+             }
+     ```
+   - **Validation Code**:
+     ```bash
+     # Test service locally
+     cd services/face-recognition
+     pytest tests/ -v
+
+     # Build and run
+     docker build -t face-recognition .
+     docker run --gpus all -e ORCHESTRATOR_URL=http://frame-buffer-v2:8002 face-recognition
+
+     # Verify registration
+     curl http://localhost:8002/processors | jq '.[] | select(.id=="face-recognition-1")'
+     ```
+   - **Quality Gate**: GPU acceleration working, <100ms per frame, proper embedding extraction
+   - **Czas**: 2h
+
+2. **[ ] Implementacja Object Detection Processor z ProcessorClient**
+   - **Metryka**: Object detection service z YOLO v8 konsumuje klatki
+   - **TDD Test First**:
+     ```python
+     # services/object-detection/tests/test_processor.py
+     async def test_object_detection_processor():
+         """Test object detection with YOLO."""
+         processor = ObjectDetectionProcessor(
+             processor_id="object-detection-1",
+             orchestrator_url="http://localhost:8002",
+             model_name="yolov8n.pt"  # nano for tests
+         )
+
+         # Test with image containing person and car
+         frame_data = {
+             b"frame_id": b"test_456",
+             b"camera_id": b"cam02",
+             b"image_data": base64.b64encode(test_street_image),
+             b"width": b"1920",
+             b"height": b"1080"
+         }
+
+         result = await processor.process_frame(frame_data)
+
+         assert result["frame_id"] == "test_456"
+         assert "objects" in result
+         assert len(result["objects"]) >= 2
+
+         # Check object structure
+         obj = result["objects"][0]
+         assert "class" in obj
+         assert "confidence" in obj
+         assert "bbox" in obj
+         assert len(obj["bbox"]) == 4  # x1, y1, x2, y2
+
+     async def test_custom_detection_classes():
+         """Test filtering specific object classes."""
+         processor = ObjectDetectionProcessor(
+             detect_classes=["person", "car", "bicycle"]
+         )
+
+         # Process frame
+         result = await processor.process_frame(test_frame_data)
+
+         # Verify only requested classes
+         detected_classes = {obj["class"] for obj in result["objects"]}
+         assert detected_classes.issubset({"person", "car", "bicycle"})
+     ```
+   - **Implementation**:
+     ```python
+     # services/object-detection/src/main.py
+     from base_processor import ProcessorClient
+     from ultralytics import YOLO
+     import cv2
+     import numpy as np
+
+     class ObjectDetectionProcessor(ProcessorClient):
+         def __init__(self, model_name="yolov8m.pt", detect_classes=None, **kwargs):
+             super().__init__(
+                 capabilities=["object_detection", "vehicle_detection", "person_detection"],
+                 result_stream="objects:detected",
+                 **kwargs
+             )
+             self.model = YOLO(model_name)
+             self.detect_classes = detect_classes
+             self.class_names = self.model.names
+
+         async def process_frame(self, frame_data: Dict[bytes, bytes]) -> Dict:
+             # Decode image
+             image_bytes = base64.b64decode(frame_data[b"image_data"])
+             nparr = np.frombuffer(image_bytes, np.uint8)
+             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+             # Run inference
+             results = self.model(img, stream=False, verbose=False)
+
+             objects = []
+             for r in results:
+                 if r.boxes is not None:
+                     for box in r.boxes:
+                         cls = int(box.cls)
+                         class_name = self.class_names[cls]
+
+                         # Filter classes if specified
+                         if self.detect_classes and class_name not in self.detect_classes:
+                             continue
+
+                         objects.append({
+                             "class": class_name,
+                             "confidence": float(box.conf),
+                             "bbox": box.xyxy[0].tolist(),  # [x1, y1, x2, y2]
+                             "track_id": int(box.id) if hasattr(box, 'id') else None
+                         })
+
+             return {
+                 "frame_id": frame_data[b"frame_id"].decode(),
+                 "camera_id": frame_data[b"camera_id"].decode(),
+                 "objects": objects,
+                 "object_count": len(objects)
+             }
+     ```
+   - **Quality Gate**: GPU acceleration, <50ms inference time, accurate detections
+   - **Czas**: 2h
+
+3. **[ ] Migracja RTSP Capture do nowego frame flow**
+   - **Metryka**: RTSP Capture publikuje klatki do Redis Stream z odpowiednim formatem
+   - **TDD Test First**:
+     ```python
+     # services/rtsp-capture/tests/test_frame_publisher.py
+     async def test_frame_publishing_format():
+         """Test frame publishing to Redis Stream."""
+         publisher = FramePublisher(redis_client)
+
+         # Create test frame
+         frame = np.random.randint(0, 255, (1080, 1920, 3), dtype=np.uint8)
+         metadata = {
+             "camera_id": "front_door",
+             "motion_detected": True,
+             "motion_score": 0.85
+         }
+
+         # Publish frame
+         msg_id = await publisher.publish_frame(frame, metadata)
+
+         # Verify in Redis
+         messages = await redis_client.xread({"frames:captured": 0}, count=1)
+         assert len(messages) > 0
+
+         frame_data = messages[0][1][0][1]
+         assert b"frame_id" in frame_data
+         assert b"camera_id" in frame_data
+         assert b"image_data" in frame_data
+         assert b"width" in frame_data
+         assert b"height" in frame_data
+         assert b"timestamp" in frame_data
+         assert b"trace_context" in frame_data
+
+         # Verify trace context
+         trace_ctx = json.loads(frame_data[b"trace_context"])
+         assert "trace_id" in trace_ctx
+         assert "span_id" in trace_ctx
+     ```
+   - **Implementation updates**:
+     ```python
+     # services/rtsp-capture/src/frame_publisher.py
+     class FramePublisher:
+         def __init__(self, redis_client, stream_name="frames:captured"):
+             self.redis = redis_client
+             self.stream = stream_name
+             self.tracer = trace.get_tracer(__name__)
+
+         async def publish_frame(self, frame: np.ndarray, metadata: Dict) -> str:
+             """Publish frame to Redis Stream with proper format."""
+             with self.tracer.start_as_current_span("publish_frame") as span:
+                 # Generate frame ID
+                 frame_id = f"{metadata['camera_id']}_{int(time.time()*1000000)}"
+
+                 # Encode frame
+                 _, buffer = cv2.imencode('.jpg', frame,
+                     [cv2.IMWRITE_JPEG_QUALITY, 85])
+
+                 # Prepare data
+                 frame_data = {
+                     "frame_id": frame_id,
+                     "camera_id": metadata["camera_id"],
+                     "timestamp": datetime.now().isoformat(),
+                     "image_data": base64.b64encode(buffer).decode(),
+                     "width": str(frame.shape[1]),
+                     "height": str(frame.shape[0]),
+                     "format": "jpeg",
+                     "size_bytes": str(len(buffer)),
+                     "metadata": json.dumps(metadata),
+                     "trace_context": json.dumps({
+                         "trace_id": format(span.get_span_context().trace_id, '032x'),
+                         "span_id": format(span.get_span_context().span_id, '016x'),
+                         "trace_flags": "01"
+                     })
+                 }
+
+                 # Publish to stream
+                 msg_id = await self.redis.xadd(self.stream, frame_data)
+
+                 # Update metrics
+                 frames_published.labels(camera_id=metadata["camera_id"]).inc()
+
+                 return msg_id
+     ```
+   - **Quality Gate**: No frame loss, proper trace propagation, compatible format
+   - **Czas**: 1.5h
+
+4. **[ ] Home Assistant Bridge integration**
+   - **Metryka**: HA Bridge konsumuje wyniki z procesorów i wysyła do HA
+   - **TDD Test First**:
+     ```python
+     # services/ha-bridge/tests/test_result_consumer.py
+     async def test_consume_detection_results():
+         """Test consuming results from processors."""
+         bridge = HABridge(
+             ha_url="http://localhost:8123",
+             result_streams=["faces:detected", "objects:detected"]
+         )
+
+         # Add test results to streams
+         await redis.xadd("faces:detected", {
+             "frame_id": "test_123",
+             "camera_id": "front_door",
+             "face_count": "2",
+             "faces": json.dumps([
+                 {"confidence": 0.95, "person_id": "john_doe"},
+                 {"confidence": 0.88, "person_id": "unknown"}
+             ])
+         })
+
+         # Process results
+         events = await bridge.process_results()
+
+         assert len(events) == 1
+         assert events[0]["event_type"] == "detektor.face_detected"
+         assert events[0]["camera_id"] == "front_door"
+         assert events[0]["face_count"] == 2
+
+     async def test_ha_event_publishing():
+         """Test publishing events to Home Assistant."""
+         bridge = HABridge()
+
+         event = {
+             "event_type": "detektor.person_detected",
+             "camera_id": "front_door",
+             "person_name": "John Doe",
+             "confidence": 0.95
+         }
+
+         # Mock HA API
+         with aioresponses() as m:
+             m.post("http://localhost:8123/api/events/detektor.person_detected",
+                    status=200)
+
+             success = await bridge.publish_to_ha(event)
+
+         assert success
+         # Verify request was made with correct data
+     ```
+   - **Implementation**:
+     ```python
+     # services/ha-bridge/src/main.py
+     class HABridge:
+         def __init__(self, ha_url: str, ha_token: str, result_streams: List[str]):
+             self.ha_url = ha_url
+             self.ha_token = ha_token
+             self.result_streams = result_streams
+             self.redis = None
+             self.consumer_groups = {}
+
+         async def start(self):
+             """Start consuming results and bridging to HA."""
+             self.redis = await aioredis.from_url("redis://redis:6379")
+
+             # Create consumer groups
+             for stream in self.result_streams:
+                 group_name = f"ha-bridge-{stream.replace(':', '-')}"
+                 try:
+                     await self.redis.xgroup_create(stream, group_name, id='0')
+                 except aioredis.ResponseError:
+                     pass
+                 self.consumer_groups[stream] = group_name
+
+             # Start consuming
+             await self.consume_loop()
+
+         async def consume_loop(self):
+             """Main consumption loop."""
+             while True:
+                 try:
+                     # Read from all streams
+                     streams = {s: '>' for s in self.result_streams}
+                     messages = await self.redis.xreadgroup(
+                         "ha-bridge", "consumer-1",
+                         streams,
+                         count=10,
+                         block=1000
+                     )
+
+                     for stream, stream_messages in messages:
+                         for msg_id, data in stream_messages:
+                             await self.process_result(stream.decode(), data)
+                             await self.redis.xack(stream,
+                                 self.consumer_groups[stream.decode()], msg_id)
+
+                 except Exception as e:
+                     logger.error(f"Error in consume loop: {e}")
+                     await asyncio.sleep(1)
+     ```
+   - **Quality Gate**: All detection events reach HA, <100ms latency
+   - **Czas**: 1.5h
+
+5. **[ ] End-to-end integration tests**
+   - **Metryka**: Pełny pipeline działa od kamery do Home Assistant
+   - **TDD Test First**:
+     ```python
+     # tests/integration/test_full_pipeline.py
+     @pytest.mark.integration
+     async def test_complete_detection_pipeline():
+         """Test full pipeline from camera to HA."""
+         async with AsyncExitStack() as stack:
+             # Start all services
+             rtsp = await stack.enter_async_context(
+                 start_service("rtsp-capture", env={"CAMERA_URL": "rtsp://test"})
+             )
+
+             fb_v2 = await stack.enter_async_context(
+                 start_service("frame-buffer-v2")
+             )
+
+             face_proc = await stack.enter_async_context(
+                 start_service("face-recognition",
+                     env={"ORCHESTRATOR_URL": "http://frame-buffer-v2:8002"})
+             )
+
+             obj_proc = await stack.enter_async_context(
+                 start_service("object-detection",
+                     env={"ORCHESTRATOR_URL": "http://frame-buffer-v2:8002"})
+             )
+
+             ha_bridge = await stack.enter_async_context(
+                 start_service("ha-bridge")
+             )
+
+             # Wait for services to initialize
+             await asyncio.sleep(5)
+
+             # Inject test frame to RTSP capture
+             test_frame = load_test_image_with_faces_and_objects()
+             await rtsp.inject_frame(test_frame, camera_id="test_cam")
+
+             # Wait for processing
+             await asyncio.sleep(3)
+
+             # Verify results in HA
+             ha_events = await ha_bridge.get_recent_events()
+
+             # Should have both face and object detection events
+             face_events = [e for e in ha_events
+                           if e["event_type"] == "detektor.face_detected"]
+             object_events = [e for e in ha_events
+                            if e["event_type"] == "detektor.object_detected"]
+
+             assert len(face_events) > 0
+             assert len(object_events) > 0
+             assert face_events[0]["camera_id"] == "test_cam"
+
+     async def test_pipeline_performance():
+         """Test pipeline meets performance requirements."""
+         # Setup pipeline
+         pipeline = await setup_test_pipeline()
+
+         # Send 100 frames
+         start_time = time.time()
+         frame_ids = []
+
+         for i in range(100):
+             frame_id = await pipeline.inject_frame(
+                 test_frame,
+                 camera_id="perf_test"
+             )
+             frame_ids.append(frame_id)
+
+         # Wait for all frames to be processed
+         timeout = 30  # 30 seconds for 100 frames
+         processed = await wait_for_frames_processed(frame_ids, timeout)
+
+         elapsed = time.time() - start_time
+
+         assert processed == 100
+         assert elapsed < timeout
+
+         # Calculate metrics
+         fps = 100 / elapsed
+         avg_latency = elapsed / 100
+
+         print(f"Pipeline FPS: {fps:.2f}")
+         print(f"Average latency: {avg_latency*1000:.2f}ms")
+
+         assert fps > 10  # At least 10 FPS
+         assert avg_latency < 0.5  # Less than 500ms per frame
+     ```
+   - **Quality Gate**: Full pipeline working, no frame loss, <500ms end-to-end latency
+   - **Czas**: 2h
+
+6. **[ ] Decommission stary frame-buffer**
+   - **Metryka**: Stary frame-buffer bezpiecznie wyłączony
+   - **TDD Test First**:
+     ```python
+     # tests/migration/test_decommission.py
+     async def test_old_frame_buffer_decommission():
+         """Test safe decommission of old frame-buffer."""
+         # Verify no services depend on old API
+         dependents = await find_services_using_endpoint("/frames/dequeue")
+         assert len(dependents) == 0, f"Services still using old API: {dependents}"
+
+         # Verify new frame-buffer handles all traffic
+         fb_v2_metrics = await get_service_metrics("frame-buffer-v2")
+         assert fb_v2_metrics["frames_routed_total"] > 0
+
+         # Check old frame-buffer can be stopped
+         old_fb = get_service("frame-buffer")
+         if old_fb.is_running():
+             await old_fb.stop()
+             await asyncio.sleep(5)
+
+             # Verify pipeline still works
+             test_frame_id = await inject_test_frame()
+             result = await wait_for_frame_processed(test_frame_id, timeout=10)
+             assert result is not None
+     ```
+   - **Implementation**:
+     ```yaml
+     # docker-compose.yml updates
+     services:
+       # frame-buffer:  # REMOVED - replaced by frame-buffer-v2
+       #   image: ghcr.io/hretheum/detektr/frame-buffer:latest
+
+       frame-buffer-v2:
+         image: ghcr.io/hretheum/detektr/frame-buffer:2.0
+         container_name: frame-buffer  # Take over the name
+         ports:
+           - "8002:8002"
+         environment:
+           - INPUT_STREAM=frames:captured
+           - CONSUMER_GROUP=frame-buffer-group
+     ```
+   - **Validation**:
+     ```bash
+     # Stop old frame-buffer
+     docker-compose stop frame-buffer
+
+     # Verify pipeline still works
+     ./scripts/test-pipeline.sh
+
+     # Remove old service
+     docker-compose rm -f frame-buffer
+
+     # Update compose file
+     sed -i '/frame-buffer:/,/^[[:space:]]*$/d' docker-compose.yml
+     ```
+   - **Quality Gate**: Zero downtime, no service disruption
+   - **Czas**: 1h
+
+### Metryki sukcesu bloku 3.1
+- Face recognition processor consuming frames via ProcessorClient
+- Object detection processor with YOLO v8 working
+- RTSP capture publishing to Redis Stream with proper format
+- HA Bridge consuming and forwarding events
+- Full pipeline operational with <500ms latency
+- Old frame-buffer safely decommissioned
+
+### Validation Script
+```bash
+#!/bin/bash
+# scripts/validate-pipeline.sh
+
+echo "Validating Detektor Pipeline..."
+
+# Check all services are healthy
+for service in rtsp-capture frame-buffer-v2 face-recognition object-detection ha-bridge; do
+    echo -n "Checking $service... "
+    if curl -sf "http://localhost:$(docker port $service 8080 | cut -d: -f2)/health" > /dev/null; then
+        echo "OK"
+    else
+        echo "FAILED"
+        exit 1
+    fi
+done
+
+# Check processor registration
+echo -n "Checking processor registrations... "
+PROCESSORS=$(curl -s http://localhost:8002/processors | jq -r '.[].id')
+if [[ "$PROCESSORS" == *"face-recognition"* ]] && [[ "$PROCESSORS" == *"object-detection"* ]]; then
+    echo "OK"
+else
+    echo "FAILED - Missing processors"
+    exit 1
+fi
+
+# Test frame flow
+echo "Testing frame flow..."
+FRAME_ID=$(date +%s%N)
+redis-cli XADD frames:captured frame_id "$FRAME_ID" camera_id "test" image_data "base64data" > /dev/null
+
+sleep 3
+
+# Check if frame was processed
+if redis-cli XRANGE faces:detected - + | grep -q "$FRAME_ID"; then
+    echo "✓ Face detection working"
+else
+    echo "✗ Face detection not working"
+fi
+
+if redis-cli XRANGE objects:detected - + | grep -q "$FRAME_ID"; then
+    echo "✓ Object detection working"
+else
+    echo "✗ Object detection not working"
+fi
+
+echo "Pipeline validation complete!"
+```
+
+---
+
 ## Overall Success Metrics
 
 ### Performance
