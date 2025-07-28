@@ -124,7 +124,7 @@ class ProcessorClient(ABC):
         for attempt in range(self.max_retries):
             try:
                 response = await self._http_client.post(
-                    f"{self.orchestrator_url}/processors/register",
+                    f"{self.orchestrator_url}/api/v1/processors/register",
                     json={
                         "id": self.processor_id,
                         "capabilities": self.capabilities,
@@ -159,7 +159,7 @@ class ProcessorClient(ABC):
         """Unregister from the orchestrator."""
         try:
             response = await self._http_client.delete(
-                f"{self.orchestrator_url}/processors/{self.processor_id}",
+                f"{self.orchestrator_url}/api/v1/processors/{self.processor_id}",
             )
             if response.status_code in [204, 404]:
                 logger.info(f"Unregistered processor {self.processor_id}")
@@ -175,7 +175,7 @@ class ProcessorClient(ABC):
                 await asyncio.sleep(self.heartbeat_interval)
 
                 response = await self._http_client.post(
-                    f"{self.orchestrator_url}/processors/heartbeat",
+                    f"{self.orchestrator_url}/api/v1/processors/heartbeat",
                     json={
                         "processor_id": self.processor_id,
                         "status": "healthy",
