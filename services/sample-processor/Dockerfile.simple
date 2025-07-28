@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+RUN pip install httpx==0.25.2 redis==5.0.1
+
+# Copy simple processor
+COPY services/sample-processor/simple_main.py .
+
+# Run the processor
+CMD ["python", "simple_main.py"]
