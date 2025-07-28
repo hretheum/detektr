@@ -16,8 +16,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code - ensure all subdirectories are included
 COPY services/frame-buffer-v2/src/ ./src/
 
-# Debug - list copied files
-RUN find /app/src -name "*.py" | head -20
+# Debug - list entire src structure
+RUN echo "=== Listing /app/src directory structure ===" && \
+    find /app/src -type f -name "*.py" | sort && \
+    echo "=== Checking if models directory exists ===" && \
+    ls -la /app/src/ && \
+    echo "=== Checking models directory content ===" && \
+    ls -la /app/src/models/ || echo "Models directory not found!"
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
