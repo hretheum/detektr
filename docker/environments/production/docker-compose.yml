@@ -132,6 +132,24 @@ services:
       - demo
       - gpu
 
+  sample-processor:
+    <<: *production-defaults
+    image: ghcr.io/hretheum/detektr/sample-processor:${IMAGE_TAG:-latest}
+    environment:
+      - LOG_LEVEL=INFO
+      - METRICS_ENABLED=true
+      - ORCHESTRATOR_URL=http://frame-buffer-v2:8002
+      - PROCESSOR_ID=sample-processor-1
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+      # REMOVED: FRAME_BUFFER_URL (old polling config)
+    depends_on:
+      frame-buffer-v2:
+        condition: service_healthy
+    networks:
+      - detektor-network
+
   # Infrastructure services with production limits
   postgres:
     <<: *production-defaults
