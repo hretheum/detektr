@@ -47,7 +47,7 @@ fi
 # Define as string for easier remote execution
 export SERVICE_PORTS_STRING='
     base-template:8000
-    frame-buffer:8002
+    frame-buffer-v2:8002
     face-recognition:8003
     object-detection:8004
     metadata-storage:8005
@@ -77,8 +77,16 @@ export SERVICE_PORTS  # Export for potential use in other scripts
 # Function to clean up containers using specific ports
 cleanup_ports() {
     echo "Checking for containers using service ports..."
+    # Only clean ports for services we're deploying
+    local services_to_clean="${DEPLOY_SERVICES:-}"
+
     while IFS=: read -r service port; do
         if [[ -n "$service" ]] && [[ -n "$port" ]]; then
+            # Skip if we have specific services and this isn't one of them
+            if [[ -n "$services_to_clean" ]] && ! echo " $services_to_clean " | grep -q " ${service} "; then
+                continue
+            fi
+
             echo "Checking port $port ($service)..."
             container_on_port=$(docker ps --format "{{.Names}}" --filter "publish=$port" 2>/dev/null | head -1 || true)
             if [[ -n "$container_on_port" ]]; then
@@ -390,7 +398,7 @@ action_deploy() {
         # Clean up containers using specific ports on remote
         log "Checking for containers using service ports on remote..."
         # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" "$(declare -f cleanup_ports); export SERVICE_PORTS_STRING='$SERVICE_PORTS_STRING'; cleanup_ports"
+        ssh "$TARGET_HOST" "$(declare -f cleanup_ports); export SERVICE_PORTS_STRING='$SERVICE_PORTS_STRING'; export DEPLOY_SERVICES='${DEPLOY_SERVICES:-}'; cleanup_ports"
 
         if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
             log "Stopping and removing specific services: $DEPLOY_SERVICES"
@@ -478,7 +486,7 @@ action_deploy() {
         # Check for port conflicts on remote
         log "Checking for port conflicts on remote..."
         # shellcheck disable=SC2029
-        ssh "$TARGET_HOST" "$(declare -f cleanup_ports); export SERVICE_PORTS_STRING='$SERVICE_PORTS_STRING'; cleanup_ports"
+        ssh "$TARGET_HOST" "$(declare -f cleanup_ports); export SERVICE_PORTS_STRING='$SERVICE_PORTS_STRING'; export DEPLOY_SERVICES='${DEPLOY_SERVICES:-}'; cleanup_ports"
     fi
 
     if [[ -n "${DEPLOY_SERVICES:-}" ]]; then
