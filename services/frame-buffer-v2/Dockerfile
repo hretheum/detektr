@@ -13,16 +13,20 @@ RUN apt-get update && apt-get install -y \
 COPY services/frame-buffer-v2/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code - ensure all subdirectories are included
+# Copy application code - explicitly copy all directories
 COPY services/frame-buffer-v2/src/ ./src/
 
-# Debug - list entire src structure
-RUN echo "=== Listing /app/src directory structure ===" && \
+# Ensure models directory exists and has proper structure
+RUN mkdir -p /app/src/models && \
+    echo "=== Listing /app/src directory structure ===" && \
     find /app/src -type f -name "*.py" | sort && \
     echo "=== Checking if models directory exists ===" && \
     ls -la /app/src/ && \
     echo "=== Checking models directory content ===" && \
     ls -la /app/src/models/ || echo "Models directory not found!"
+
+# Copy models __init__.py explicitly to ensure it's there
+COPY services/frame-buffer-v2/src/models/__init__.py ./src/models/__init__.py
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
