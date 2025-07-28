@@ -4,14 +4,12 @@ import asyncio
 import logging
 import os
 import signal
-import sys
-from contextlib import asynccontextmanager
+from contextlib import suppress
 
 import redis.asyncio as aioredis
 import uvicorn
-from fastapi import FastAPI
 
-from src.api.app import app as api_app
+from src.api.app import app
 from src.orchestrator import (
     FrameDistributor,
     ProcessorRegistry,
@@ -29,12 +27,14 @@ class FrameBufferService:
     """Main service orchestrator."""
 
     def __init__(self):
+        """Initialize the frame buffer service."""
         self.redis_client = None
         self.consumer = None
         self.distributor = None
         self.registry = None
         self.queue_manager = None
         self._running = False
+        self._consume_task = None
 
     async def start(self):
         """Start the frame buffer service."""
@@ -47,7 +47,7 @@ class FrameBufferService:
         )
 
         # Initialize components
-        self.registry = ProcessorRegistry()
+        self.registry = ProcessorRegistry(self.redis_client)
         self.queue_manager = WorkQueueManager(self.redis_client)
         self.distributor = FrameDistributor(self.registry, self.redis_client)
 
@@ -62,27 +62,27 @@ class FrameBufferService:
             consumer_id="frame-buffer-1",
         )
 
+        # Store components in app state for API access
+        app.state.registry = self.registry
+        app.state.redis_client = self.redis_client
+        app.state.queue_manager = self.queue_manager
+
         # Start consuming frames
         self._running = True
-        consume_task = asyncio.create_task(self._consume_frames())
-
-        # Store components in app state for API access
-        api_app.state.registry = self.registry
-        api_app.state.redis_client = self.redis_client
-        api_app.state.queue_manager = self.queue_manager
+        self._consume_task = asyncio.create_task(self._consume_frames())
 
         logger.info("Frame Buffer v2 started successfully")
-
-        # Wait for shutdown
-        try:
-            await consume_task
-        except asyncio.CancelledError:
-            logger.info("Frame consumption cancelled")
 
     async def stop(self):
         """Stop the service gracefully."""
         logger.info("Stopping Frame Buffer v2...")
         self._running = False
+
+        # Cancel consume task
+        if self._consume_task:
+            self._consume_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await self._consume_task
 
         if self.redis_client:
             await self.redis_client.aclose()
@@ -133,34 +133,29 @@ class FrameBufferService:
 
 # Global service instance
 service = FrameBufferService()
+shutdown_event = asyncio.Event()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """FastAPI lifespan manager."""
-    # Start the service
-    service_task = asyncio.create_task(service.start())
+async def startup():
+    """Startup event handler."""
+    await service.start()
 
-    yield
 
-    # Stop the service
+async def shutdown():
+    """Shutdown event handler."""
     await service.stop()
-    service_task.cancel()
-    try:
-        await service_task
-    except asyncio.CancelledError:
-        pass
+    shutdown_event.set()
 
 
-# Set lifespan for API app
-api_app.router.lifespan_context = lifespan
+# Add event handlers to app
+app.add_event_handler("startup", startup)
+app.add_event_handler("shutdown", shutdown)
 
 
 def handle_shutdown(signum, frame):
     """Handle shutdown signals."""
     logger.info(f"Received signal {signum}")
-    asyncio.create_task(service.stop())
-    sys.exit(0)
+    shutdown_event.set()
 
 
 if __name__ == "__main__":
@@ -170,4 +165,4 @@ if __name__ == "__main__":
 
     # Run the API server
     port = int(os.getenv("PORT", "8002"))
-    uvicorn.run(api_app, host="0.0.0.0", port=port, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
