@@ -13,20 +13,24 @@ RUN apt-get update && apt-get install -y \
 COPY services/frame-buffer-v2/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code - explicitly copy all directories
+# Copy application code including all subdirectories
 COPY services/frame-buffer-v2/src/ ./src/
 
-# Ensure models directory exists and has proper structure
-RUN mkdir -p /app/src/models && \
-    echo "=== Listing /app/src directory structure ===" && \
-    find /app/src -type f -name "*.py" | sort && \
-    echo "=== Checking if models directory exists ===" && \
-    ls -la /app/src/ && \
-    echo "=== Checking models directory content ===" && \
-    ls -la /app/src/models/ || echo "Models directory not found!"
+# Force creation of models directory and copy __init__.py content
+RUN mkdir -p /app/src/models
 
-# Copy models __init__.py explicitly to ensure it's there
-COPY services/frame-buffer-v2/src/models/__init__.py ./src/models/__init__.py
+# Copy models __init__.py separately to ensure it exists
+COPY services/frame-buffer-v2/src/models/__init__.py /app/src/models/__init__.py
+
+# Debug - verify everything is in place
+RUN echo "=== Final directory structure ===" && \
+    find /app/src -type d | sort && \
+    echo "=== All Python files ===" && \
+    find /app/src -name "*.py" | wc -l && \
+    echo "=== Models directory content ===" && \
+    ls -la /app/src/models/ && \
+    echo "=== Test import ===" && \
+    cd /app && python -c "from src.models import FrameReadyEvent; print('Import successful!')"
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
