@@ -32,13 +32,13 @@ services:
     depends_on:
       - redis
 
-  frame-buffer-v2-v2:
-    image: ghcr.io/hretheum/detektr/frame-buffer-v2-v2:${IMAGE_TAG:-latest}
+  frame-buffer-v2:
+    image: ghcr.io/hretheum/detektr/frame-buffer-v2:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
       - "8002:8002"
     environment:
-      SERVICE_NAME: frame-buffer-v2-v2
+      SERVICE_NAME: frame-buffer-v2
       PORT: 8002
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}

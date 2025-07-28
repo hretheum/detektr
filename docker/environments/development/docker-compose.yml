@@ -163,7 +163,7 @@ services:
       - PYTHONUNBUFFERED=1
       - DEBUG=true
       - ENABLE_FRAME_CONSUMER=true
-      - FRAME_BUFFER_URL=http://frame-buffer:8002
+      - FRAME_BUFFER_URL=http://frame-buffer-v2:8002
       - DETECTION_THRESHOLD=0.5
       - SIMULATE_GPU=false
       - PROCESSING_DELAY_MS=10
@@ -172,14 +172,9 @@ services:
       - ../../../services/shared/base-processor:/app/base-processor:ro
       - ../../../services/shared/frame-tracking:/app/frame-tracking:ro
       - sample_processor_cache:/app/__pycache__
-    command:
-      [
-        "python",
-        "-m",
-        "sample_processor",
-      ]
+    command: ["python", "-m", "sample_processor"]
 
-  frame-buffer:
+  frame-buffer-v2:
     <<: *development-defaults
     environment:
       - LOG_LEVEL=DEBUG
