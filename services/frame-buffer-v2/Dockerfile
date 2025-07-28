@@ -13,8 +13,11 @@ RUN apt-get update && apt-get install -y \
 COPY services/frame-buffer-v2/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code - ensure all subdirectories are included
 COPY services/frame-buffer-v2/src/ ./src/
+
+# Debug - list copied files
+RUN find /app/src -name "*.py" | head -20
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
