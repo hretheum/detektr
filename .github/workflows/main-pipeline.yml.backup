@@ -101,8 +101,8 @@ jobs:
             llm-intent:
               - 'services/llm-intent/**'
             sample-processor:
-              - 'services/sample-processor/**'
-              - 'services/shared/processor_client.py'
+              - 'examples/sample-processor/**'
+              - 'services/shared/base-processor/**'
 
       - name: Determine services to build
         id: determine-services
@@ -146,8 +146,11 @@ jobs:
               # Check each service path
               for service in rtsp-capture frame-events frame-buffer-v2 telegram-alerts metadata-storage example-otel echo-service gpu-demo timescaledb base-template face-recognition object-detection ha-bridge llm-intent sample-processor; do
                 service_path="services/$service"
+                if [[ "$service" == "sample-processor" ]]; then
+                  service_path="examples/sample-processor"
+                fi
 
-                if echo "$changed_files" | grep -q "$service_path\|services/shared/processor_client.py"; then
+                if echo "$changed_files" | grep -q "$service_path\|services/shared/base-processor"; then
                   # Check if service is already in array to avoid duplicates
                   if [[ ! " ${services[@]} " =~ " ${service} " ]]; then
                     echo "Service $service has changes (detected from git)"
@@ -207,6 +210,9 @@ jobs:
               recent_changes=$(git diff --name-only HEAD~10 HEAD | grep -E '^(services|examples)/' | sort -u)
               for service in rtsp-capture sample-processor; do
                 service_path="services/$service"
+                if [[ "$service" == "sample-processor" ]]; then
+                  service_path="examples/sample-processor"
+                fi
                 if echo "$recent_changes" | grep -q "$service_path"; then
                   echo "Service $service had recent changes"
                   services+=("$service")
@@ -316,7 +322,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: services/${{ matrix.service }}/Dockerfile
+          file: ${{ matrix.service == 'sample-processor' && 'examples/sample-processor/Dockerfile' || format('services/{0}/Dockerfile', matrix.service) }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

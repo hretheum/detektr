@@ -25,4 +25,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import httpx; httpx.get('http://localhost:8099/health')" || exit 1
 
 # Run the processor
-CMD ["python", "-m", "services.sample_processor.src.main"]
+CMD ["python", "/app/services/sample-processor/src/main.py"]
