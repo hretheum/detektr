@@ -54,7 +54,7 @@ class FrameBufferService:
         self.distributor = FrameDistributor(self.registry, self.redis_client)
 
         # Initialize consumer for input stream
-        input_stream = os.getenv("INPUT_STREAM", "frames:captured")
+        input_stream = os.getenv("INPUT_STREAM", "frames:metadata")
         consumer_group = os.getenv("CONSUMER_GROUP", "frame-buffer-group")
 
         self.consumer = StreamConsumer(
@@ -68,6 +68,9 @@ class FrameBufferService:
         app.state.registry = self.registry
         app.state.redis_client = self.redis_client
         app.state.queue_manager = self.queue_manager
+
+        # Create consumer group if needed
+        await self.consumer.create_group(start_id="0")
 
         # Start consuming frames
         self._running = True
@@ -124,7 +127,7 @@ class FrameBufferService:
 
                     if success:
                         # Acknowledge the message
-                        await self.consumer.ack_message(frame_data["id"])
+                        await self.consumer.ack_frame(frame_data["id"])
                     else:
                         logger.warning(f"Failed to distribute frame {frame.frame_id}")
 

@@ -46,6 +46,8 @@ services:
       FRAME_QUEUE_NAME: ${FRAME_QUEUE_NAME:-frame_queue}
       DLQ_NAME: ${DLQ_NAME:-frame_dlq}
       MAX_BUFFER_SIZE: ${MAX_BUFFER_SIZE:-1000}
+      INPUT_STREAM: ${INPUT_STREAM:-frames:metadata}
+      CONSUMER_GROUP: ${CONSUMER_GROUP:-frame-buffer-group}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
     networks:
       - detektor-network

@@ -1,5 +1,6 @@
 """Frame distributor - routes frames to appropriate processors."""
 
+import json
 import logging
 import random
 from collections import defaultdict
@@ -7,12 +8,20 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 import redis.asyncio as aioredis
+from prometheus_client import Counter
 
 from src.models import FrameReadyEvent
 from src.orchestrator.processor_registry import ProcessorInfo, ProcessorRegistry
 from src.orchestrator.trace_context import TraceContext, create_trace_span
 
 logger = logging.getLogger(__name__)
+
+# Metrics
+frames_distributed = Counter(
+    "frame_buffer_frames_distributed_total",
+    "Total number of frames distributed to processors",
+    ["processor_id", "status"],
+)
 
 
 class FrameDistributor:
@@ -115,8 +124,22 @@ class FrameDistributor:
         if not self.redis:
             raise RuntimeError("Redis client required for dispatch")
 
-        # Convert frame to Redis Stream format
-        frame_data = frame.to_json()
+        # Convert frame to Redis Stream format (string values for Redis)
+        frame_json = frame.to_json()
+        frame_data = {
+            "frame_id": frame_json["frame_id"],
+            "camera_id": frame_json["camera_id"],
+            "timestamp": frame_json["timestamp"],
+            "size_bytes": str(frame_json["size_bytes"]),
+            "width": str(frame_json["width"]),
+            "height": str(frame_json["height"]),
+            "format": frame_json["format"],
+            "trace_context": json.dumps(frame_json["trace_context"]),
+            "metadata": json.dumps(frame_json["metadata"]),
+            "priority": str(frame_json["priority"]),
+            "storage_path": frame_json.get("storage_path", ""),
+            "storage_backend": frame_json.get("storage_backend", "redis"),
+        }
 
         # Get configurable maxlen or use default
         maxlen = processor.metadata.get("queue_maxlen", self.DEFAULT_QUEUE_MAXLEN)
@@ -146,6 +169,12 @@ class FrameDistributor:
                             f"with capability {frame.metadata.get('detection_type')}"
                         )
                         span.add_attribute("processor.found", False)
+
+                        # Update metrics
+                        frames_distributed.labels(
+                            processor_id="none", status="no_processor"
+                        ).inc()
+
                         return False
 
                     span.add_attribute("processor.id", processor.id)
@@ -154,9 +183,14 @@ class FrameDistributor:
                     msg_id = await self.dispatch_to_processor(processor, frame)
                     span.add_attribute("message.id", msg_id)
 
+                    # Update metrics
+                    frames_distributed.labels(
+                        processor_id=processor.id, status="success"
+                    ).inc()
+
                     logger.debug(
-                        f"Dispatched frame {frame.frame_id} to processor {processor.id} "
-                        f"(queue: {processor.queue}, msg_id: {msg_id})"
+                        f"Dispatched frame {frame.frame_id} to processor "
+                        f"{processor.id} (queue: {processor.queue}, msg_id: {msg_id})"
                     )
                     return True
             else:
@@ -167,12 +201,24 @@ class FrameDistributor:
                         f"No processor available for frame {frame.frame_id} "
                         f"with capability {frame.metadata.get('detection_type')}"
                     )
+
+                    # Update metrics
+                    frames_distributed.labels(
+                        processor_id="none", status="no_processor"
+                    ).inc()
+
                     return False
 
                 msg_id = await self.dispatch_to_processor(processor, frame)
+
+                # Update metrics
+                frames_distributed.labels(
+                    processor_id=processor.id, status="success"
+                ).inc()
+
                 logger.debug(
-                    f"Dispatched frame {frame.frame_id} to processor {processor.id} "
-                    f"(queue: {processor.queue}, msg_id: {msg_id})"
+                    f"Dispatched frame {frame.frame_id} to processor "
+                    f"{processor.id} (queue: {processor.queue}, msg_id: {msg_id})"
                 )
                 return True
 
@@ -183,4 +229,8 @@ class FrameDistributor:
             # Record failure for circuit breaker
             if hasattr(e, "processor_id"):
                 self.processor_failures[e.processor_id].append(datetime.now())
+
+            # Update error metrics
+            frames_distributed.labels(processor_id="none", status="error").inc()
+
             return False

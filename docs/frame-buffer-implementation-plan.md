@@ -2041,6 +2041,153 @@ curl http://localhost:8002/metrics | grep 'processor_id="sample-processor"'
 
 ---
 
+## Block 3.2: Frame Distribution Implementation
+
+### Zadania atomowe
+
+4. **[ ] Implementacja dystrybucji ramek do procesorów**
+   - **Metryka**: Frame Buffer v2 faktycznie dystrybuuje ramki do kolejek procesorów
+   - **Kontekst**: Obecnie Frame Buffer v2 nie implementuje dystrybucji - konsumuje ramki ale ich nie przekazuje
+   - **TDD Test First**:
+     ```python
+     # tests/integration/test_frame_distribution.py
+     async def test_frame_distribution_to_processor_queues():
+         """Test that Frame Buffer v2 distributes frames to processor queues."""
+         # Setup Redis and processor
+         redis = await aioredis.from_url("redis://localhost:6379")
+
+         # Register a test processor
+         processor_id = "test-processor-dist"
+         queue_name = f"frames:ready:{processor_id}"
+
+         # Clear the queue
+         await redis.delete(queue_name)
+
+         # Register processor via API
+         async with httpx.AsyncClient() as client:
+             response = await client.post(
+                 "http://localhost:8002/processors/register",
+                 json={
+                     "id": processor_id,
+                     "capabilities": ["test"],
+                     "capacity": 10,
+                     "queue": queue_name
+                 }
+             )
+             assert response.status_code == 201
+
+         # Add frame to input stream
+         await redis.xadd("frames:captured", {
+             "frame_id": "dist-test-1",
+             "camera_id": "cam1",
+             "timestamp": datetime.now().isoformat(),
+             "size_bytes": "1024",
+             "width": "1920",
+             "height": "1080",
+             "format": "jpeg",
+             "trace_context": "{}",
+             "metadata": "{}"
+         })
+
+         # Wait for distribution
+         await asyncio.sleep(2)
+
+         # Check processor queue
+         messages = await redis.xrange(queue_name, count=10)
+         assert len(messages) > 0, "No frames in processor queue"
+
+         # Verify frame data
+         frame_data = messages[0][1]
+         assert frame_data[b"frame_id"] == b"dist-test-1"
+         assert frame_data[b"camera_id"] == b"cam1"
+     ```
+   - **Implementation plan**:
+     ```python
+     # src/orchestrator/distributor.py - UPDATE existing class
+     class FrameDistributor:
+         async def distribute_frame(self, frame: FrameReadyEvent) -> bool:
+             """Distribute frame to appropriate processor queue."""
+             try:
+                 # Select processor based on capabilities
+                 processor = await self.select_processor(frame)
+                 if not processor:
+                     logger.warning(f"No processor available for frame {frame.frame_id}")
+                     return False
+
+                 # Prepare frame data for Redis
+                 frame_data = {
+                     "frame_id": frame.frame_id,
+                     "camera_id": frame.camera_id,
+                     "timestamp": frame.timestamp.isoformat(),
+                     "size_bytes": str(frame.size_bytes),
+                     "width": str(frame.width),
+                     "height": str(frame.height),
+                     "format": frame.format,
+                     "trace_context": json.dumps(frame.trace_context),
+                     "metadata": json.dumps(frame.metadata),
+                     "storage_path": frame.storage_path or "",
+                     "storage_backend": frame.storage_backend or "redis"
+                 }
+
+                 # Add to processor queue
+                 queue_name = f"frames:ready:{processor.id}"
+                 msg_id = await self.redis.xadd(queue_name, frame_data)
+
+                 # Update metrics
+                 frames_distributed.labels(
+                     processor_id=processor.id,
+                     status="success"
+                 ).inc()
+
+                 logger.info(f"Distributed frame {frame.frame_id} to {processor.id} (msg: {msg_id})")
+                 return True
+
+             except Exception as e:
+                 logger.error(f"Failed to distribute frame {frame.frame_id}: {e}")
+                 frames_distributed.labels(
+                     processor_id="none",
+                     status="error"
+                 ).inc()
+                 return False
+     ```
+   - **Validation**:
+     ```bash
+     # Run the distribution test
+     pytest tests/integration/test_frame_distribution.py -v
+
+     # Monitor Redis streams
+     redis-cli XINFO STREAM frames:ready:sample-processor
+
+     # Check metrics
+     curl http://localhost:8002/metrics | grep frames_distributed
+     ```
+   - **Quality Gate**:
+     - Frames appear in processor queues within 100ms
+     - No frame loss during distribution
+     - Proper error handling for missing processors
+   - **Czas**: 2h
+
+### Metryki sukcesu bloku 3.2
+- Frame Buffer v2 actively distributes frames to processor queues
+- ProcessorClient successfully consumes from its dedicated queue
+- Complete E2E flow working: RTSP → Redis → Frame Buffer v2 → Processor Queues → Processors
+- Distribution metrics available and monitored
+
+### 🚨 CHECKPOINT WALIDACYJNY DLA BLOCK 3.2
+**OBOWIĄZKOWE po implementacji dystrybucji:**
+1. Uruchom test dystrybucji: `pytest tests/integration/test_frame_distribution.py`
+2. Sprawdź czy ramki trafiają do kolejek: `redis-cli XLEN frames:ready:sample-processor`
+3. Zweryfikuj E2E flow: `./scripts/validate-e2e-flow.sh`
+4. Sprawdź metryki: `curl http://localhost:8002/metrics | grep frames_distributed`
+
+**Kryteria sukcesu:**
+- ✅ Ramki pojawiają się w kolejkach procesorów
+- ✅ ProcessorClient konsumuje ramki ze swojej kolejki
+- ✅ Brak frame loss podczas dystrybucji
+- ✅ Metryki pokazują liczbę dystrybuowanych ramek
+
+---
+
 ## Overall Success Metrics
 
 ### Performance

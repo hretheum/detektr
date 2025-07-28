@@ -5,6 +5,7 @@ import json
 import logging
 import time
 from abc import ABC, abstractmethod
+from contextlib import suppress
 from typing import Dict, List, Optional
 
 import httpx
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class ProcessorClient(ABC):
     """Base class for processors that register with orchestrator and consume from Redis.
-    
+
     This class provides the ProcessorClient pattern for Frame Buffer v2 integration.
     """
 
@@ -71,8 +72,8 @@ class ProcessorClient(ABC):
         self._running = True
 
         # Initialize clients
-        self._redis_client = await aioredis.create_redis(
-            f"redis://{self.redis_host}:{self.redis_port}"
+        self._redis_client = await aioredis.from_url(
+            f"redis://{self.redis_host}:{self.redis_port}", decode_responses=False
         )
         self._http_client = httpx.AsyncClient(timeout=30.0)
 
@@ -98,17 +99,13 @@ class ProcessorClient(ABC):
         # Cancel tasks
         if self._heartbeat_task:
             self._heartbeat_task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._heartbeat_task
-            except asyncio.CancelledError:
-                pass
 
         if self._consumer_task:
             self._consumer_task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._consumer_task
-            except asyncio.CancelledError:
-                pass
 
         # Unregister from orchestrator
         await self.unregister()
@@ -129,13 +126,14 @@ class ProcessorClient(ABC):
                 response = await self._http_client.post(
                     f"{self.orchestrator_url}/processors/register",
                     json={
-                        "processor_id": self.processor_id,
+                        "id": self.processor_id,
                         "capabilities": self.capabilities,
+                        "capacity": 10,  # Default capacity
                         "queue": f"frames:ready:{self.processor_id}",
                     },
                 )
 
-                if response.status_code == 200:
+                if response.status_code == 201:
                     logger.info(
                         f"Successfully registered processor {self.processor_id}"
                     )
@@ -149,7 +147,8 @@ class ProcessorClient(ABC):
             except Exception as e:
                 self._retry_count = attempt + 1
                 logger.error(
-                    f"Registration attempt {attempt + 1} failed: {type(e).__name__}: {e}"
+                    f"Registration attempt {attempt + 1} failed: "
+                    f"{type(e).__name__}: {e}"
                 )
                 if attempt < self.max_retries - 1:
                     await asyncio.sleep(2**attempt)  # Exponential backoff
@@ -159,11 +158,13 @@ class ProcessorClient(ABC):
     async def unregister(self):
         """Unregister from the orchestrator."""
         try:
-            await self._http_client.post(
-                f"{self.orchestrator_url}/processors/unregister",
-                json={"processor_id": self.processor_id},
+            response = await self._http_client.delete(
+                f"{self.orchestrator_url}/processors/{self.processor_id}",
             )
-            logger.info(f"Unregistered processor {self.processor_id}")
+            if response.status_code in [204, 404]:
+                logger.info(f"Unregistered processor {self.processor_id}")
+            else:
+                logger.error(f"Failed to unregister: {response.status_code}")
         except Exception as e:
             logger.error(f"Failed to unregister: {e}")
 
@@ -218,7 +219,7 @@ class ProcessorClient(ABC):
                 )
 
                 if messages:
-                    for stream, stream_messages in messages:
+                    for _stream, stream_messages in messages:
                         for msg_id, frame_data in stream_messages:
                             # Process frame
                             await self._process_frame_wrapper(
@@ -234,7 +235,7 @@ class ProcessorClient(ABC):
     async def _process_frame_wrapper(
         self, msg_id: bytes, frame_data: Dict[bytes, bytes], stream_key: str
     ):
-        """Wrapper to handle frame processing with error handling."""
+        """Handle frame processing with error handling."""
         frame_id = frame_data.get(b"frame_id", b"unknown").decode()
 
         try:

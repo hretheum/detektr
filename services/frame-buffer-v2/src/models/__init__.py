@@ -29,6 +29,8 @@ class FrameReadyEvent:
     trace_context: Dict[str, str]
     priority: int = 0
     metadata: Dict[str, Any] = field(default_factory=dict)
+    storage_path: Optional[str] = None
+    storage_backend: str = "redis"
 
     def __post_init__(self):
         """Validate frame data."""
@@ -54,6 +56,8 @@ class FrameReadyEvent:
             "trace_context": self.trace_context,
             "priority": self.priority,
             "metadata": self.metadata,
+            "storage_path": self.storage_path,
+            "storage_backend": self.storage_backend,
         }
 
     @classmethod
@@ -70,6 +74,8 @@ class FrameReadyEvent:
             trace_context=data["trace_context"],
             priority=data.get("priority", 0),
             metadata=data.get("metadata", {}),
+            storage_path=data.get("storage_path"),
+            storage_backend=data.get("storage_backend", "redis"),
         )
 
 
