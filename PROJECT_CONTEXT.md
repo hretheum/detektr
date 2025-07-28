@@ -239,16 +239,19 @@ Konfiguracje agentów znajdują się w: `/Users/hretheum/dev/bezrobocie/detektor
 ## Porty serwisów
 
 - 8000: base-template ✅
-- 8001: frame-tracking ✅
-- 8002: frame-buffer ✅
-- 8003: object-detection
-- 8004: ha-bridge
+- 8001: frame-tracking ✅ (frame-events)
+- 8002: frame-buffer-v2 ✅ (z Block 3 features)
+- 8003: face-recognition
+- 8004: object-detection
 - 8005: metadata-storage ✅
-- 8006: face-recognition
+- 8006: (reserved)
 - 8007: echo-service
 - 8008: gpu-demo
 - 8009: example-otel
 - 8080: rtsp-capture ✅
+- 8081: frame-events ✅
+- 8082: cadvisor ✅
+- 8083: adminer
 - 8099: sample-processor ✅
 - 6379: Redis ✅
 - 5432: PostgreSQL ✅
@@ -478,9 +481,9 @@ docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d
 
 ### 🔧 Działające usługi produkcyjne:
 - **Infrastruktura**: postgres, pgbouncer, redis, prometheus, grafana, jaeger (wszystkie healthy)
-- **Aplikacyjne**: rtsp-capture, frame-buffer (z consumer), frame-events, metadata-storage, base-template, sample-processor
+- **Aplikacyjne**: rtsp-capture, frame-buffer-v2 (z Block 3 features), frame-events, metadata-storage, base-template, sample-processor
 - **Sieć**: Wszystkie serwisy na jednej sieci `detektor-network` (naprawiono problem z `detektr_default`)
-- **Frame-buffer consumer**: Konsumuje ~1000 frames/sec ale buffer się zapycha
+- **Frame-buffer-v2**: Nowa wersja z backpressure control, smart routing, circuit breaker i priority queue
 
 ## ✅ ROZWIĄZANY PROBLEM: rtsp-capture nie odpowiada na HTTP (2025-07-26 23:20)
 
@@ -508,3 +511,36 @@ ret, frame = await loop.run_in_executor(None, self.cap.read)
 - Publikuje metadata do Redis Streams
 - Health endpoint `/health` odpowiada poprawnie
 - Wszystkie metryki i monitoring działają
+
+## ✅ ROZWIĄZANY PROBLEM: Pipeline zatrzymywał wszystkie serwisy podczas deploy (2025-07-28)
+
+### Problem:
+- Funkcja `cleanup_ports()` w `scripts/deploy.sh` zatrzymywała WSZYSTKIE kontenery używające portów ze zdefiniowanej listy
+- To powodowało zatrzymanie wszystkich serwisów podczas deploymentu pojedynczego serwisu
+
+### Rozwiązanie:
+- Zmodyfikowano `cleanup_ports()` aby sprawdzała tylko porty serwisów w `DEPLOY_SERVICES`
+- Dodano przekazywanie `DEPLOY_SERVICES` przez SSH do zdalnych deploymentów
+- Zaktualizowano wszystkie referencje z `frame-buffer` na `frame-buffer-v2`
+
+### Status: ✅ DZIAŁA
+- Pipeline teraz zatrzymuje tylko serwisy które są deployowane
+- Pozostałe serwisy działają bez przerwy
+- Deployment pojedynczego serwisu nie wpływa na resztę systemu
+
+## ✅ ROZWIĄZANY PROBLEM: frame-buffer-v2 models directory nie był kopiowany do Docker (2025-07-28)
+
+### Problem:
+- Katalog `services/frame-buffer-v2/src/models/` nie był śledzony przez Git
+- Docker build nie mógł znaleźć pliku `__init__.py` podczas kopiowania
+- Kontener ciągle restartował z błędem `ModuleNotFoundError: No module named 'src.models'`
+
+### Rozwiązanie:
+- Dodano `services/frame-buffer-v2/src/models/__init__.py` do Git (`git add -f`)
+- Dodano `.gitkeep` do katalogu models dla pewności
+- Zaktualizowano Dockerfile z explicit copy instrukcjami
+
+### Status: ✅ DZIAŁA
+- frame-buffer-v2 działa poprawnie na porcie 8002
+- Wszystkie moduły są prawidłowo importowane
+- Block 3 features (backpressure control, smart routing, circuit breaker, priority queue) są dostępne
