@@ -1,19 +1,47 @@
 """FastAPI application for Frame Buffer v2."""
 
 import uuid
+from contextlib import asynccontextmanager
 
+import redis.asyncio as aioredis
 from fastapi import APIRouter, FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.api.routes import processors
 from src.config import Settings
+from src.orchestrator.processor_registry import ProcessorRegistry
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifecycle."""
+    # Load settings
+    settings = Settings()
+    app.state.settings = settings
+
+    # Startup
+    redis_client = aioredis.from_url(
+        settings.redis_url, max_connections=settings.redis_max_connections
+    )
+    registry = ProcessorRegistry(redis_client)
+
+    # Make instances available to routes
+    app.state.registry = registry
+    app.state.redis = redis_client
+
+    yield
+
+    # Shutdown
+    await redis_client.close()
+
 
 # Create FastAPI app
 app = FastAPI(
     title="Frame Buffer v2 API",
     description="Intelligent frame orchestrator for video processing pipeline",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
 # Configure CORS
@@ -47,18 +75,8 @@ async def health_check():
     """Health check endpoint."""
     try:
         # Check Redis connection
-        # Note: redis_client is set by main.py during startup
-        if hasattr(app.state, "redis_client") and app.state.redis_client:
-            await app.state.redis_client.ping()
-            return {"status": "healthy", "service": "frame-buffer-v2"}
-        else:
-            return JSONResponse(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                content={
-                    "status": "unhealthy",
-                    "error": "Redis client not initialized",
-                },
-            )
+        await app.state.redis.ping()
+        return {"status": "healthy", "service": "frame-buffer-v2"}
     except Exception as e:
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
