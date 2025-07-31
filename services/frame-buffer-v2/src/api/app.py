@@ -78,10 +78,12 @@ async def get_metrics():
     try:
         # Add registry metrics if available
         if hasattr(app.state, "registry") and app.state.registry:
-            processors = await app.state.registry.list_processors()
+            processors = await app.state.registry.list_all()
             metrics["processors"] = {
                 "total": len(processors),
-                "active": len([p for p in processors if p.status == "active"]),
+                "active": len(
+                    processors
+                ),  # All registered processors are considered active,
             }
 
         # Add Redis metrics if available
