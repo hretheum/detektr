@@ -135,7 +135,9 @@ class WorkQueueManager:
         # Convert to Redis-compatible format
         redis_data = {}
         for key, value in data.items():
-            if isinstance(value, (dict, list)):
+            if value is None:
+                redis_data[key] = ""  # Convert None to empty string
+            elif isinstance(value, (dict, list)):
                 redis_data[key] = json.dumps(value)
             else:
                 redis_data[key] = str(value)
@@ -193,7 +195,9 @@ class WorkQueueManager:
             # Convert to Redis format
             redis_data = {}
             for key, value in data.items():
-                if isinstance(value, (dict, list)):
+                if value is None:
+                    redis_data[key] = ""  # Convert None to empty string
+                elif isinstance(value, (dict, list)):
                     redis_data[key] = json.dumps(value)
                 else:
                     redis_data[key] = str(value)

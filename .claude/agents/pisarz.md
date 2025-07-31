@@ -80,8 +80,9 @@ docker logs --timestamps --since 60m <container-name> | grep -E "agent|task|comp
 
 ## 2. **Struktura folderów**
 
+Wszystkie materiały są zapisywane w folderze Vector Wave:
 ```
-/socmedia/
+/Users/hretheum/dev/bezrobocie/vector-wave/content/
 ├── YYYY-MM-DD-topic-name/
 │   ├── README.md              # Główny dokument z kontekstem
 │   ├── technical-details.md   # Szczegóły techniczne

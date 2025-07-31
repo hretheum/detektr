@@ -27,7 +27,7 @@ class FrameReadyEvent:
     height: int
     format: str
     trace_context: Dict[str, str]
-    priority: int = 0
+    priority: Optional[int] = 0
     metadata: Dict[str, Any] = field(default_factory=dict)
     storage_path: Optional[str] = None
     storage_backend: str = "redis"
@@ -40,7 +40,10 @@ class FrameReadyEvent:
         if self.width <= 0 or self.height <= 0:
             raise ValueError("Invalid dimensions")
 
-        if not 0 <= self.priority <= 10:
+        # Handle None priority - convert to default
+        if self.priority is None:
+            self.priority = 0
+        elif not 0 <= self.priority <= 10:
             raise ValueError("Priority must be between 0 and 10")
 
     def to_json(self) -> dict:
@@ -54,7 +57,7 @@ class FrameReadyEvent:
             "height": self.height,
             "format": self.format,
             "trace_context": self.trace_context,
-            "priority": self.priority,
+            "priority": self.priority if self.priority is not None else 0,
             "metadata": self.metadata,
             "storage_path": self.storage_path,
             "storage_backend": self.storage_backend,

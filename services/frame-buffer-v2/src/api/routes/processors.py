@@ -108,3 +108,23 @@ async def find_by_capability(capability: str, request: Request) -> List[Processo
     """Find processors by capability."""
     registry = request.app.state.registry
     return await registry.find_by_capability(capability)
+
+
+@router.post("/heartbeat", summary="Processor heartbeat")
+async def processor_heartbeat(
+    heartbeat_data: dict,
+    registry: ProcessorRegistry = Depends(get_registry),
+):
+    """Receive heartbeat from processor."""
+    processor_id = heartbeat_data.get("processor_id")
+    if not processor_id:
+        raise HTTPException(400, "processor_id is required")
+
+    # Check if processor exists
+    processor = await registry.get_processor(processor_id)
+    if not processor:
+        raise HTTPException(404, f"Processor {processor_id} not found")
+
+    # Update last heartbeat timestamp (could be stored in Redis)
+    # For now, just acknowledge the heartbeat
+    return {"status": "ok", "processor_id": processor_id}

@@ -211,7 +211,7 @@ async def test_frame_dispatch(redis_client):
         width=1920,
         height=1080,
         format="jpeg",
-        trace_context={"trace_id": "123"},
+        trace_context={"trace_id": "123", "span_id": "456"},
         metadata={"detection_type": "face_detection"},
     )
 
@@ -227,12 +227,12 @@ async def test_frame_dispatch(redis_client):
     assert len(messages) == 1
 
     stream_name, stream_messages = messages[0]
-    assert stream_name == "frames:ready:test-proc"
+    assert stream_name == b"frames:ready:test-proc"
     assert len(stream_messages) == 1
 
     msg_id, data = stream_messages[0]
-    assert data["frame_id"] == "test-frame-1"
-    assert data["camera_id"] == "cam1"
+    assert data[b"frame_id"] == b"test-frame-1"
+    assert data[b"camera_id"] == b"cam1"
 
 
 @pytest.mark.asyncio
@@ -400,3 +400,64 @@ async def test_no_redis_client():
         await distributor.dispatch_to_processor(
             ProcessorInfo(id="test", capabilities=["detection"], capacity=10), frame
         )
+
+
+@pytest.mark.asyncio
+async def test_frame_with_none_priority(redis_client):
+    """Test frame distribution with None priority value."""
+    registry = ProcessorRegistry(redis_client)
+    distributor = FrameDistributor(registry, redis_client)
+
+    # Register processor
+    await registry.register(
+        ProcessorInfo(
+            id="test-proc",
+            capabilities=["face_detection"],
+            capacity=10,
+            queue="frames:ready:test-proc",
+        )
+    )
+
+    # Create frame with priority None
+    frame = FrameReadyEvent(
+        frame_id="test-none-priority",
+        camera_id="cam1",
+        timestamp=datetime.now(),
+        size_bytes=1024,
+        width=1920,
+        height=1080,
+        format="jpeg",
+        trace_context={"trace_id": "456", "span_id": "789"},
+        metadata={"detection_type": "face_detection"},
+        priority=0,  # FrameReadyEvent doesn't allow None, but simulate the JSON case
+    )
+
+    # Manually override to simulate None from external source
+    frame_json = frame.to_json()
+    frame_json["priority"] = None  # Simulate None value from external source
+
+    # Create modified frame from JSON
+    frame_with_none = FrameReadyEvent.from_json({**frame_json, "priority": None})
+
+    # Verify priority was converted to 0
+    assert (
+        frame_with_none.priority == 0
+    ), f"Priority should be 0, but is {frame_with_none.priority}"
+
+    # Clear the queue first
+    await redis_client.delete("frames:ready:test-proc")
+
+    success = await distributor.distribute_frame(frame_with_none)
+    assert success is True
+
+    # Verify frame was added to processor queue with priority "0"
+    messages = await redis_client.xread({"frames:ready:test-proc": 0}, count=1)
+    assert len(messages) == 1
+
+    stream_name, stream_messages = messages[0]
+    msg_id, data = stream_messages[0]
+
+    # Check that priority was properly handled as "0" string
+    assert b"priority" in data, f"Priority not found in data: {data}"
+    assert data[b"priority"] == b"0"  # Redis returns bytes
+    assert data[b"frame_id"] == b"test-none-priority"

@@ -126,6 +126,8 @@ class FrameDistributor:
 
         # Convert frame to Redis Stream format (string values for Redis)
         frame_json = frame.to_json()
+
+        # Ensure all values are not None
         frame_data = {
             "frame_id": frame_json["frame_id"],
             "camera_id": frame_json["camera_id"],
@@ -136,8 +138,11 @@ class FrameDistributor:
             "format": frame_json["format"],
             "trace_context": json.dumps(frame_json["trace_context"]),
             "metadata": json.dumps(frame_json["metadata"]),
-            "priority": str(frame_json["priority"]),
-            "storage_path": frame_json.get("storage_path", ""),
+            "priority": str(
+                frame_json.get("priority", 0)
+            ),  # Handle None with default 0
+            "storage_path": frame_json.get("storage_path")
+            or "",  # Convert None to empty string
             "storage_backend": frame_json.get("storage_backend", "redis"),
         }
 

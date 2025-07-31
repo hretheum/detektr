@@ -64,3 +64,53 @@ async def health_check():
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"status": "unhealthy", "error": str(e)},
         )
+
+
+@app.get("/metrics")
+async def get_metrics():
+    """Metrics endpoint for Frame Buffer v2."""
+    metrics = {
+        "status": "healthy",
+        "service": "frame-buffer-v2",
+        "version": "2.0.0",
+    }
+
+    try:
+        # Add registry metrics if available
+        if hasattr(app.state, "registry") and app.state.registry:
+            processors = await app.state.registry.list_processors()
+            metrics["processors"] = {
+                "total": len(processors),
+                "active": len([p for p in processors if p.status == "active"]),
+            }
+
+        # Add Redis metrics if available
+        if hasattr(app.state, "redis_client") and app.state.redis_client:
+            info = await app.state.redis_client.info()
+            metrics["redis"] = {
+                "connected_clients": info.get("connected_clients", 0),
+                "used_memory_human": info.get("used_memory_human", "unknown"),
+                "uptime_in_seconds": info.get("uptime_in_seconds", 0),
+            }
+
+            # Get stream info
+            try:
+                stream_info = await app.state.redis_client.xinfo_stream(
+                    "frames:metadata"
+                )
+                metrics["input_stream"] = {
+                    "length": stream_info.get("length", 0),
+                    "groups": stream_info.get("groups", 0),
+                    "last_generated_id": stream_info.get(
+                        "last-generated-id", "unknown"
+                    ),
+                }
+            except Exception:
+                metrics["input_stream"] = {"error": "Stream not found"}
+
+        return metrics
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"status": "unhealthy", "error": str(e)},
+        )
