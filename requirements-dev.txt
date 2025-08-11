@@ -21,7 +21,7 @@ mkdocs==1.5.3
 mkdocs-material==9.5.3
 
 # Type stubs
-types-requests==2.31.0.20240106
+types-requests==2.32.4.20250809
 types-pyyaml==6.0.12.12
 
 # OpenTelemetry instrumentation packages
