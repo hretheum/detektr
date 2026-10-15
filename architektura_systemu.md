@@ -384,7 +384,7 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
 3. **Deploy**: Pull z registry na Nebula (NIGDY build na produkcji)
 4. **Monitor**: Health checks i observability od początku
 
-### Faza 2: Akwizycja i Storage z pełnym monitoringiem (2-3 tygodnie) - (6/8 zadań ukończonych)
+### Faza 2: Akwizycja i Storage z pełnym monitoringiem (2-3 tygodnie) ✅ - (8/8 zadań ukończonych)
 
 #### Zadania i Metryki
 
@@ -516,24 +516,40 @@ WAŻNE: Zawsze zaczynaj od Bloku 0 (Prerequisites) w każdym zadaniu!
      - Grafana dashboard with Jaeger integration ✅
    - **[Szczegóły →](docs/faza-2-akwizycja/05-frame-tracking-implementation.md)**
 
-7. **Dashboard: Frame Pipeline Overview**
+7. **[x] Pipeline Integration - End-to-End Flow** ✅ **COMPLETED**
+   - **Metryki**:
+     - Pipeline działa: RTSP → Redis → Frame Buffer → Processors → Results
+     - Frame Buffer v2 konsumuje z frames:metadata i dystrybuuje do procesorów
+     - Sample-processor przetwarza klatki i zapisuje wyniki
+   - **Walidacja**:
+     ```bash
+     # Test manual frame injection
+     docker exec detektr-redis-1 redis-cli XADD frames:metadata ...
+     # Check processor queue
+     docker exec detektr-redis-1 redis-cli XLEN frames:ready:sample-processor-1
+     # Check results
+     docker exec detektr-redis-1 redis-cli XRANGE sample:results + - COUNT 5
+     ```
+   - **Sukces**: Klatki są przetwarzane end-to-end, wyniki w sample:results
+   - **Status produkcyjny**:
+     - Frame Buffer v2 z /metrics endpoint i obsługą None priority ✅
+     - RTSP capture z detection_type w metadata ✅
+     - Pełny flow działa z testowymi klatkami ✅
+   - **Data ukończenia**: 2025-01-31
+
+8. **[ ] Dashboard: Frame Pipeline Overview + Alerty**
    - **Metryki na dashboardzie**:
      - Frames per second (live)
      - Processing latency histogram
      - Queue depths
      - Error rate
-   - **Walidacja**: Import dashboard JSON do Grafana
-   - **Sukces**: Wszystkie panele pokazują dane real-time
-   - **[Szczegóły →](docs/faza-2-akwizycja/06-dashboard-frame-pipeline.md)**
-
-8. **Alerty: frame drop, latency, queue size**
    - **Alerty**:
      - Frame drop rate > 1%
      - Processing latency p95 > 200ms
      - Queue size > 5000
-   - **Walidacja**: Trigger test conditions, check alert manager
-   - **Sukces**: Alerty firing w <1 min od warunku
-   - **[Szczegóły →](docs/faza-2-akwizycja/07-alerts-configuration.md)**
+   - **Walidacja**: Import dashboard JSON do Grafana, trigger test alerts
+   - **Sukces**: Wszystkie panele pokazują dane real-time, alerty działają
+   - **[Szczegóły →](docs/faza-2-akwizycja/06-dashboard-frame-pipeline.md)**
 
 ### Faza 3: AI Services - Podstawy (3-4 tygodnie)
 

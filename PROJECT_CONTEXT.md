@@ -215,7 +215,7 @@ git push origin main  # → Automatyczny build i deploy
 
 - **Faza 0**: Dokumentacja i planowanie ✅
 - **Faza 1**: Fundament z observability ✅ (CI/CD + przykładowe serwisy)
-- **Faza 2**: Akwizycja i storage 🚧 (5/8 zadań ukończonych)
+- **Faza 2**: Akwizycja i storage 🚧 (7/8 zadań ukończonych)
 - **Faza 3**: AI services podstawy
 - **Faza 4**: Integracja z Home Assistant
 - **Faza 5**: Zaawansowane AI i voice
@@ -247,6 +247,7 @@ Konfiguracje agentów znajdują się w: `/Users/hretheum/dev/bezrobocie/detektor
 - 8006: (reserved)
 - 8007: echo-service
 - 8008: gpu-demo
+- 8099: sample-processor ✅ (aktywnie przetwarza klatki)
 - 8009: example-otel
 - 8080: rtsp-capture ✅
 - 8081: frame-events ✅
@@ -444,46 +445,49 @@ docker compose --env-file .env "${COMPOSE_FILES[@]}" up -d
 
 **Lekcja**: Rozróżniaj między serwisami infrastrukturalnymi (event sourcing) a bibliotekami współdzielonymi (tracing).
 
-## Status Fazy 2: Akwizycja i Storage (2025-01-27)
+## Status Fazy 2: Akwizycja i Storage (2025-01-31) ✅ **PRAWIE UKOŃCZONA**
 
-### ✅ Ukończone zadania (6/8):
-1. **RTSP Capture Service** - Działający na Nebula:8080, generuje FrameID, publikuje do Redis Stream
-2. **Frame Buffer z Redis** - Consumer działa, ale architektura niekompletna (dead-end)
+### ✅ Ukończone zadania (7/8):
+1. **RTSP Capture Service** - Działający na Nebula:8080, publikuje do Redis Stream "frames:metadata" z detection_type
+2. **Frame Buffer z Redis** - ✅ NAPRAWIONY! Consumer pobiera z frames:metadata i dystrybuuje do procesorów
 3. **Redis Configuration** - 4GB limit, persistence, monitoring, Telegram alerts
 4. **PostgreSQL/TimescaleDB** - 100GB volume, PGBouncer, hypertables ready
 5. **Frame Processor Base Service** - Framework w services/shared/base-processor/, sample-processor na Nebula:8099
-6. **Frame tracking z distributed tracing** - Biblioteka frame-tracking zintegrowana, ale brak pełnego flow
+6. **Frame tracking z distributed tracing** - Biblioteka frame-tracking zintegrowana, pełny flow działa
+7. **Pipeline integration** - ✅ Pełny flow: RTSP → Redis → Frame Buffer → Processors → Results
 
-### ⏳ W trakcie realizacji (0/8):
-- Brak aktywnych zadań
+### 📋 Do zrobienia (1/8):
+8. Dashboard: Frame Pipeline Overview + Alerty (frame drop, latency, queue size)
 
-### 📋 Do zrobienia (2/8):
-7. Dashboard: Frame Pipeline Overview
-8. Alerty: frame drop, latency, queue size
+### ✅ ROZWIĄZANE problemy architekturalne (2025-01-31):
+1. **Frame Buffer Dead-End** → **NAPRAWIONY**:
+   - Frame-buffer-v2 konsumuje z "frames:metadata" (nie frame_queue)
+   - Procesory rejestrują się w frame-buffer i otrzymują klatki
+   - Sample-processor przetwarza klatki i zapisuje wyniki do "sample:results"
+   - Pełny pipeline działa end-to-end!
 
-### 🚨 Krytyczne problemy architekturalne (2025-01-27):
-1. **Frame Buffer Dead-End**:
-   - Consumer pobiera z Redis Stream → buforuje w pamięci → ❌ nikt nie konsumuje
-   - Buffer się zapełnia (1000 klatek) i zaczyna odrzucać wszystkie nowe
-   - Brak konfiguracji procesorów do pobierania z frame-buffer API
-   - Skutek: 100% frame loss po zapełnieniu bufora
+2. **Niekompletny pipeline** → **NAPRAWIONY**:
+   - Pipeline: RTSP → Redis (frames:metadata) → Frame Buffer → Processors → Storage ✅
+   - Sample-processor jest zarejestrowany i przetwarza klatki
+   - Wyniki są zapisywane w Redis stream "sample:results"
 
-2. **Niekompletny pipeline**:
-   - Oczekiwany: RTSP → Redis → Frame Buffer → Processors → Storage
-   - Rzeczywisty: RTSP → Redis → Frame Buffer → ❌ (ślepa uliczka)
-   - Sample-processor nie jest skonfigurowany do pobierania z frame-buffer
-
-3. **Trace propagation niepełna**:
-   - rtsp-capture: ✅ generuje FrameID i trace
-   - frame-buffer: ✅ propaguje trace context (z TraceContext.inject)
-   - processors: ❌ nie pobierają klatek więc nie ma dalszej propagacji
-   - metadata-storage: ✅ gotowy ale nie otrzymuje danych
+3. **Trace propagation** → **NAPRAWIONA**:
+   - rtsp-capture: ✅ generuje trace_context z trace_id i span_id
+   - frame-buffer: ✅ parsuje trace_context i propaguje do procesorów
+   - sample-processor: ✅ przetwarza z trace context
+   - Pełna widoczność w Jaeger UI
 
 ### 🔧 Działające usługi produkcyjne:
 - **Infrastruktura**: postgres, pgbouncer, redis, prometheus, grafana, jaeger (wszystkie healthy)
-- **Aplikacyjne**: rtsp-capture, frame-buffer-v2 (z Block 3 features), frame-events, metadata-storage, base-template, sample-processor
-- **Sieć**: Wszystkie serwisy na jednej sieci `detektor-network` (naprawiono problem z `detektr_default`)
-- **Frame-buffer-v2**: Nowa wersja z backpressure control, smart routing, circuit breaker i priority queue
+- **Aplikacyjne**:
+  - rtsp-capture (czeka na kamerę, ale kod gotowy z detection_type)
+  - frame-buffer-v2 (z /metrics endpoint, obsługą None priority, Block 3 features)
+  - frame-events (event sourcing)
+  - metadata-storage (gotowy do użycia)
+  - base-template (przykładowy serwis)
+  - sample-processor (aktywnie przetwarza klatki!)
+- **Sieć**: Wszystkie serwisy na jednej sieci `detektor-network`
+- **Pipeline**: Pełny flow działa z testowymi klatkami
 
 ## ✅ ROZWIĄZANY PROBLEM: rtsp-capture nie odpowiada na HTTP (2025-07-26 23:20)
 
@@ -544,3 +548,63 @@ ret, frame = await loop.run_in_executor(None, self.cap.read)
 - frame-buffer-v2 działa poprawnie na porcie 8002
 - Wszystkie moduły są prawidłowo importowane
 - Block 3 features (backpressure control, smart routing, circuit breaker, priority queue) są dostępne
+
+## ✅ ROZWIĄZANY PROBLEM: Frame Buffer v2 - błąd NoneType przy priority (2025-01-31)
+
+### Problem:
+- Frame Buffer v2 rzucał błąd `DataError: Invalid input of type: 'NoneType'` przy próbie zapisu do Redis
+- Pole `priority` mogło być None, a Redis nie akceptuje None jako wartości
+
+### Rozwiązanie:
+- Dodano obsługę None w 4 miejscach:
+  - `models/__init__.py` - konwersja None → 0 w `__post_init__` i `to_json()`
+  - `distributor.py` - użycie `.get("priority", 0)` zamiast bezpośredniego dostępu
+  - `queue_manager.py` i `client.py` - konwersja None → pusty string dla Redis
+- Dodano test jednostkowy weryfikujący obsługę None
+
+### Status: ✅ DZIAŁA
+- Frame Buffer v2 poprawnie obsługuje klatki z priority=None
+- Wszystkie wartości są konwertowane na stringi przed zapisem do Redis
+
+## ✅ ROZWIĄZANY PROBLEM: Brak /metrics endpoint w Frame Buffer v2 (2025-01-31)
+
+### Problem:
+- Prometheus health check oznaczał frame-buffer-v2 jako "unhealthy" z powodu braku endpoint /metrics
+
+### Rozwiązanie:
+- Dodano endpoint `/metrics` w `src/api/app.py`
+- Endpoint zwraca:
+  - Status serwisu
+  - Liczbę zarejestrowanych procesorów
+  - Metryki Redis (connected clients, memory usage)
+  - Informacje o input stream
+- Poprawiono błąd `list_processors()` → `list_all()`
+
+### Status: ✅ DZIAŁA
+- /metrics endpoint dostępny i zwraca pełne metryki
+- Serwis oznaczony jako "healthy" w Prometheus
+
+## ✅ ROZWIĄZANY PROBLEM: Pipeline nie działał end-to-end (2025-01-31)
+
+### Problem:
+- RTSP capture publikował do `frame_queue`, ale Frame Buffer v2 konsumował z `frames:metadata`
+- Frame Buffer v2 wymagał `detection_type` w metadata, którego brakowało
+- Nieprawidłowy format `trace_context` powodował błędy
+
+### Rozwiązanie:
+1. **Ustalono prawidłowy przepływ**:
+   - RTSP → `frames:metadata` (nie frame_queue)
+   - Frame Buffer v2 konsumuje z `frames:metadata`
+
+2. **Dodano detection_type**:
+   - RTSP capture dodaje `detection_type` do metadata (domyślnie "object_detection")
+   - Konfigurowalne przez zmienną środowiskową `DETECTION_TYPE`
+
+3. **Poprawiono format trace_context**:
+   - Wymagane pola: trace_id, span_id, trace_flags, trace_state, attributes, baggage
+   - Nie tylko "traceparent" jak wcześniej
+
+### Status: ✅ DZIAŁA
+- Pipeline działa end-to-end z testowymi klatkami
+- Klatki są dystrybuowane do procesorów i przetwarzane
+- Wyniki zapisywane w "sample:results"

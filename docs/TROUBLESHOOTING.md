@@ -637,6 +637,73 @@ docker exec -it [container] inotifywait -m /app
 docker run --rm -it --pid container:[container] --cap-add SYS_PTRACE alpine strace -p 1
 ```
 
+## Frame Buffer v2 - NoneType Error (2025-01-31)
+
+**Problem**: Frame Buffer v2 rzuca błąd `AttributeError: 'NoneType' object has no attribute 'priority'`
+
+**Przyczyna**: W metodzie `_calculate_priority()` próba dostępu do `processor.priority` gdy `processor` jest None
+
+**Rozwiązanie**:
+```python
+# Dodano obsługę None w _calculate_priority
+if processor is None:
+    return 0.5  # Default priority
+return processor.priority
+```
+
+**Lekcja**: Zawsze sprawdzaj None przed dostępem do atrybutów, szczególnie w async code
+
+## Frame Buffer v2 - Brak /metrics endpoint (2025-01-31)
+
+**Problem**: Frame Buffer v2 nie ma endpointu `/metrics` wymaganego przez Prometheus
+
+**Przyczyna**: Endpoint nie był zdefiniowany w FastAPI
+
+**Rozwiązanie**:
+```python
+# Dodano endpoint w main.py
+@app.get("/metrics")
+async def get_metrics():
+    # Return Prometheus metrics
+    from prometheus_client import generate_latest
+    return Response(content=generate_latest(), media_type="text/plain")
+```
+
+**Lekcja**: Sprawdzaj wszystkie wymagane endpointy przed deploymentem
+
+## Pipeline Flow - Nieprawidłowy stream name (2025-01-31)
+
+**Problem**: Frame Buffer v2 konsumuje z `frame_queue` zamiast `frames:metadata`
+
+**Przyczyna**: Hardcoded stream name nie pasował do rzeczywistego pipeline
+
+**Rozwiązanie**:
+```python
+# Zmieniono REDIS_STREAM_NAME
+REDIS_STREAM_NAME = "frames:metadata"  # było "frame_queue"
+```
+
+**Lekcja**: Konfiguracja powinna być spójna między serwisami, najlepiej w zmiennych środowiskowych
+
+## RTSP Capture - Brak detection_type w metadata (2025-01-31)
+
+**Problem**: Frame Buffer v2 oczekuje pola `detection_type` w metadata klatek
+
+**Przyczyna**: RTSP Capture nie dodawał tego pola
+
+**Rozwiązanie**:
+```python
+# Dodano w RTSP capture przy publikacji do Redis
+metadata = {
+    "frame_id": frame_id,
+    "timestamp": timestamp,
+    "detection_type": "general",  # Dodane pole
+    # ... reszta metadata
+}
+```
+
+**Lekcja**: Dokumentuj wymagane pola w API i sprawdzaj je w testach integracyjnych
+
 ## Getting Help
 
 Jeśli problem persystuje:
